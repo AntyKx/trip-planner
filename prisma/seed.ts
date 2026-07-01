@@ -2,17 +2,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
-  await prisma.route.deleteMany();
-  await prisma.item.deleteMany();
-  await prisma.place.deleteMany();
-  await prisma.tripDay.deleteMany();
-  await prisma.collaborator.deleteMany();
-  await prisma.trip.deleteMany();
-  await prisma.user.deleteMany();
+const DEMO_TRIP_TITLE = "東京五日自由行";
 
-  const user = await prisma.user.create({
-    data: { name: "Anty", email: "antyk123@gmail.com" },
+async function main() {
+  // Never wipe the database — only ever touched this specific demo trip.
+  // Re-running seed is a no-op once the demo trip exists, so it can't
+  // clobber trips the user created themselves.
+  const existingDemo = await prisma.trip.findFirst({
+    where: { title: DEMO_TRIP_TITLE },
+  });
+  if (existingDemo) {
+    console.log("Demo trip already exists, skipping:", existingDemo.id);
+    return;
+  }
+
+  const user = await prisma.user.upsert({
+    where: { email: "antyk123@gmail.com" },
+    update: {},
+    create: { name: "Anty", email: "antyk123@gmail.com" },
   });
 
   // Keep the trip a few days out (not today) so it still falls inside
@@ -26,7 +33,7 @@ async function main() {
   const trip = await prisma.trip.create({
     data: {
       ownerId: user.id,
-      title: "東京五日自由行",
+      title: DEMO_TRIP_TITLE,
       startDate: dayOffset(3),
       endDate: dayOffset(7),
       status: "planning",
