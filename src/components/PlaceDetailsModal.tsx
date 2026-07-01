@@ -69,6 +69,15 @@ function PlaceDetailsModal({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(provider === "google");
 
+  // Lock background scroll while the modal is open.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
   useEffect(() => {
     if (provider !== "google") return;
     let cancelled = false;
