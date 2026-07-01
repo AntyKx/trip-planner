@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
+import { ImageIcon, Camera } from "lucide-react";
 import { updateTripCoverImage } from "@/app/trips/actions";
 
 export default function CoverImagePicker({
@@ -111,9 +112,10 @@ export default function CoverImagePicker({
             type="button"
             onClick={() => setIsOpen((v) => !v)}
             disabled={isPending}
-            className="rounded-lg bg-black/50 px-3 py-1.5 text-sm font-medium text-white backdrop-blur hover:bg-black/60 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-lg bg-black/50 px-3 py-1.5 text-sm font-medium text-white backdrop-blur hover:bg-black/60 disabled:opacity-50"
           >
-            🖼️ 變更封面圖片
+            <ImageIcon className="h-4 w-4" />
+            變更封面圖片
           </button>
 
           {isOpen && (
@@ -129,9 +131,10 @@ export default function CoverImagePicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
               >
-                {isUploading ? "上傳中…" : "📷 從手機相簿選擇"}
+                <Camera className="h-4 w-4" />
+                {isUploading ? "上傳中…" : "從手機相簿選擇"}
               </button>
               {uploadError && (
                 <p className="mt-2 text-xs text-red-500">{uploadError}</p>
@@ -148,7 +151,7 @@ export default function CoverImagePicker({
                         key={url}
                         type="button"
                         onClick={() => apply(url)}
-                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-indigo-400"
+                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-teal-400"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="" className="h-14 w-full object-cover" />
@@ -167,7 +170,7 @@ export default function CoverImagePicker({
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-md bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700"
+                  className="shrink-0 rounded-md bg-teal-600 px-3 py-1 text-sm text-white hover:bg-teal-700"
                 >
                   套用
                 </button>

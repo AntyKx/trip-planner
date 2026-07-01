@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
+import { MapPin, Search, Check } from "lucide-react";
 import { searchPlaces, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
 
@@ -92,7 +93,7 @@ export default function ExploreClient({
       {trips.length === 0 ? (
         <p className="mt-6 text-sm text-slate-700">
           尚無行程，請先
-          <Link href="/trips/new" className="mx-1 text-indigo-600 underline">
+          <Link href="/trips/new" className="mx-1 text-teal-600 underline">
             建立行程
           </Link>
           再來加點。
@@ -148,8 +149,9 @@ export default function ExploreClient({
         <button
           type="submit"
           disabled={isSearching}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
         >
+          <Search className="h-4 w-4" />
           {isSearching ? "搜尋中..." : "搜尋"}
         </button>
       </form>
@@ -176,8 +178,8 @@ export default function ExploreClient({
                     className="h-12 w-12 shrink-0 rounded-lg object-cover"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg">
-                    📍
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                    <MapPin className="h-5 w-5 text-slate-400" />
                   </div>
                 )}
                 <div className="min-w-0">
@@ -192,7 +194,10 @@ export default function ExploreClient({
               </div>
               <div className="flex shrink-0 flex-col gap-1">
                 {addedIds.has(place.externalId) ? (
-                  <span className="text-xs text-emerald-600">已加入 ✓</span>
+                  <span className="flex items-center gap-1 text-xs text-emerald-600">
+                    <Check className="h-3.5 w-3.5" />
+                    已加入
+                  </span>
                 ) : (
                   <>
                     <button

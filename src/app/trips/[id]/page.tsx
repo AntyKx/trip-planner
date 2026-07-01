@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
@@ -87,9 +88,10 @@ export default async function TripDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href={`/explore?tripId=${trip.id}`}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700"
+            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
           >
-            + 加入景點/餐廳
+            <Plus className="h-4 w-4" />
+            加入景點/餐廳
           </Link>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
             {trip.status}

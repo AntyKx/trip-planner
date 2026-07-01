@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { Users } from "lucide-react";
 import { addCollaborator, removeCollaborator } from "@/app/trips/actions";
 
 export type Collaborator = {
@@ -58,7 +59,10 @@ export default function CollaboratorsPanel({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="text-sm font-semibold text-slate-700">共同協作者</h3>
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+        <Users className="h-4 w-4" />
+        共同協作者
+      </h3>
 
       <ul className="mt-3 space-y-2">
         {collaborators.map((c) => (
@@ -116,7 +120,7 @@ export default function CollaboratorsPanel({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+          className="rounded-md bg-teal-600 px-3 py-1 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
         >
           邀請
         </button>

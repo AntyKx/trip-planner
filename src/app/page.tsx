@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Plus, Luggage } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 
 export default async function TripsPage() {
@@ -28,9 +29,10 @@ export default async function TripsPage() {
         </div>
         <Link
           href="/trips/new"
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
         >
-          + 新增行程
+          <Plus className="h-4 w-4" />
+          新增行程
         </Link>
       </div>
 
@@ -56,8 +58,8 @@ export default async function TripsPage() {
                   className="h-14 w-14 shrink-0 rounded-lg object-cover"
                 />
               ) : (
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl">
-                  🧳
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+                  <Luggage className="h-6 w-6 text-slate-400" />
                 </div>
               )}
               <div className="min-w-0 flex-1">

@@ -17,6 +17,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { MapPin, Navigation, GripVertical, X, RefreshCw } from "lucide-react";
 import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
 import { reorderItems, deleteItem } from "@/app/trips/actions";
 
@@ -76,8 +77,8 @@ function SortableItemCard({
           />
         ) : (
           item.place && (
-            <div className="flex w-20 shrink-0 items-center justify-center bg-slate-100 text-2xl sm:w-28">
-              📍
+            <div className="flex w-20 shrink-0 items-center justify-center bg-slate-100 sm:w-28">
+              <MapPin className="h-6 w-6 text-slate-400" />
             </div>
           )
         )}
@@ -88,7 +89,7 @@ function SortableItemCard({
               <span className="shrink-0 text-xs font-medium text-slate-500">
                 {formatTime(item.startTime)}
               </span>
-              <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+              <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-600">
                 {TYPE_LABEL[item.type]}
               </span>
             </div>
@@ -99,27 +100,27 @@ function SortableItemCard({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="開啟 Google Maps 導航"
-                  className="px-1 text-slate-400 hover:text-indigo-600"
+                  className="p-1 text-slate-400 hover:text-teal-600"
                 >
-                  🧭
+                  <Navigation className="h-4 w-4" />
                 </a>
               )}
               <button
                 {...attributes}
                 {...listeners}
                 type="button"
-                className="cursor-grab touch-none px-1 text-slate-400 hover:text-slate-700"
+                className="cursor-grab touch-none p-1 text-slate-400 hover:text-slate-700"
                 aria-label="拖曳排序"
               >
-                ⠿
+                <GripVertical className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={onDelete}
                 aria-label="刪除項目"
-                className="px-1 text-slate-400 hover:text-red-600"
+                className="p-1 text-slate-400 hover:text-red-600"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
@@ -261,9 +262,10 @@ export default function DayTimeline({
           type="button"
           onClick={handleOptimize}
           disabled={!canOptimize || !routesLibrary || isOptimizing}
-          className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isOptimizing ? "優化中…" : "🔄 自動優化路線"}
+          <RefreshCw className={`h-3.5 w-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
+          {isOptimizing ? "優化中…" : "自動優化路線"}
         </button>
         {!canOptimize && items.length >= 2 && (
           <span className="text-xs text-slate-600">

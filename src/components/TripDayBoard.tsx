@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Map as MapIcon, MapPin } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
@@ -45,7 +46,7 @@ export default function TripDayBoard({
                 onClick={() => setSelectedDayId(day.id)}
                 className={
                   isActive
-                    ? "shrink-0 rounded-full bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white"
+                    ? "shrink-0 rounded-full bg-teal-600 px-4 py-1.5 text-sm font-medium text-white"
                     : "shrink-0 rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200"
                 }
               >
@@ -91,7 +92,8 @@ export default function TripDayBoard({
       {/* Map panel — always scoped to the day selected above */}
       <aside className="space-y-4 lg:sticky lg:top-10">
         <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+            <MapIcon className="h-4 w-4" />
             地圖{selectedDay && ` · Day ${selectedDay.dayIndex}`}
           </h3>
           <div className="mt-3">
@@ -117,7 +119,7 @@ export default function TripDayBoard({
                 key={item.id}
                 className="flex items-center gap-2 text-sm text-slate-600"
               >
-                <span>📍</span>
+                <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
                 <span className="flex-1">{item.name}</span>
                 <span className="text-xs text-slate-600">
                   {item.lat.toFixed(3)}, {item.lng.toFixed(3)}
