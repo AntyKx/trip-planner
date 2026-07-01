@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { MapPin, Navigation, GripVertical, X, RefreshCw } from "lucide-react";
 import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
 import { reorderItems, deleteItem } from "@/app/trips/actions";
+import PlaceDetailsTrigger from "./PlaceDetailsModal";
 
 export type TimelineItem = {
   id: string;
@@ -32,6 +33,7 @@ export type TimelineItem = {
     rating: number | null;
     country: string;
     provider: string;
+    externalId: string;
     photoUrl: string | null;
     lat: number;
     lng: number;
@@ -124,16 +126,31 @@ function SortableItemCard({
               </button>
             </div>
           </div>
-          <h3 className="mt-1 truncate font-semibold text-slate-900">
-            {item.place?.name ?? item.note ?? "未命名項目"}
-          </h3>
-          {item.place && (
-            <p className="mt-0.5 truncate text-sm text-slate-600">
-              {item.place.address}
-              {item.place.rating != null && (
-                <span className="text-amber-500"> · ★ {item.place.rating.toFixed(1)}</span>
-              )}
-            </p>
+          {item.place ? (
+            <PlaceDetailsTrigger
+              provider={item.place.provider}
+              externalId={item.place.externalId}
+              fallback={{
+                name: item.place.name,
+                address: item.place.address,
+                rating: item.place.rating,
+                photoUrl: item.place.photoUrl,
+              }}
+            >
+              <h3 className="mt-1 truncate font-semibold text-slate-900 hover:text-teal-700">
+                {item.place.name}
+              </h3>
+              <p className="mt-0.5 truncate text-sm text-slate-600">
+                {item.place.address}
+                {item.place.rating != null && (
+                  <span className="text-amber-500"> · ★ {item.place.rating.toFixed(1)}</span>
+                )}
+              </p>
+            </PlaceDetailsTrigger>
+          ) : (
+            <h3 className="mt-1 truncate font-semibold text-slate-900">
+              {item.note ?? "未命名項目"}
+            </h3>
           )}
         </div>
       </div>

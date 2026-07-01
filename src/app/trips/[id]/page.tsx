@@ -123,6 +123,7 @@ export default async function TripDetailPage({
                       rating: item.place.rating,
                       country: item.place.country,
                       provider: item.place.provider,
+                      externalId: item.place.externalId,
                       photoUrl: item.place.photoUrl,
                       lat: item.place.lat,
                       lng: item.place.lng,

@@ -82,3 +82,114 @@ export async function searchPlaces(
 
   return { ok: true, results };
 }
+
+export type PlaceReview = {
+  authorName: string;
+  authorPhotoUri?: string;
+  rating?: number;
+  text?: string;
+  relativeTime: string;
+};
+
+export type PlaceDetails = {
+  name: string;
+  address?: string;
+  rating?: number;
+  userRatingCount?: number;
+  phoneNumber?: string;
+  websiteUri?: string;
+  googleMapsUri?: string;
+  openNow?: boolean;
+  weekdayDescriptions?: string[];
+  reviews: PlaceReview[];
+  photoUrl?: string;
+};
+
+export type PlaceDetailsResult =
+  | { ok: true; details: PlaceDetails }
+  | { ok: false; error: string };
+
+type RawReview = {
+  rating?: number;
+  text?: { text?: string };
+  relativePublishTimeDescription?: string;
+  authorAttribution?: { displayName?: string; photoUri?: string };
+};
+
+type RawPlaceDetails = {
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  rating?: number;
+  userRatingCount?: number;
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  googleMapsUri?: string;
+  regularOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] };
+  reviews?: RawReview[];
+  photos?: { name: string }[];
+};
+
+// Called directly from the browser — see searchPlaces above for why.
+export async function getPlaceDetails(
+  placeId: string
+): Promise<PlaceDetailsResult> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "尚未設定 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" };
+  }
+
+  const fieldMask = [
+    "displayName",
+    "formattedAddress",
+    "rating",
+    "userRatingCount",
+    "nationalPhoneNumber",
+    "websiteUri",
+    "googleMapsUri",
+    "regularOpeningHours",
+    "reviews",
+    "photos",
+  ].join(",");
+
+  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+    headers: {
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": fieldMask,
+      "Accept-Language": "zh-TW",
+    },
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    return { ok: false, error: `Places API 錯誤 (${res.status})：${text.slice(0, 200)}` };
+  }
+
+  const data: RawPlaceDetails = await res.json();
+
+  const reviews: PlaceReview[] = (data.reviews ?? []).slice(0, 5).map((r) => ({
+    authorName: r.authorAttribution?.displayName ?? "匿名",
+    authorPhotoUri: r.authorAttribution?.photoUri,
+    rating: r.rating,
+    text: r.text?.text,
+    relativeTime: r.relativePublishTimeDescription ?? "",
+  }));
+
+  return {
+    ok: true,
+    details: {
+      name: data.displayName?.text ?? "",
+      address: data.formattedAddress,
+      rating: data.rating,
+      userRatingCount: data.userRatingCount,
+      phoneNumber: data.nationalPhoneNumber,
+      websiteUri: data.websiteUri,
+      googleMapsUri: data.googleMapsUri,
+      openNow: data.regularOpeningHours?.openNow,
+      weekdayDescriptions: data.regularOpeningHours?.weekdayDescriptions,
+      reviews,
+      photoUrl: data.photos?.[0]
+        ? `https://places.googleapis.com/v1/${data.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`
+        : undefined,
+    },
+  };
+}
