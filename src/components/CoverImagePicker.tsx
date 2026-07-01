@@ -8,7 +8,8 @@ import {
   type FormEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { updateTripCoverImage, uploadCoverImagePhoto } from "@/app/trips/actions";
+import { upload } from "@vercel/blob/client";
+import { updateTripCoverImage } from "@/app/trips/actions";
 
 export default function CoverImagePicker({
   tripId,
@@ -47,17 +48,26 @@ export default function CoverImagePicker({
     e.target.value = "";
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+      setUploadError("請選擇圖片檔案");
+      return;
+    }
+
     setUploadError(null);
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.set("file", file);
-      const result = await uploadCoverImagePhoto(formData);
-      if (result.ok) {
-        apply(result.url);
-      } else {
-        setUploadError(result.error);
-      }
+      // Uploads straight from the browser to Vercel Blob (not through a
+      // Server Action / Vercel Function), which caps request bodies at
+      // 4.5MB — too small for real phone photos.
+      const blob = await upload(file.name, file, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+      apply(blob.url);
+    } catch (err) {
+      setUploadError(
+        err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次"
+      );
     } finally {
       setIsUploading(false);
     }

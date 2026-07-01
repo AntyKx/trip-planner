@@ -3,7 +3,6 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { put } from "@vercel/blob";
 
 export async function reorderItems(
   tripId: string,
@@ -99,32 +98,6 @@ export async function removeCollaborator(tripId: string, userId: string) {
 export async function deleteItem(tripId: string, itemId: string) {
   await prisma.item.delete({ where: { id: itemId } });
   revalidatePath(`/trips/${tripId}`);
-}
-
-export type UploadCoverImageResult =
-  | { ok: true; url: string }
-  | { ok: false; error: string };
-
-export async function uploadCoverImagePhoto(
-  formData: FormData
-): Promise<UploadCoverImageResult> {
-  const file = formData.get("file");
-  if (!(file instanceof File)) {
-    return { ok: false, error: "沒有收到檔案" };
-  }
-  if (!file.type.startsWith("image/")) {
-    return { ok: false, error: "請選擇圖片檔案" };
-  }
-  if (file.size > 8 * 1024 * 1024) {
-    return { ok: false, error: "圖片太大了，請選擇 8MB 以內的檔案" };
-  }
-
-  const blob = await put(`cover-images/${Date.now()}-${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-  });
-
-  return { ok: true, url: blob.url };
 }
 
 export async function updateTripCoverImage(
