@@ -78,7 +78,7 @@ export default async function TripDetailPage({
 
       <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{trip.title}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{trip.title}</h1>
           <p className="mt-1 text-sm text-slate-700">
             {trip.startDate.toISOString().slice(0, 10)} ~{" "}
             {trip.endDate.toISOString().slice(0, 10)}

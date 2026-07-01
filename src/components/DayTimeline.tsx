@@ -104,7 +104,7 @@ function SortableItemCard({
               </span>
             )}
           </div>
-          <h3 className="mt-1 font-semibold">
+          <h3 className="mt-1 font-semibold text-slate-900">
             {item.place?.name ?? item.note ?? "未命名項目"}
           </h3>
           {item.place?.address && (

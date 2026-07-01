@@ -7,7 +7,7 @@ export default function NewTripPage() {
       <Link href="/" className="text-sm text-slate-700 hover:underline">
         ← 回我的行程
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">建立新行程</h1>
+      <h1 className="mt-2 text-2xl font-bold text-slate-900">建立新行程</h1>
 
       <form action={createTrip} className="mt-6 space-y-4">
         <div>

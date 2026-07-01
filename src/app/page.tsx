@@ -21,7 +21,7 @@ export default async function TripsPage() {
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">我的行程</h1>
+          <h1 className="text-2xl font-bold text-slate-900">我的行程</h1>
           <p className="mt-1 text-sm text-slate-700">
             旅遊規劃 APP 原型 — 資料來自 Prisma + SQLite
           </p>
@@ -62,7 +62,7 @@ export default async function TripsPage() {
               )}
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">{trip.title}</h2>
+                  <h2 className="text-lg font-semibold text-slate-900">{trip.title}</h2>
                   <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
                     {trip.status}
                   </span>
