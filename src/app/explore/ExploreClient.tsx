@@ -71,9 +71,19 @@ export default function ExploreClient({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <Link href="/" className="text-sm text-slate-700 hover:underline">
-        ← 回我的行程
-      </Link>
+      <div className="flex items-center gap-4 text-sm">
+        {selectedTripId && (
+          <Link
+            href={`/trips/${selectedTripId}`}
+            className="text-slate-700 hover:underline"
+          >
+            ← 回到行程
+          </Link>
+        )}
+        <Link href="/" className="text-slate-700 hover:underline">
+          回首頁
+        </Link>
+      </div>
       <h1 className="mt-2 text-2xl font-bold text-slate-900">探索景點 / 餐廳</h1>
       <p className="mt-1 text-sm text-slate-700">
         搜尋結果來自 Google Places API，選好行程與日期後可直接加入。

@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import TripMap from "@/components/TripMap";
-import TripDayTabs from "@/components/TripDayTabs";
+import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import { COUNTRY_FLAG } from "@/lib/labels";
 import { getDailyWeather } from "@/lib/weather";
-import CollaboratorsPanel from "@/components/CollaboratorsPanel";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 
@@ -102,17 +99,17 @@ export default async function TripDetailPage({
       </div>
 
       <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
-      <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
-        {/* Day timeline */}
-        <div>
-          <TripDayTabs
+        <div className="mt-8">
+          <TripDayBoard
             tripId={trip.id}
+            apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            collaborators={collaborators}
             days={trip.days.map((day, dayIdx) => ({
               id: day.id,
               dayIndex: day.dayIndex,
               date: day.date.toISOString().slice(0, 10),
               weather: dayWeather[dayIdx],
-              items: day.items.map((item) => ({
+              timelineItems: day.items.map((item) => ({
                 id: item.id,
                 type: item.type,
                 startTime: item.startTime,
@@ -130,7 +127,7 @@ export default async function TripDetailPage({
                     }
                   : null,
               })),
-              routes: day.routes.map((route) => ({
+              timelineRoutes: day.routes.map((route) => ({
                 fromItemId: route.fromItemId,
                 toItemId: route.toItemId,
                 mode: route.mode,
@@ -138,56 +135,24 @@ export default async function TripDetailPage({
                 distanceKm: route.distanceKm,
                 provider: route.provider,
               })),
+              mapItems: day.items
+                .filter((item) => item.place)
+                .map((item) => ({
+                  id: item.id,
+                  name: item.place!.name,
+                  lat: item.place!.lat,
+                  lng: item.place!.lng,
+                  type: item.type,
+                  country: item.place!.country,
+                })),
+              mapRoutes: day.routes.map((route) => ({
+                fromItemId: route.fromItemId,
+                toItemId: route.toItemId,
+                mode: route.mode,
+              })),
             }))}
           />
         </div>
-
-        {/* Map panel */}
-        <aside className="space-y-4 lg:sticky lg:top-10">
-        <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-700">地圖</h3>
-          <div className="mt-3">
-            <TripMap
-              apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
-              days={trip.days.map((day) => ({
-                id: day.id,
-                dayIndex: day.dayIndex,
-                items: day.items
-                  .filter((item) => item.place)
-                  .map((item) => ({
-                    id: item.id,
-                    name: item.place!.name,
-                    lat: item.place!.lat,
-                    lng: item.place!.lng,
-                    type: item.type,
-                  })),
-                routes: day.routes.map((route) => ({
-                  fromItemId: route.fromItemId,
-                  toItemId: route.toItemId,
-                  mode: route.mode,
-                })),
-              }))}
-            />
-          </div>
-          <ul className="mt-4 space-y-2">
-            {allPlaces.map((place) => (
-              <li
-                key={place.id}
-                className="flex items-center gap-2 text-sm text-slate-600"
-              >
-                <span>{COUNTRY_FLAG[place.country] ?? "📍"}</span>
-                <span className="flex-1">{place.name}</span>
-                <span className="text-xs text-slate-600">
-                  {place.lat.toFixed(3)}, {place.lng.toFixed(3)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <CollaboratorsPanel tripId={trip.id} collaborators={collaborators} />
-        </aside>
-      </div>
       </GoogleMapsProvider>
     </main>
   );

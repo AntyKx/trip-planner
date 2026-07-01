@@ -9,6 +9,7 @@ export type MapItem = {
   lat: number;
   lng: number;
   type: string;
+  country?: string;
 };
 
 export type MapRoute = {
