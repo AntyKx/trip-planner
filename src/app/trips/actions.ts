@@ -1,0 +1,102 @@
+"use server";
+
+import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+
+export async function reorderItems(
+  tripId: string,
+  dayId: string,
+  orderedItemIds: string[]
+) {
+  await prisma.$transaction(
+    orderedItemIds.map((id, index) =>
+      prisma.item.update({ where: { id }, data: { sortOrder: index + 1 } })
+    )
+  );
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export type NewPlaceInput = {
+  name: string;
+  category: string;
+  country: string;
+  address?: string;
+  lat: number;
+  lng: number;
+  rating?: number;
+  priceLevel?: number;
+  provider: string;
+  externalId: string;
+};
+
+export async function addPlaceToDay(
+  tripId: string,
+  dayId: string,
+  itemType: "PLACE" | "RESTAURANT" | "HOTEL" | "CUSTOM",
+  place: NewPlaceInput
+) {
+  const dbPlace = await prisma.place.upsert({
+    where: {
+      provider_externalId: {
+        provider: place.provider,
+        externalId: place.externalId,
+      },
+    },
+    update: {},
+    create: place,
+  });
+
+  const lastItem = await prisma.item.findFirst({
+    where: { dayId },
+    orderBy: { sortOrder: "desc" },
+  });
+
+  await prisma.item.create({
+    data: {
+      dayId,
+      type: itemType,
+      placeId: dbPlace.id,
+      sortOrder: (lastItem?.sortOrder ?? 0) + 1,
+    },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export async function createTrip(formData: FormData) {
+  const title = formData.get("title") as string;
+  const startDate = new Date(formData.get("startDate") as string);
+  const endDate = new Date(formData.get("endDate") as string);
+
+  let owner = await prisma.user.findFirst();
+  if (!owner) {
+    owner = await prisma.user.create({
+      data: { name: "Anty", email: "antyk123@gmail.com" },
+    });
+  }
+
+  const dayCount =
+    Math.round(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1;
+
+  const trip = await prisma.trip.create({
+    data: {
+      ownerId: owner.id,
+      title,
+      startDate,
+      endDate,
+      status: "planning",
+      days: {
+        create: Array.from({ length: Math.max(dayCount, 1) }, (_, i) => ({
+          date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+          dayIndex: i + 1,
+        })),
+      },
+    },
+  });
+
+  revalidatePath("/");
+  redirect(`/trips/${trip.id}`);
+}

@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+enum ItemType {
+  PLACE
+  RESTAURANT
+  HOTEL
+  TRANSPORT
+  CUSTOM
+}
+
+enum TravelMode {
+  WALK
+  TRANSIT
+  DRIVE
+  BIKE
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  avatarUrl     String?
+  trips         Trip[]
+  collaborating Collaborator[]
+  createdAt     DateTime       @default(now())
+}
+
+model Trip {
+  id            String         @id @default(cuid())
+  owner         User           @relation(fields: [ownerId], references: [id])
+  ownerId       String
+  title         String
+  startDate     DateTime
+  endDate       DateTime
+  coverImage    String?
+  status        String         @default("planning") // planning | confirmed | archived
+  days          TripDay[]
+  collaborators Collaborator[]
+  createdAt     DateTime       @default(now())
+}
+
+model Collaborator {
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  tripId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  role      Role     @default(EDITOR)
+  createdAt DateTime @default(now())
+
+  @@id([tripId, userId])
+}
+
+model TripDay {
+  id        String   @id @default(cuid())
+  trip      Trip     @relation(fields: [tripId], references: [id])
+  tripId    String
+  date      DateTime
+  dayIndex  Int
+  note      String?
+  items     Item[]
+  routes    Route[]
+}
+
+model Item {
+  id        String    @id @default(cuid())
+  day       TripDay   @relation(fields: [dayId], references: [id])
+  dayId     String
+  type      ItemType
+  place     Place?    @relation(fields: [placeId], references: [id])
+  placeId   String?
+  startTime DateTime?
+  endTime   DateTime?
+  sortOrder Int
+  note      String?
+
+  routesFrom Route[] @relation("RouteFrom")
+  routesTo   Route[] @relation("RouteTo")
+}
+
+model Place {
+  id         String   @id @default(cuid())
+  name       String
+  category   String
+  country    String // "TW" | "JP" | ...
+  address    String?
+  lat        Float
+  lng        Float
+  rating     Float?
+  priceLevel Int?
+  openHours  String? // JSON string: { mon: "09:00-18:00", ... }
+  provider   String // "google" | "hotpepper" | "tdx" | ...
+  externalId String
+  items      Item[]
+
+  @@unique([provider, externalId])
+}
+
+model Route {
+  id         String     @id @default(cuid())
+  day        TripDay    @relation(fields: [dayId], references: [id])
+  dayId      String
+  fromItem   Item       @relation("RouteFrom", fields: [fromItemId], references: [id])
+  fromItemId String
+  toItem     Item       @relation("RouteTo", fields: [toItemId], references: [id])
+  toItemId   String
+  mode       TravelMode
+  country    String // "TW" | "JP" | ...
+  provider   String // "google" | "tdx" | "ekispert" | ...
+  durationMin Int?
+  distanceKm  Float?
+  fare        Float?
+  rawPolyline String?
+}
