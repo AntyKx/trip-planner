@@ -100,6 +100,18 @@ export async function deleteItem(tripId: string, itemId: string) {
   revalidatePath(`/trips/${tripId}`);
 }
 
+export async function updateTripCoverImage(
+  tripId: string,
+  coverImage: string | null
+) {
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { coverImage: coverImage?.trim() || null },
+  });
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath("/");
+}
+
 export async function deleteTrip(tripId: string) {
   await prisma.trip.delete({ where: { id: tripId } });
   revalidatePath("/");
