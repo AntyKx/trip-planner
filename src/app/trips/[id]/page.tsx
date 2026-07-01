@@ -7,6 +7,7 @@ import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { COUNTRY_FLAG } from "@/lib/labels";
 import { getDailyWeather, weatherLabel } from "@/lib/weather";
 import CollaboratorsPanel from "@/components/CollaboratorsPanel";
+import DeleteTripButton from "@/components/DeleteTripButton";
 
 export default async function TripDetailPage({
   params,
@@ -82,6 +83,7 @@ export default async function TripDetailPage({
           <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
             {trip.status}
           </span>
+          <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />
         </div>
       </div>
 

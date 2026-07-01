@@ -94,6 +94,17 @@ export async function removeCollaborator(tripId: string, userId: string) {
   revalidatePath(`/trips/${tripId}`);
 }
 
+export async function deleteItem(tripId: string, itemId: string) {
+  await prisma.item.delete({ where: { id: itemId } });
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export async function deleteTrip(tripId: string) {
+  await prisma.trip.delete({ where: { id: tripId } });
+  revalidatePath("/");
+  redirect("/");
+}
+
 export async function createTrip(formData: FormData) {
   const title = formData.get("title") as string;
   const startDate = new Date(formData.get("startDate") as string);

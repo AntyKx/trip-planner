@@ -57,9 +57,9 @@ model Trip {
 }
 
 model Collaborator {
-  trip      Trip     @relation(fields: [tripId], references: [id])
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   tripId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   role      Role     @default(EDITOR)
   createdAt DateTime @default(now())
@@ -69,7 +69,7 @@ model Collaborator {
 
 model TripDay {
   id        String   @id @default(cuid())
-  trip      Trip     @relation(fields: [tripId], references: [id])
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
   tripId    String
   date      DateTime
   dayIndex  Int
@@ -80,7 +80,7 @@ model TripDay {
 
 model Item {
   id        String    @id @default(cuid())
-  day       TripDay   @relation(fields: [dayId], references: [id])
+  day       TripDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
   dayId     String
   type      ItemType
   place     Place?    @relation(fields: [placeId], references: [id])
@@ -114,11 +114,11 @@ model Place {
 
 model Route {
   id         String     @id @default(cuid())
-  day        TripDay    @relation(fields: [dayId], references: [id])
+  day        TripDay    @relation(fields: [dayId], references: [id], onDelete: Cascade)
   dayId      String
-  fromItem   Item       @relation("RouteFrom", fields: [fromItemId], references: [id])
+  fromItem   Item       @relation("RouteFrom", fields: [fromItemId], references: [id], onDelete: Cascade)
   fromItemId String
-  toItem     Item       @relation("RouteTo", fields: [toItemId], references: [id])
+  toItem     Item       @relation("RouteTo", fields: [toItemId], references: [id], onDelete: Cascade)
   toItemId   String
   mode       TravelMode
   country    String // "TW" | "JP" | ...

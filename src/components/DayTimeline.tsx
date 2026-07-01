@@ -24,7 +24,7 @@ import {
   COUNTRY_FLAG,
   formatTime,
 } from "@/lib/labels";
-import { reorderItems } from "@/app/trips/actions";
+import { reorderItems, deleteItem } from "@/app/trips/actions";
 
 export type TimelineItem = {
   id: string;
@@ -54,9 +54,11 @@ export type TimelineRoute = {
 function SortableItemCard({
   item,
   route,
+  onDelete,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
+  onDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -105,6 +107,14 @@ function SortableItemCard({
             </p>
           )}
         </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          aria-label="刪除項目"
+          className="self-start px-1 text-slate-400 hover:text-red-600"
+        >
+          ✕
+        </button>
       </div>
 
       {route && (
@@ -202,6 +212,24 @@ export default function DayTimeline({
     }
   }
 
+  function handleDeleteItem(itemId: string) {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+    if (
+      !confirm(
+        `確定要刪除「${item.place?.name ?? item.note ?? "這個項目"}」嗎？`
+      )
+    )
+      return;
+
+    const newItems = items.filter((i) => i.id !== itemId);
+    setItems(newItems);
+
+    startTransition(() => {
+      deleteItem(tripId, itemId);
+    });
+  }
+
   if (items.length === 0) {
     return <p className="text-sm text-slate-600">這天還沒有安排項目。</p>;
   }
@@ -242,7 +270,14 @@ export default function DayTimeline({
           <div className={isPending ? "space-y-0 opacity-70" : "space-y-0"}>
             {items.map((item) => {
               const route = routes.find((r) => r.fromItemId === item.id);
-              return <SortableItemCard key={item.id} item={item} route={route} />;
+              return (
+                <SortableItemCard
+                  key={item.id}
+                  item={item}
+                  route={route}
+                  onDelete={() => handleDeleteItem(item.id)}
+                />
+              );
             })}
           </div>
         </SortableContext>
