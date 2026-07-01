@@ -71,27 +71,13 @@ export default async function TripDetailPage({
         ← 回我的行程
       </Link>
 
-      <div className="relative mt-3">
-        {coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverImage}
-            alt={trip.title}
-            className="h-40 w-full rounded-xl object-cover sm:h-56"
-          />
-        ) : (
-          <div className="flex h-32 w-full items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500 sm:h-40">
-            尚未設定封面圖片
-          </div>
-        )}
-        <div className="absolute bottom-3 right-3">
-          <CoverImagePicker
-            tripId={trip.id}
-            currentCoverImage={trip.coverImage}
-            availablePhotos={availablePhotos}
-          />
-        </div>
-      </div>
+      <CoverImagePicker
+        tripId={trip.id}
+        tripTitle={trip.title}
+        coverImage={coverImage}
+        currentCoverImage={trip.coverImage}
+        availablePhotos={availablePhotos}
+      />
 
       <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

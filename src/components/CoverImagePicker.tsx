@@ -13,14 +13,19 @@ import { updateTripCoverImage } from "@/app/trips/actions";
 
 export default function CoverImagePicker({
   tripId,
+  tripTitle,
+  coverImage,
   currentCoverImage,
   availablePhotos,
 }: {
   tripId: string;
+  tripTitle: string;
+  coverImage?: string | null;
   currentCoverImage: string | null;
   availablePhotos: string[];
 }) {
   const router = useRouter();
+  const [showEditButton, setShowEditButton] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -28,12 +33,17 @@ export default function CoverImagePicker({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  function closeAll() {
+    setIsOpen(false);
+    setShowEditButton(false);
+  }
+
   function apply(url: string | null) {
     startTransition(async () => {
       await updateTripCoverImage(tripId, url);
       router.refresh();
     });
-    setIsOpen(false);
+    closeAll();
     setCustomUrl("");
   }
 
@@ -74,91 +84,115 @@ export default function CoverImagePicker({
   }
 
   return (
-    <div className="relative inline-block">
+    <div className="relative mt-3">
       <button
         type="button"
-        onClick={() => setIsOpen((v) => !v)}
-        disabled={isPending}
-        className="rounded-lg bg-black/50 px-3 py-1.5 text-sm font-medium text-white backdrop-blur hover:bg-black/60 disabled:opacity-50"
+        onClick={() => setShowEditButton((v) => !v)}
+        className="group block w-full"
+        aria-label="編輯封面圖片"
       >
-        🖼️ 變更封面圖片
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt={tripTitle}
+            className="h-40 w-full rounded-xl object-cover transition group-hover:brightness-95 sm:h-56"
+          />
+        ) : (
+          <div className="flex h-32 w-full items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500 transition group-hover:bg-slate-200 sm:h-40">
+            點擊設定封面圖片
+          </div>
+        )}
       </button>
 
-      {isOpen && (
-        <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-lg sm:w-80">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+      {showEditButton && (
+        <div className="absolute bottom-3 right-3">
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            onClick={() => setIsOpen((v) => !v)}
+            disabled={isPending}
+            className="rounded-lg bg-black/50 px-3 py-1.5 text-sm font-medium text-white backdrop-blur hover:bg-black/60 disabled:opacity-50"
           >
-            {isUploading ? "上傳中…" : "📷 從手機相簿選擇"}
+            🖼️ 變更封面圖片
           </button>
-          {uploadError && (
-            <p className="mt-2 text-xs text-red-500">{uploadError}</p>
-          )}
 
-          {availablePhotos.length > 0 && (
-            <>
-              <p className="mt-3 text-xs font-medium text-slate-600">
-                或從行程裡的地點照片挑選
-              </p>
-              <div className="mt-2 grid grid-cols-4 gap-2">
-                {availablePhotos.map((url) => (
-                  <button
-                    key={url}
-                    type="button"
-                    onClick={() => apply(url)}
-                    className="overflow-hidden rounded-lg border border-slate-200 hover:border-indigo-400"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="h-14 w-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          <form onSubmit={handleCustomSubmit} className="mt-3 flex gap-2">
-            <input
-              value={customUrl}
-              onChange={(e) => setCustomUrl(e.target.value)}
-              placeholder="或貼上圖片網址"
-              className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
-            />
-            <button
-              type="submit"
-              className="shrink-0 rounded-md bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700"
-            >
-              套用
-            </button>
-          </form>
-
-          <div className="mt-3 flex items-center justify-between">
-            {currentCoverImage && (
+          {isOpen && (
+            <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-lg sm:w-80">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
               <button
                 type="button"
-                onClick={() => apply(null)}
-                className="text-xs text-red-500 hover:underline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
               >
-                移除封面（改回自動帶入）
+                {isUploading ? "上傳中…" : "📷 從手機相簿選擇"}
               </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="ml-auto text-xs text-slate-500 hover:underline"
-            >
-              關閉
-            </button>
-          </div>
+              {uploadError && (
+                <p className="mt-2 text-xs text-red-500">{uploadError}</p>
+              )}
+
+              {availablePhotos.length > 0 && (
+                <>
+                  <p className="mt-3 text-xs font-medium text-slate-600">
+                    或從行程裡的地點照片挑選
+                  </p>
+                  <div className="mt-2 grid grid-cols-4 gap-2">
+                    {availablePhotos.map((url) => (
+                      <button
+                        key={url}
+                        type="button"
+                        onClick={() => apply(url)}
+                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-indigo-400"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={url} alt="" className="h-14 w-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <form onSubmit={handleCustomSubmit} className="mt-3 flex gap-2">
+                <input
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="或貼上圖片網址"
+                  className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
+                />
+                <button
+                  type="submit"
+                  className="shrink-0 rounded-md bg-indigo-600 px-3 py-1 text-sm text-white hover:bg-indigo-700"
+                >
+                  套用
+                </button>
+              </form>
+
+              <div className="mt-3 flex items-center justify-between">
+                {currentCoverImage && (
+                  <button
+                    type="button"
+                    onClick={() => apply(null)}
+                    className="text-xs text-red-500 hover:underline"
+                  >
+                    移除封面（改回自動帶入）
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={closeAll}
+                  className="ml-auto text-xs text-slate-500 hover:underline"
+                >
+                  關閉
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

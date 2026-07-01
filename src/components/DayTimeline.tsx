@@ -93,6 +93,17 @@ function SortableItemCard({
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {item.place && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="開啟 Google Maps 導航"
+                  className="px-1 text-slate-400 hover:text-indigo-600"
+                >
+                  🧭
+                </a>
+              )}
               <button
                 {...attributes}
                 {...listeners}
