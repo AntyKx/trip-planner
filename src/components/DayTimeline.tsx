@@ -65,43 +65,56 @@ function SortableItemCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-        <button
-          {...attributes}
-          {...listeners}
-          type="button"
-          className="cursor-grab touch-none px-1 text-slate-400 hover:text-slate-700"
-          aria-label="拖曳排序"
-        >
-          ⠿
-        </button>
-        <div className="w-12 shrink-0 text-sm font-medium text-slate-700">
-          {formatTime(item.startTime)}
-        </div>
+    <div ref={setNodeRef} style={style} className="mb-3">
+      <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {item.place?.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.place.photoUrl}
             alt={item.place.name}
-            className="h-12 w-12 shrink-0 rounded-lg object-cover"
+            className="w-20 shrink-0 object-cover sm:w-28"
           />
         ) : (
           item.place && (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg">
+            <div className="flex w-20 shrink-0 items-center justify-center bg-slate-100 text-2xl sm:w-28">
               📍
             </div>
           )
         )}
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
-              {TYPE_LABEL[item.type]}
-            </span>
-            <h3 className="truncate font-semibold text-slate-900">
-              {item.place?.name ?? item.note ?? "未命名項目"}
-            </h3>
+
+        <div className="min-w-0 flex-1 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="shrink-0 text-xs font-medium text-slate-500">
+                {formatTime(item.startTime)}
+              </span>
+              <span className="shrink-0 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">
+                {TYPE_LABEL[item.type]}
+              </span>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                {...attributes}
+                {...listeners}
+                type="button"
+                className="cursor-grab touch-none px-1 text-slate-400 hover:text-slate-700"
+                aria-label="拖曳排序"
+              >
+                ⠿
+              </button>
+              <button
+                type="button"
+                onClick={onDelete}
+                aria-label="刪除項目"
+                className="px-1 text-slate-400 hover:text-red-600"
+              >
+                ✕
+              </button>
+            </div>
           </div>
+          <h3 className="mt-1 truncate font-semibold text-slate-900">
+            {item.place?.name ?? item.note ?? "未命名項目"}
+          </h3>
           {item.place && (
             <p className="mt-0.5 truncate text-sm text-slate-600">
               {item.place.address}
@@ -111,18 +124,10 @@ function SortableItemCard({
             </p>
           )}
         </div>
-        <button
-          type="button"
-          onClick={onDelete}
-          aria-label="刪除項目"
-          className="px-1 text-slate-400 hover:text-red-600"
-        >
-          ✕
-        </button>
       </div>
 
       {route && (
-        <div className="flex items-center gap-2 py-2 pl-16 text-sm text-slate-700">
+        <div className="flex items-center gap-2 py-2 pl-3 text-sm text-slate-700">
           <span>{MODE_ICON[route.mode]}</span>
           <span>{MODE_LABEL[route.mode]}</span>
           {route.durationMin != null && <span>· {route.durationMin} 分鐘</span>}
@@ -271,7 +276,7 @@ export default function DayTimeline({
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className={isPending ? "space-y-0 opacity-70" : "space-y-0"}>
+          <div className={isPending ? "opacity-70" : undefined}>
             {items.map((item) => {
               const route = routes.find((r) => r.fromItemId === item.id);
               return (

@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripMap from "@/components/TripMap";
-import DayTimeline from "@/components/DayTimeline";
+import TripDayTabs from "@/components/TripDayTabs";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { COUNTRY_FLAG } from "@/lib/labels";
-import { getDailyWeather, weatherLabel } from "@/lib/weather";
+import { getDailyWeather } from "@/lib/weather";
 import CollaboratorsPanel from "@/components/CollaboratorsPanel";
 import DeleteTripButton from "@/components/DeleteTripButton";
 
@@ -101,60 +101,42 @@ export default async function TripDetailPage({
       <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         {/* Day timeline */}
-        <div className="space-y-10">
-          {trip.days.map((day, dayIdx) => {
-            const weather = dayWeather[dayIdx];
-            return (
-            <section key={day.id}>
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
-                <span>
-                  Day {day.dayIndex} · {day.date.toISOString().slice(0, 10)}
-                </span>
-                {weather && (
-                  <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
-                    <span>{weatherLabel(weather.weatherCode).emoji}</span>
-                    <span>
-                      {Math.round(weather.maxTemp)}° / {Math.round(weather.minTemp)}°
-                    </span>
-                  </span>
-                )}
-              </h2>
-
-              <div className="mt-4">
-                <DayTimeline
-                  tripId={trip.id}
-                  dayId={day.id}
-                  items={day.items.map((item) => ({
-                    id: item.id,
-                    type: item.type,
-                    startTime: item.startTime,
-                    note: item.note,
-                    place: item.place
-                      ? {
-                          name: item.place.name,
-                          address: item.place.address,
-                          rating: item.place.rating,
-                          country: item.place.country,
-                          provider: item.place.provider,
-                          photoUrl: item.place.photoUrl,
-                          lat: item.place.lat,
-                          lng: item.place.lng,
-                        }
-                      : null,
-                  }))}
-                  routes={day.routes.map((route) => ({
-                    fromItemId: route.fromItemId,
-                    toItemId: route.toItemId,
-                    mode: route.mode,
-                    durationMin: route.durationMin,
-                    distanceKm: route.distanceKm,
-                    provider: route.provider,
-                  }))}
-                />
-              </div>
-            </section>
-            );
-          })}
+        <div>
+          <TripDayTabs
+            tripId={trip.id}
+            days={trip.days.map((day, dayIdx) => ({
+              id: day.id,
+              dayIndex: day.dayIndex,
+              date: day.date.toISOString().slice(0, 10),
+              weather: dayWeather[dayIdx],
+              items: day.items.map((item) => ({
+                id: item.id,
+                type: item.type,
+                startTime: item.startTime,
+                note: item.note,
+                place: item.place
+                  ? {
+                      name: item.place.name,
+                      address: item.place.address,
+                      rating: item.place.rating,
+                      country: item.place.country,
+                      provider: item.place.provider,
+                      photoUrl: item.place.photoUrl,
+                      lat: item.place.lat,
+                      lng: item.place.lng,
+                    }
+                  : null,
+              })),
+              routes: day.routes.map((route) => ({
+                fromItemId: route.fromItemId,
+                toItemId: route.toItemId,
+                mode: route.mode,
+                durationMin: route.durationMin,
+                distanceKm: route.distanceKm,
+                provider: route.provider,
+              })),
+            }))}
+          />
         </div>
 
         {/* Map panel */}
