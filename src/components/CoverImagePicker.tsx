@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
-import { updateTripCoverImage } from "@/app/trips/actions";
+import {
+  useRef,
+  useState,
+  useTransition,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import { updateTripCoverImage, uploadCoverImagePhoto } from "@/app/trips/actions";
 
 export default function CoverImagePicker({
   tripId,
@@ -15,6 +21,9 @@ export default function CoverImagePicker({
   const [isOpen, setIsOpen] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function apply(url: string | null) {
     startTransition(() => {
@@ -30,6 +39,27 @@ export default function CoverImagePicker({
     apply(customUrl.trim());
   }
 
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadError(null);
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      const result = await uploadCoverImagePhoto(formData);
+      if (result.ok) {
+        apply(result.url);
+      } else {
+        setUploadError(result.error);
+      }
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   return (
     <div className="relative inline-block">
       <button
@@ -43,10 +73,29 @@ export default function CoverImagePicker({
 
       {isOpen && (
         <div className="absolute left-0 top-full z-10 mt-2 w-72 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-lg sm:w-80">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+          >
+            {isUploading ? "上傳中…" : "📷 從手機相簿選擇"}
+          </button>
+          {uploadError && (
+            <p className="mt-2 text-xs text-red-500">{uploadError}</p>
+          )}
+
           {availablePhotos.length > 0 && (
             <>
-              <p className="text-xs font-medium text-slate-600">
-                從行程裡的地點照片挑選
+              <p className="mt-3 text-xs font-medium text-slate-600">
+                或從行程裡的地點照片挑選
               </p>
               <div className="mt-2 grid grid-cols-4 gap-2">
                 {availablePhotos.map((url) => (
