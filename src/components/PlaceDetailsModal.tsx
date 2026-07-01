@@ -23,11 +23,13 @@ export default function PlaceDetailsTrigger({
   provider,
   externalId,
   fallback,
+  footer,
   children,
 }: {
   provider: string;
   externalId: string;
   fallback: Fallback;
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,6 +49,7 @@ export default function PlaceDetailsTrigger({
           provider={provider}
           externalId={externalId}
           fallback={fallback}
+          footer={footer}
           onClose={() => setIsOpen(false)}
         />
       )}
@@ -58,11 +61,13 @@ function PlaceDetailsModal({
   provider,
   externalId,
   fallback,
+  footer,
   onClose,
 }: {
   provider: string;
   externalId: string;
   fallback: Fallback;
+  footer?: ReactNode;
   onClose: () => void;
 }) {
   const [details, setDetails] = useState<PlaceDetails | null>(null);
@@ -105,9 +110,10 @@ function PlaceDetailsModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-5 sm:rounded-2xl"
+        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+      <div className="overflow-y-auto p-5">
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-lg font-bold text-slate-900">
             {details?.name || fallback.name}
@@ -250,6 +256,11 @@ function PlaceDetailsModal({
             </a>
           )}
         </div>
+      </div>
+
+      {footer && (
+        <div className="shrink-0 border-t border-slate-200 p-3">{footer}</div>
+      )}
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { MapPin, Search, Check } from "lucide-react";
 import { searchPlaces, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
+import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
 
 export type TripOption = {
   id: string;
@@ -68,6 +69,37 @@ export default function ExploreClient({
       });
       setAddedIds((prev) => new Set(prev).add(place.externalId));
     });
+  }
+
+  function renderAddActions(place: PlaceResult) {
+    if (addedIds.has(place.externalId)) {
+      return (
+        <span className="flex items-center gap-1 text-xs text-emerald-600">
+          <Check className="h-3.5 w-3.5" />
+          已加入
+        </span>
+      );
+    }
+    return (
+      <>
+        <button
+          type="button"
+          disabled={!selectedDayId || isAdding}
+          onClick={() => handleAdd(place, "RESTAURANT")}
+          className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
+        >
+          加為餐廳
+        </button>
+        <button
+          type="button"
+          disabled={!selectedDayId || isAdding}
+          onClick={() => handleAdd(place, "PLACE")}
+          className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
+        >
+          加為景點
+        </button>
+      </>
+    );
   }
 
   return (
@@ -182,42 +214,34 @@ export default function ExploreClient({
                     <MapPin className="h-5 w-5 text-slate-400" />
                   </div>
                 )}
-                <div className="min-w-0">
-                  <h3 className="truncate font-semibold text-slate-900">{place.name}</h3>
+                <PlaceDetailsTrigger
+                  provider="google"
+                  externalId={place.externalId}
+                  fallback={{
+                    name: place.name,
+                    address: place.address || null,
+                    rating: place.rating ?? null,
+                    photoUrl: place.photoUrl ?? null,
+                  }}
+                  footer={
+                    <div className="flex items-center justify-end gap-2">
+                      {renderAddActions(place)}
+                    </div>
+                  }
+                >
+                  <h3 className="truncate font-semibold text-slate-900 hover:text-teal-700">
+                    {place.name}
+                  </h3>
                   <p className="mt-0.5 truncate text-sm text-slate-600">
                     {[place.category, place.address].filter(Boolean).join(" · ")}
                     {place.rating != null && (
                       <span className="text-amber-500"> · ★ {place.rating}</span>
                     )}
                   </p>
-                </div>
+                </PlaceDetailsTrigger>
               </div>
               <div className="flex shrink-0 flex-col gap-1">
-                {addedIds.has(place.externalId) ? (
-                  <span className="flex items-center gap-1 text-xs text-emerald-600">
-                    <Check className="h-3.5 w-3.5" />
-                    已加入
-                  </span>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      disabled={!selectedDayId || isAdding}
-                      onClick={() => handleAdd(place, "RESTAURANT")}
-                      className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      加為餐廳
-                    </button>
-                    <button
-                      type="button"
-                      disabled={!selectedDayId || isAdding}
-                      onClick={() => handleAdd(place, "PLACE")}
-                      className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
-                    >
-                      加為景點
-                    </button>
-                  </>
-                )}
+                {renderAddActions(place)}
               </div>
             </div>
           </div>
