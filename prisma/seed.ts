@@ -15,18 +15,26 @@ async function main() {
     data: { name: "Anty", email: "antyk123@gmail.com" },
   });
 
+  // Keep the trip a few days out (not today) so it still falls inside
+  // Open-Meteo's ~16-day forecast window whenever this seed is run.
+  const dayOffset = (n: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() + n);
+    return new Date(d.toISOString().slice(0, 10));
+  };
+
   const trip = await prisma.trip.create({
     data: {
       ownerId: user.id,
       title: "東京五日自由行",
-      startDate: new Date("2026-08-10"),
-      endDate: new Date("2026-08-14"),
+      startDate: dayOffset(3),
+      endDate: dayOffset(7),
       status: "planning",
     },
   });
 
   const day1 = await prisma.tripDay.create({
-    data: { tripId: trip.id, date: new Date("2026-08-10"), dayIndex: 1 },
+    data: { tripId: trip.id, date: dayOffset(3), dayIndex: 1 },
   });
 
   const sensoji = await prisma.place.create({
@@ -90,6 +98,31 @@ async function main() {
       provider: "google",
       durationMin: 12,
       distanceKm: 0.9,
+    },
+  });
+
+  const skytree = await prisma.place.create({
+    data: {
+      name: "東京晴空塔",
+      category: "景點",
+      country: "JP",
+      address: "東京都墨田区押上1-1-2",
+      lat: 35.7101,
+      lng: 139.8107,
+      rating: 4.4,
+      provider: "google",
+      externalId: "skytree-demo",
+    },
+  });
+
+  await prisma.item.create({
+    data: {
+      dayId: day1.id,
+      type: "PLACE",
+      placeId: skytree.id,
+      startTime: new Date("2026-08-10T15:00:00"),
+      endTime: new Date("2026-08-10T17:00:00"),
+      sortOrder: 3,
     },
   });
 

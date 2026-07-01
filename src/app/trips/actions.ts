@@ -64,6 +64,36 @@ export async function addPlaceToDay(
   revalidatePath(`/trips/${tripId}`);
 }
 
+export async function addCollaborator(
+  tripId: string,
+  email: string,
+  role: "EDITOR" | "VIEWER"
+) {
+  const trimmedEmail = email.trim().toLowerCase();
+  if (!trimmedEmail) return;
+
+  const user = await prisma.user.upsert({
+    where: { email: trimmedEmail },
+    update: {},
+    create: { email: trimmedEmail, name: trimmedEmail.split("@")[0] },
+  });
+
+  await prisma.collaborator.upsert({
+    where: { tripId_userId: { tripId, userId: user.id } },
+    update: { role },
+    create: { tripId, userId: user.id, role },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export async function removeCollaborator(tripId: string, userId: string) {
+  await prisma.collaborator.delete({
+    where: { tripId_userId: { tripId, userId } },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export async function createTrip(formData: FormData) {
   const title = formData.get("title") as string;
   const startDate = new Date(formData.get("startDate") as string);

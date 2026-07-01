@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripMap from "@/components/TripMap";
 import DayTimeline from "@/components/DayTimeline";
+import GoogleMapsProvider from "@/components/GoogleMapsProvider";
 import { COUNTRY_FLAG } from "@/lib/labels";
+import { getDailyWeather, weatherLabel } from "@/lib/weather";
+import CollaboratorsPanel from "@/components/CollaboratorsPanel";
 
 export default async function TripDetailPage({
   params,
@@ -15,6 +18,8 @@ export default async function TripDetailPage({
   const trip = await prisma.trip.findUnique({
     where: { id },
     include: {
+      owner: true,
+      collaborators: { include: { user: true } },
       days: {
         orderBy: { dayIndex: "asc" },
         include: {
@@ -30,10 +35,28 @@ export default async function TripDetailPage({
 
   if (!trip) notFound();
 
+  const collaborators = [
+    { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },
+    ...trip.collaborators.map((c) => ({
+      userId: c.user.id,
+      name: c.user.name,
+      email: c.user.email,
+      role: c.role,
+    })),
+  ];
+
   const allPlaces = trip.days
     .flatMap((day) => day.items)
     .map((item) => item.place)
     .filter((place): place is NonNullable<typeof place> => place !== null);
+
+  const dayWeather = await Promise.all(
+    trip.days.map(async (day) => {
+      const firstPlace = day.items.find((item) => item.place)?.place;
+      if (!firstPlace) return null;
+      return getDailyWeather(firstPlace.lat, firstPlace.lng, day.date);
+    })
+  );
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
@@ -62,13 +85,26 @@ export default async function TripDetailPage({
         </div>
       </div>
 
+      <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
         {/* Day timeline */}
         <div className="space-y-10">
-          {trip.days.map((day) => (
+          {trip.days.map((day, dayIdx) => {
+            const weather = dayWeather[dayIdx];
+            return (
             <section key={day.id}>
-              <h2 className="text-lg font-semibold text-slate-800">
-                Day {day.dayIndex} · {day.date.toISOString().slice(0, 10)}
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+                <span>
+                  Day {day.dayIndex} · {day.date.toISOString().slice(0, 10)}
+                </span>
+                {weather && (
+                  <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
+                    <span>{weatherLabel(weather.weatherCode).emoji}</span>
+                    <span>
+                      {Math.round(weather.maxTemp)}° / {Math.round(weather.minTemp)}°
+                    </span>
+                  </span>
+                )}
               </h2>
 
               <div className="mt-4">
@@ -87,6 +123,8 @@ export default async function TripDetailPage({
                           rating: item.place.rating,
                           country: item.place.country,
                           provider: item.place.provider,
+                          lat: item.place.lat,
+                          lng: item.place.lng,
                         }
                       : null,
                   }))}
@@ -101,11 +139,13 @@ export default async function TripDetailPage({
                 />
               </div>
             </section>
-          ))}
+            );
+          })}
         </div>
 
         {/* Map panel */}
-        <aside className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-10">
+        <aside className="space-y-4 lg:sticky lg:top-10">
+        <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-700">地圖</h3>
           <div className="mt-3">
             <TripMap
@@ -144,8 +184,12 @@ export default async function TripDetailPage({
               </li>
             ))}
           </ul>
+        </div>
+
+        <CollaboratorsPanel tripId={trip.id} collaborators={collaborators} />
         </aside>
       </div>
+      </GoogleMapsProvider>
     </main>
   );
 }

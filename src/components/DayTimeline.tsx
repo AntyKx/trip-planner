@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import {
   DndContext,
   closestCenter,
@@ -36,6 +37,8 @@ export type TimelineItem = {
     rating: number | null;
     country: string;
     provider: string;
+    lat: number;
+    lng: number;
   } | null;
 };
 
@@ -130,9 +133,15 @@ export default function DayTimeline({
 }) {
   const [items, setItems] = useState(initialItems);
   const [isPending, startTransition] = useTransition();
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
+  const routesLibrary = useMapsLibrary("routes");
+
+  const placeItems = items.filter((i) => i.place);
+  const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -152,27 +161,92 @@ export default function DayTimeline({
     });
   }
 
+  async function handleOptimize() {
+    if (!routesLibrary || !canOptimize) return;
+    setOptimizeError(null);
+    setIsOptimizing(true);
+
+    try {
+      const origin = placeItems[0];
+      const destination = placeItems[placeItems.length - 1];
+      const waypoints = placeItems.slice(1, -1).map((item) => ({
+        location: { lat: item.place!.lat, lng: item.place!.lng },
+        stopover: true,
+      }));
+
+      const directionsService = new routesLibrary.DirectionsService();
+      const result = await directionsService.route({
+        origin: { lat: origin.place!.lat, lng: origin.place!.lng },
+        destination: { lat: destination.place!.lat, lng: destination.place!.lng },
+        waypoints,
+        optimizeWaypoints: true,
+        travelMode: "DRIVING" as google.maps.TravelMode,
+      });
+
+      const order = result.routes[0]?.waypoint_order ?? [];
+      const optimizedMiddle = order.map((i: number) => placeItems[1 + i]);
+      const newItems = [origin, ...optimizedMiddle, destination];
+
+      setItems(newItems);
+      startTransition(() => {
+        reorderItems(
+          tripId,
+          dayId,
+          newItems.map((i) => i.id)
+        );
+      });
+    } catch {
+      setOptimizeError("路線優化失敗，可能是地點距離太遠或無法規劃路線");
+    } finally {
+      setIsOptimizing(false);
+    }
+  }
+
   if (items.length === 0) {
     return <p className="text-sm text-slate-400">這天還沒有安排項目。</p>;
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext
-        items={items.map((i) => i.id)}
-        strategy={verticalListSortingStrategy}
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleOptimize}
+          disabled={!canOptimize || !routesLibrary || isOptimizing}
+          className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isOptimizing ? "優化中…" : "🔄 自動優化路線"}
+        </button>
+        {!canOptimize && items.length >= 2 && (
+          <span className="text-xs text-slate-400">
+            需要至少 3 個都有地點資料的項目才能優化
+          </span>
+        )}
+      </div>
+
+      {optimizeError && (
+        <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+          {optimizeError}
+        </p>
+      )}
+
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
       >
-        <div className={isPending ? "space-y-0 opacity-70" : "space-y-0"}>
-          {items.map((item) => {
-            const route = routes.find((r) => r.fromItemId === item.id);
-            return <SortableItemCard key={item.id} item={item} route={route} />;
-          })}
-        </div>
-      </SortableContext>
-    </DndContext>
+        <SortableContext
+          items={items.map((i) => i.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className={isPending ? "space-y-0 opacity-70" : "space-y-0"}>
+            {items.map((item) => {
+              const route = routes.find((r) => r.fromItemId === item.id);
+              return <SortableItemCard key={item.id} item={item} route={route} />;
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
+    </div>
   );
 }

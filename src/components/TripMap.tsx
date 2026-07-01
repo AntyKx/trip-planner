@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { APIProvider, Map, Marker, useMap } from "@vis.gl/react-google-maps";
+import { Map, Marker, useMap } from "@vis.gl/react-google-maps";
 
 export type MapItem = {
   id: string;
@@ -121,38 +121,36 @@ export default function TripMap({
         </select>
       )}
 
-      <APIProvider apiKey={apiKey}>
-        <Map
-          style={{ width: "100%", height: 320, borderRadius: 12 }}
-          defaultCenter={center}
-          defaultZoom={14}
-          gestureHandling="greedy"
-          disableDefaultUI={false}
-        >
-          {day.items.map((item, index) => (
-            <Marker
-              key={item.id}
-              position={{ lat: item.lat, lng: item.lng }}
-              title={item.name}
-              label={String(index + 1)}
-            />
-          ))}
+      <Map
+        style={{ width: "100%", height: 320, borderRadius: 12 }}
+        defaultCenter={center}
+        defaultZoom={14}
+        gestureHandling="greedy"
+        disableDefaultUI={false}
+      >
+        {day.items.map((item, index) => (
+          <Marker
+            key={item.id}
+            position={{ lat: item.lat, lng: item.lng }}
+            title={item.name}
+            label={String(index + 1)}
+          />
+        ))}
 
-          {day.routes.map((route) => {
-            const from = day.items.find((i) => i.id === route.fromItemId);
-            const to = day.items.find((i) => i.id === route.toItemId);
-            if (!from || !to) return null;
-            return (
-              <RouteSegment
-                key={`${route.fromItemId}-${route.toItemId}`}
-                from={from}
-                to={to}
-                mode={route.mode}
-              />
-            );
-          })}
-        </Map>
-      </APIProvider>
+        {day.routes.map((route) => {
+          const from = day.items.find((i) => i.id === route.fromItemId);
+          const to = day.items.find((i) => i.id === route.toItemId);
+          if (!from || !to) return null;
+          return (
+            <RouteSegment
+              key={`${route.fromItemId}-${route.toItemId}`}
+              from={from}
+              to={to}
+              mode={route.mode}
+            />
+          );
+        })}
+      </Map>
     </div>
   );
 }
