@@ -3,7 +3,17 @@ import { prisma } from "@/lib/prisma";
 
 export default async function TripsPage() {
   const trips = await prisma.trip.findMany({
-    include: { days: true },
+    include: {
+      days: {
+        orderBy: { dayIndex: "asc" },
+        include: {
+          items: {
+            orderBy: { sortOrder: "asc" },
+            include: { place: true },
+          },
+        },
+      },
+    },
     orderBy: { startDate: "asc" },
   });
 
@@ -25,24 +35,46 @@ export default async function TripsPage() {
       </div>
 
       <div className="mt-8 grid gap-4">
-        {trips.map((trip) => (
-          <Link
-            key={trip.id}
-            href={`/trips/${trip.id}`}
-            className="block rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
-          >
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{trip.title}</h2>
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
-                {trip.status}
-              </span>
-            </div>
-            <p className="mt-1 text-sm text-slate-700">
-              {trip.startDate.toISOString().slice(0, 10)} ~{" "}
-              {trip.endDate.toISOString().slice(0, 10)} · 共 {trip.days.length} 天
-            </p>
-          </Link>
-        ))}
+        {trips.map((trip) => {
+          const coverImage =
+            trip.coverImage ??
+            trip.days
+              .flatMap((day) => day.items)
+              .find((item) => item.place?.photoUrl)?.place?.photoUrl;
+
+          return (
+            <Link
+              key={trip.id}
+              href={`/trips/${trip.id}`}
+              className="flex gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+            >
+              {coverImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={coverImage}
+                  alt={trip.title}
+                  className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-2xl">
+                  🧳
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold">{trip.title}</h2>
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+                    {trip.status}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm text-slate-700">
+                  {trip.startDate.toISOString().slice(0, 10)} ~{" "}
+                  {trip.endDate.toISOString().slice(0, 10)} · 共 {trip.days.length} 天
+                </p>
+              </div>
+            </Link>
+          );
+        })}
 
         {trips.length === 0 && (
           <p className="text-sm text-slate-700">

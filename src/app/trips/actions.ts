@@ -26,6 +26,7 @@ export type NewPlaceInput = {
   lng: number;
   rating?: number;
   priceLevel?: number;
+  photoUrl?: string;
   provider: string;
   externalId: string;
 };
@@ -43,7 +44,7 @@ export async function addPlaceToDay(
         externalId: place.externalId,
       },
     },
-    update: {},
+    update: { photoUrl: place.photoUrl },
     create: place,
   });
 

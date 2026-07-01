@@ -37,6 +37,7 @@ export type TimelineItem = {
     rating: number | null;
     country: string;
     provider: string;
+    photoUrl: string | null;
     lat: number;
     lng: number;
   } | null;
@@ -84,6 +85,14 @@ function SortableItemCard({
         <div className="w-14 shrink-0 text-sm font-medium text-slate-700">
           {formatTime(item.startTime)}
         </div>
+        {item.place?.photoUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.place.photoUrl}
+            alt={item.place.name}
+            className="h-14 w-14 shrink-0 rounded-lg object-cover"
+          />
+        )}
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-600">

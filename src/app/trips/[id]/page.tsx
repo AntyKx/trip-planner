@@ -51,6 +51,8 @@ export default async function TripDetailPage({
     .map((item) => item.place)
     .filter((place): place is NonNullable<typeof place> => place !== null);
 
+  const coverImage = trip.coverImage ?? allPlaces.find((p) => p.photoUrl)?.photoUrl;
+
   const dayWeather = await Promise.all(
     trip.days.map(async (day) => {
       const firstPlace = day.items.find((item) => item.place)?.place;
@@ -64,6 +66,15 @@ export default async function TripDetailPage({
       <Link href="/" className="text-sm text-slate-700 hover:underline">
         ← 回我的行程
       </Link>
+
+      {coverImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={coverImage}
+          alt={trip.title}
+          className="mt-3 h-40 w-full rounded-xl object-cover sm:h-56"
+        />
+      )}
 
       <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -125,6 +136,7 @@ export default async function TripDetailPage({
                           rating: item.place.rating,
                           country: item.place.country,
                           provider: item.place.provider,
+                          photoUrl: item.place.photoUrl,
                           lat: item.place.lat,
                           lng: item.place.lng,
                         }

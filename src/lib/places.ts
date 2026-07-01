@@ -7,6 +7,7 @@ export type PlaceResult = {
   rating?: number;
   priceLevel?: number;
   category: string;
+  photoUrl?: string;
 };
 
 export type SearchPlacesResult =
@@ -21,6 +22,7 @@ type RawPlace = {
   rating?: number;
   priceLevel?: string;
   primaryTypeDisplayName?: { text?: string };
+  photos?: { name: string }[];
 };
 
 const PRICE_LEVEL_MAP: Record<string, number> = {
@@ -48,7 +50,7 @@ export async function searchPlaces(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.priceLevel,places.primaryTypeDisplayName",
+        "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.priceLevel,places.primaryTypeDisplayName,places.photos",
     },
     body: JSON.stringify({
       textQuery: query,
@@ -73,6 +75,9 @@ export async function searchPlaces(
     rating: p.rating,
     priceLevel: p.priceLevel ? PRICE_LEVEL_MAP[p.priceLevel] : undefined,
     category: p.primaryTypeDisplayName?.text ?? "",
+    photoUrl: p.photos?.[0]
+      ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`
+      : undefined,
   }));
 
   return { ok: true, results };

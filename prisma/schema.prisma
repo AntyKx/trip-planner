@@ -105,6 +105,7 @@ model Place {
   rating     Float?
   priceLevel Int?
   openHours  String? // JSON string: { mon: "09:00-18:00", ... }
+  photoUrl   String?
   provider   String // "google" | "hotpepper" | "tdx" | ...
   externalId String
   items      Item[]
