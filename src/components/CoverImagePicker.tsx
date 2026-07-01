@@ -7,6 +7,7 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 import { updateTripCoverImage, uploadCoverImagePhoto } from "@/app/trips/actions";
 
 export default function CoverImagePicker({
@@ -18,6 +19,7 @@ export default function CoverImagePicker({
   currentCoverImage: string | null;
   availablePhotos: string[];
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -26,8 +28,9 @@ export default function CoverImagePicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function apply(url: string | null) {
-    startTransition(() => {
-      updateTripCoverImage(tripId, url);
+    startTransition(async () => {
+      await updateTripCoverImage(tripId, url);
+      router.refresh();
     });
     setIsOpen(false);
     setCustomUrl("");

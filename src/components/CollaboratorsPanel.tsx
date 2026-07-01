@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { addCollaborator, removeCollaborator } from "@/app/trips/actions";
 
 export type Collaborator = {
@@ -23,6 +24,7 @@ export default function CollaboratorsPanel({
   tripId: string;
   collaborators: Collaborator[];
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -43,12 +45,14 @@ export default function CollaboratorsPanel({
     startTransition(async () => {
       await addCollaborator(tripId, email, role);
       formRef.current?.reset();
+      router.refresh();
     });
   }
 
   function handleRemove(userId: string) {
     startTransition(async () => {
       await removeCollaborator(tripId, userId);
+      router.refresh();
     });
   }
 
