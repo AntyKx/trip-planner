@@ -74,12 +74,12 @@ function SortableItemCard({
           {...attributes}
           {...listeners}
           type="button"
-          className="cursor-grab touch-none self-start px-1 text-slate-300 hover:text-slate-500"
+          className="cursor-grab touch-none self-start px-1 text-slate-400 hover:text-slate-700"
           aria-label="拖曳排序"
         >
           ⠿
         </button>
-        <div className="w-14 shrink-0 text-sm font-medium text-slate-500">
+        <div className="w-14 shrink-0 text-sm font-medium text-slate-700">
           {formatTime(item.startTime)}
         </div>
         <div className="flex-1">
@@ -88,7 +88,7 @@ function SortableItemCard({
               {TYPE_LABEL[item.type]}
             </span>
             {item.place && (
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-600">
                 {COUNTRY_FLAG[item.place.country] ?? ""} {item.place.provider}
               </span>
             )}
@@ -97,7 +97,7 @@ function SortableItemCard({
             {item.place?.name ?? item.note ?? "未命名項目"}
           </h3>
           {item.place?.address && (
-            <p className="mt-0.5 text-sm text-slate-500">{item.place.address}</p>
+            <p className="mt-0.5 text-sm text-slate-700">{item.place.address}</p>
           )}
           {item.place?.rating && (
             <p className="mt-0.5 text-sm text-amber-500">
@@ -108,12 +108,12 @@ function SortableItemCard({
       </div>
 
       {route && (
-        <div className="flex items-center gap-2 py-2 pl-16 text-sm text-slate-500">
+        <div className="flex items-center gap-2 py-2 pl-16 text-sm text-slate-700">
           <span>{MODE_ICON[route.mode]}</span>
           <span>{MODE_LABEL[route.mode]}</span>
           {route.durationMin != null && <span>· {route.durationMin} 分鐘</span>}
           {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
-          <span className="text-xs text-slate-300">({route.provider})</span>
+          <span className="text-xs text-slate-600">({route.provider})</span>
         </div>
       )}
     </div>
@@ -203,7 +203,7 @@ export default function DayTimeline({
   }
 
   if (items.length === 0) {
-    return <p className="text-sm text-slate-400">這天還沒有安排項目。</p>;
+    return <p className="text-sm text-slate-600">這天還沒有安排項目。</p>;
   }
 
   return (
@@ -218,7 +218,7 @@ export default function DayTimeline({
           {isOptimizing ? "優化中…" : "🔄 自動優化路線"}
         </button>
         {!canOptimize && items.length >= 2 && (
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-600">
             需要至少 3 個都有地點資料的項目才能優化
           </span>
         )}

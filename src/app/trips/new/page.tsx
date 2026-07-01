@@ -4,7 +4,7 @@ import { createTrip } from "../actions";
 export default function NewTripPage() {
   return (
     <main className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
-      <Link href="/" className="text-sm text-slate-500 hover:underline">
+      <Link href="/" className="text-sm text-slate-700 hover:underline">
         ← 回我的行程
       </Link>
       <h1 className="mt-2 text-2xl font-bold">建立新行程</h1>

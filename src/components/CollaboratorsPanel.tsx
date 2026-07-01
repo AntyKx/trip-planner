@@ -64,7 +64,7 @@ export default function CollaboratorsPanel({
           >
             <div>
               <span className="font-medium text-slate-700">{c.name}</span>
-              <span className="ml-2 text-xs text-slate-400">{c.email}</span>
+              <span className="ml-2 text-xs text-slate-600">{c.email}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
@@ -85,11 +85,15 @@ export default function CollaboratorsPanel({
         ))}
 
         {collaborators.length === 0 && (
-          <p className="text-sm text-slate-400">還沒有共同協作者。</p>
+          <p className="text-sm text-slate-600">還沒有共同協作者。</p>
         )}
       </ul>
 
-      <form ref={formRef} onSubmit={handleAdd} className="mt-4 flex gap-2">
+      <form
+        ref={formRef}
+        onSubmit={handleAdd}
+        className="mt-4 flex flex-col gap-2 sm:flex-row"
+      >
         <input
           name="email"
           type="email"
@@ -116,7 +120,7 @@ export default function CollaboratorsPanel({
 
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
 
-      <p className="mt-3 text-xs text-slate-400">
+      <p className="mt-3 text-xs text-slate-600">
         目前是原型階段，還沒有登入系統，所以這裡只管理「誰有存取權」的名單，
         還不會限制實際編輯權限。
       </p>

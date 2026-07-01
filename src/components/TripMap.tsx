@@ -74,7 +74,7 @@ function RouteSegment({
 
 function MissingKeyNotice() {
   return (
-    <div className="flex h-64 flex-col items-center justify-center gap-1 rounded-lg bg-slate-100 px-4 text-center text-xs text-slate-400">
+    <div className="flex h-64 flex-col items-center justify-center gap-1 rounded-lg bg-slate-100 px-4 text-center text-xs text-slate-600">
       <p>尚未設定 Google Maps API Key</p>
       <p>請在 .env.local 填入 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY 後重啟 dev server</p>
     </div>
@@ -97,7 +97,7 @@ export default function TripMap({
 
   if (!day || day.items.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
+      <div className="flex h-64 items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-600">
         這天還沒有地點可顯示
       </div>
     );

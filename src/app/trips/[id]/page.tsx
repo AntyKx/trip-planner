@@ -59,15 +59,15 @@ export default async function TripDetailPage({
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-10">
-      <Link href="/" className="text-sm text-slate-500 hover:underline">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
+      <Link href="/" className="text-sm text-slate-700 hover:underline">
         ← 回我的行程
       </Link>
 
-      <div className="mt-2 flex items-center justify-between">
+      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{trip.title}</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-700">
             {trip.startDate.toISOString().slice(0, 10)} ~{" "}
             {trip.endDate.toISOString().slice(0, 10)}
           </p>
@@ -75,7 +75,7 @@ export default async function TripDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href={`/explore?tripId=${trip.id}`}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-indigo-700"
           >
             + 加入景點/餐廳
           </Link>
@@ -178,7 +178,7 @@ export default async function TripDetailPage({
               >
                 <span>{COUNTRY_FLAG[place.country] ?? "📍"}</span>
                 <span className="flex-1">{place.name}</span>
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-600">
                   {place.lat.toFixed(3)}, {place.lng.toFixed(3)}
                 </span>
               </li>

@@ -69,17 +69,17 @@ export default function ExploreClient({
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10">
-      <Link href="/" className="text-sm text-slate-500 hover:underline">
+    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
+      <Link href="/" className="text-sm text-slate-700 hover:underline">
         ← 回我的行程
       </Link>
       <h1 className="mt-2 text-2xl font-bold">探索景點 / 餐廳</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="mt-1 text-sm text-slate-700">
         搜尋結果來自 Google Places API，選好行程與日期後可直接加入。
       </p>
 
       {trips.length === 0 ? (
-        <p className="mt-6 text-sm text-slate-500">
+        <p className="mt-6 text-sm text-slate-700">
           尚無行程，請先
           <Link href="/trips/new" className="mx-1 text-indigo-600 underline">
             建立行程
@@ -88,7 +88,7 @@ export default function ExploreClient({
         </p>
       ) : (
         <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 text-sm">
-          <span className="text-slate-500">加入到：</span>
+          <span className="text-slate-700">加入到：</span>
           <select
             value={selectedTripId}
             onChange={(e) => {
@@ -119,7 +119,7 @@ export default function ExploreClient({
         </div>
       )}
 
-      <form onSubmit={handleSearch} className="mt-6 flex gap-2">
+      <form onSubmit={handleSearch} className="mt-6 flex flex-col gap-2 sm:flex-row">
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value as "JP" | "TW")}
@@ -159,9 +159,9 @@ export default function ExploreClient({
               <div>
                 <h3 className="font-semibold">{place.name}</h3>
                 {place.category && (
-                  <p className="text-xs text-slate-400">{place.category}</p>
+                  <p className="text-xs text-slate-600">{place.category}</p>
                 )}
-                <p className="mt-1 text-sm text-slate-500">{place.address}</p>
+                <p className="mt-1 text-sm text-slate-700">{place.address}</p>
                 {place.rating != null && (
                   <p className="mt-1 text-sm text-amber-500">★ {place.rating}</p>
                 )}
@@ -195,7 +195,7 @@ export default function ExploreClient({
         ))}
 
         {results.length === 0 && !isSearching && !searchError && (
-          <p className="text-sm text-slate-400">輸入關鍵字開始搜尋。</p>
+          <p className="text-sm text-slate-600">輸入關鍵字開始搜尋。</p>
         )}
       </div>
     </main>
