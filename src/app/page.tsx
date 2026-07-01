@@ -46,7 +46,7 @@ export default async function TripsPage() {
             <Link
               key={trip.id}
               href={`/trips/${trip.id}`}
-              className="flex gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
+              className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:shadow-md"
             >
               {coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
