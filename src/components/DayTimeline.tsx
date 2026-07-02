@@ -184,7 +184,11 @@ export default function DayTimeline({
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    useSensor(PointerSensor, {
+      // Long-press to start dragging instead of activating on the
+      // slightest movement — avoids hijacking scroll gestures on mobile.
+      activationConstraint: { delay: 250, tolerance: 8 },
+    })
   );
   const routesLibrary = useMapsLibrary("routes");
 
