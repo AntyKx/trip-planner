@@ -111,8 +111,8 @@ function SortableItemCard({
                 {...attributes}
                 {...listeners}
                 type="button"
-                className="cursor-grab touch-none p-1 text-slate-400 hover:text-slate-700"
-                aria-label="拖曳排序"
+                className="cursor-grab touch-none select-none p-1 text-slate-400 [-webkit-touch-callout:none] hover:text-slate-700"
+                aria-label="長按拖曳排序"
               >
                 <GripVertical className="h-4 w-4" />
               </button>
@@ -187,7 +187,7 @@ export default function DayTimeline({
     useSensor(PointerSensor, {
       // Long-press to start dragging instead of activating on the
       // slightest movement — avoids hijacking scroll gestures on mobile.
-      activationConstraint: { delay: 250, tolerance: 8 },
+      activationConstraint: { delay: 250, tolerance: 12 },
     })
   );
   const routesLibrary = useMapsLibrary("routes");
