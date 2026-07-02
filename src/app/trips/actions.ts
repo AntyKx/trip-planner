@@ -17,6 +17,45 @@ export async function reorderItems(
   revalidatePath(`/trips/${tripId}`);
 }
 
+export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
+
+export type RouteInput = {
+  fromItemId: string;
+  toItemId: string;
+  mode: TravelModeValue;
+  durationMin: number;
+  distanceKm: number;
+};
+
+// Replaces every Route for this day with a fresh set — called after
+// optimize or after recomputing transit times for the current order,
+// since the previous adjacency is no longer meaningful either way.
+export async function saveRoutes(
+  tripId: string,
+  dayId: string,
+  country: string,
+  routes: RouteInput[]
+) {
+  await prisma.$transaction([
+    prisma.route.deleteMany({ where: { dayId } }),
+    ...routes.map((r) =>
+      prisma.route.create({
+        data: {
+          dayId,
+          fromItemId: r.fromItemId,
+          toItemId: r.toItemId,
+          mode: r.mode,
+          durationMin: Math.round(r.durationMin),
+          distanceKm: Math.round(r.distanceKm * 10) / 10,
+          country,
+          provider: "google",
+        },
+      })
+    ),
+  ]);
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export type NewPlaceInput = {
   name: string;
   category: string;

@@ -20,7 +20,12 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { MapPin, Navigation, Pencil, Plus, X, RefreshCw } from "lucide-react";
 import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
-import { reorderItems, deleteItem } from "@/app/trips/actions";
+import {
+  reorderItems,
+  deleteItem,
+  saveRoutes,
+  type TravelModeValue,
+} from "@/app/trips/actions";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 
@@ -50,6 +55,20 @@ export type TimelineRoute = {
   durationMin: number | null;
   distanceKm: number | null;
   provider: string;
+};
+
+const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
+  { value: "WALK", label: "🚶 步行" },
+  { value: "TRANSIT", label: "🚆 大眾運輸" },
+  { value: "DRIVE", label: "🚗 開車" },
+  { value: "BIKE", label: "🚲 騎車" },
+];
+
+const GOOGLE_TRAVEL_MODE: Record<TravelModeValue, google.maps.TravelMode> = {
+  WALK: "WALKING" as google.maps.TravelMode,
+  TRANSIT: "TRANSIT" as google.maps.TravelMode,
+  DRIVE: "DRIVING" as google.maps.TravelMode,
+  BIKE: "BICYCLING" as google.maps.TravelMode,
 };
 
 function SortableItemCard({
@@ -181,7 +200,7 @@ export default function DayTimeline({
   dayId,
   dayDate,
   items: initialItems,
-  routes,
+  routes: initialRoutes,
 }: {
   tripId: string;
   dayId: string;
@@ -190,9 +209,12 @@ export default function DayTimeline({
   routes: TimelineRoute[];
 }) {
   const [items, setItems] = useState(initialItems);
+  const [routes, setRoutes] = useState(initialRoutes);
   const [isPending, startTransition] = useTransition();
   const [isOptimizing, setIsOptimizing] = useState(false);
+  const [isComputingRoutes, setIsComputingRoutes] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
+  const [travelMode, setTravelMode] = useState<TravelModeValue>("WALK");
   const [editingItem, setEditingItem] = useState<TimelineItem | "new" | null>(
     null
   );
@@ -230,6 +252,43 @@ export default function DayTimeline({
     });
   }
 
+  function legsToRoutes(
+    orderedPlaceItems: TimelineItem[],
+    legs: google.maps.DirectionsLeg[]
+  ): TimelineRoute[] {
+    return legs.map((leg, i) => ({
+      fromItemId: orderedPlaceItems[i].id,
+      toItemId: orderedPlaceItems[i + 1].id,
+      mode: travelMode,
+      durationMin: leg.duration ? Math.round(leg.duration.value / 60) : null,
+      distanceKm: leg.distance
+        ? Math.round((leg.distance.value / 1000) * 10) / 10
+        : null,
+      provider: "google",
+    }));
+  }
+
+  function saveComputedRoutes(newRoutes: TimelineRoute[]) {
+    setRoutes(newRoutes);
+    const country = placeItems[0]?.place?.country ?? "TW";
+    startTransition(() => {
+      saveRoutes(
+        tripId,
+        dayId,
+        country,
+        newRoutes
+          .filter((r) => r.durationMin != null && r.distanceKm != null)
+          .map((r) => ({
+            fromItemId: r.fromItemId,
+            toItemId: r.toItemId,
+            mode: r.mode as TravelModeValue,
+            durationMin: r.durationMin!,
+            distanceKm: r.distanceKm!,
+          }))
+      );
+    });
+  }
+
   async function handleOptimize() {
     if (!routesLibrary || !canOptimize) return;
     setOptimizeError(null);
@@ -249,7 +308,7 @@ export default function DayTimeline({
         destination: { lat: destination.place!.lat, lng: destination.place!.lng },
         waypoints,
         optimizeWaypoints: true,
-        travelMode: "DRIVING" as google.maps.TravelMode,
+        travelMode: GOOGLE_TRAVEL_MODE[travelMode],
       });
 
       const order = result.routes[0]?.waypoint_order ?? [];
@@ -264,10 +323,43 @@ export default function DayTimeline({
           newItems.map((i) => i.id)
         );
       });
+
+      const legs = result.routes[0]?.legs ?? [];
+      saveComputedRoutes(legsToRoutes(newItems, legs));
     } catch {
       setOptimizeError("路線優化失敗，可能是地點距離太遠或無法規劃路線");
     } finally {
       setIsOptimizing(false);
+    }
+  }
+
+  async function handleComputeRoutes() {
+    if (!routesLibrary || placeItems.length < 2) return;
+    setOptimizeError(null);
+    setIsComputingRoutes(true);
+
+    try {
+      const origin = placeItems[0];
+      const destination = placeItems[placeItems.length - 1];
+      const waypoints = placeItems.slice(1, -1).map((item) => ({
+        location: { lat: item.place!.lat, lng: item.place!.lng },
+        stopover: true,
+      }));
+
+      const directionsService = new routesLibrary.DirectionsService();
+      const result = await directionsService.route({
+        origin: { lat: origin.place!.lat, lng: origin.place!.lng },
+        destination: { lat: destination.place!.lat, lng: destination.place!.lng },
+        waypoints,
+        travelMode: GOOGLE_TRAVEL_MODE[travelMode],
+      });
+
+      const legs = result.routes[0]?.legs ?? [];
+      saveComputedRoutes(legsToRoutes(placeItems, legs));
+    } catch {
+      setOptimizeError("計算交通路線失敗，可能是地點距離太遠或無法規劃路線");
+    } finally {
+      setIsComputingRoutes(false);
     }
   }
 
@@ -334,6 +426,17 @@ export default function DayTimeline({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
+        <select
+          value={travelMode}
+          onChange={(e) => setTravelMode(e.target.value as TravelModeValue)}
+          className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600"
+        >
+          {TRAVEL_MODE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           onClick={handleOptimize}
@@ -342,6 +445,15 @@ export default function DayTimeline({
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
           {isOptimizing ? "優化中…" : "自動優化路線"}
+        </button>
+        <button
+          type="button"
+          onClick={handleComputeRoutes}
+          disabled={!routesLibrary || placeItems.length < 2 || isComputingRoutes}
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <RefreshCw className={`h-3.5 w-3.5 ${isComputingRoutes ? "animate-spin" : ""}`} />
+          {isComputingRoutes ? "計算中…" : "計算交通路線"}
         </button>
         <button
           type="button"
