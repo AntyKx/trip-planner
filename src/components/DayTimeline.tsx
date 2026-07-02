@@ -36,6 +36,9 @@ export type TimelineItem = {
   endTime: string | Date | null;
   note: string | null;
   confirmationNumber: string | null;
+  cost: number | null;
+  currency: string | null;
+  costCategory: string | null;
   place: {
     name: string;
     address: string | null;
@@ -123,6 +126,11 @@ function SortableItemCard({
               <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-600">
                 {TYPE_LABEL[item.type]}
               </span>
+              {item.cost != null && (
+                <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  {item.currency} {item.cost.toLocaleString()}
+                </span>
+              )}
             </div>
             <div className="flex shrink-0 items-center gap-1">
               <button
@@ -400,6 +408,9 @@ export default function DayTimeline({
                 endTime: result.endTime,
                 note: result.note,
                 confirmationNumber: result.confirmationNumber,
+                cost: result.cost,
+                currency: result.currency,
+                costCategory: result.costCategory,
               }
             : i
         );
@@ -413,6 +424,9 @@ export default function DayTimeline({
           endTime: result.endTime,
           note: result.note,
           confirmationNumber: result.confirmationNumber,
+          cost: result.cost,
+          currency: result.currency,
+          costCategory: result.costCategory,
           place: null,
         },
       ];
@@ -428,6 +442,9 @@ export default function DayTimeline({
           endTime: editingItem.endTime,
           note: editingItem.note,
           confirmationNumber: editingItem.confirmationNumber,
+          cost: editingItem.cost,
+          currency: editingItem.currency,
+          costCategory: editingItem.costCategory,
           placeName: editingItem.place?.name ?? null,
         }
       : null;

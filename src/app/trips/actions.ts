@@ -146,6 +146,14 @@ export type ItemTypeValue =
   | "TRANSPORT"
   | "CUSTOM";
 
+export type CostCategoryValue =
+  | "TRANSPORT"
+  | "FOOD"
+  | "LODGING"
+  | "TICKET"
+  | "SHOPPING"
+  | "OTHER";
+
 export async function updateItem(
   tripId: string,
   itemId: string,
@@ -155,6 +163,9 @@ export async function updateItem(
     endTime: string | null;
     note: string | null;
     confirmationNumber: string | null;
+    cost: number | null;
+    currency: string | null;
+    costCategory: CostCategoryValue | null;
   }
 ) {
   await prisma.item.update({
@@ -165,6 +176,9 @@ export async function updateItem(
       endTime: data.endTime ? new Date(data.endTime) : null,
       note: data.note?.trim() || null,
       confirmationNumber: data.confirmationNumber?.trim() || null,
+      cost: data.cost,
+      currency: data.cost != null ? data.currency : null,
+      costCategory: data.cost != null ? data.costCategory : null,
     },
   });
   revalidatePath(`/trips/${tripId}`);
@@ -179,6 +193,9 @@ export async function addCustomItem(
     startTime: string | null;
     endTime: string | null;
     confirmationNumber: string | null;
+    cost: number | null;
+    currency: string | null;
+    costCategory: CostCategoryValue | null;
   }
 ) {
   const lastItem = await prisma.item.findFirst({
@@ -194,6 +211,9 @@ export async function addCustomItem(
       startTime: data.startTime ? new Date(data.startTime) : null,
       endTime: data.endTime ? new Date(data.endTime) : null,
       confirmationNumber: data.confirmationNumber?.trim() || null,
+      cost: data.cost,
+      currency: data.cost != null ? data.currency : null,
+      costCategory: data.cost != null ? data.costCategory : null,
       sortOrder: (lastItem?.sortOrder ?? 0) + 1,
     },
   });

@@ -6,6 +6,7 @@ import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimelin
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
+import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
 import {
   weatherLabel,
@@ -199,6 +200,8 @@ export default function TripDayBoard({
             )}
           </ul>
         </div>
+
+        <BudgetSummary days={days} />
 
         <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} />
 

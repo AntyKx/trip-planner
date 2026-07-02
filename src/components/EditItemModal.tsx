@@ -6,6 +6,7 @@ import {
   updateItem,
   addCustomItem,
   type ItemTypeValue,
+  type CostCategoryValue,
 } from "@/app/trips/actions";
 
 const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
@@ -16,6 +17,25 @@ const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
   { value: "CUSTOM", label: "自訂" },
 ];
 
+const COST_CATEGORY_OPTIONS: { value: CostCategoryValue; label: string }[] = [
+  { value: "TRANSPORT", label: "交通" },
+  { value: "FOOD", label: "餐飲" },
+  { value: "LODGING", label: "住宿" },
+  { value: "TICKET", label: "門票" },
+  { value: "SHOPPING", label: "購物" },
+  { value: "OTHER", label: "其他" },
+];
+
+const CURRENCY_OPTIONS = ["TWD", "JPY", "USD"];
+
+const DEFAULT_COST_CATEGORY: Record<ItemTypeValue, CostCategoryValue> = {
+  PLACE: "TICKET",
+  RESTAURANT: "FOOD",
+  HOTEL: "LODGING",
+  TRANSPORT: "TRANSPORT",
+  CUSTOM: "OTHER",
+};
+
 export type EditableItem = {
   id: string;
   type: string;
@@ -23,6 +43,9 @@ export type EditableItem = {
   endTime: string | Date | null;
   note: string | null;
   confirmationNumber: string | null;
+  cost: number | null;
+  currency: string | null;
+  costCategory: string | null;
   placeName: string | null;
 };
 
@@ -33,6 +56,9 @@ export type SavedItemResult = {
   endTime: string | null;
   note: string | null;
   confirmationNumber: string | null;
+  cost: number | null;
+  currency: string | null;
+  costCategory: CostCategoryValue | null;
 };
 
 const CONFIRMATION_LABEL: Record<ItemTypeValue, string> = {
@@ -73,6 +99,12 @@ export default function EditItemModal({
   const [confirmationNumber, setConfirmationNumber] = useState(
     item?.confirmationNumber ?? ""
   );
+  const [cost, setCost] = useState(item?.cost != null ? String(item.cost) : "");
+  const [currency, setCurrency] = useState(item?.currency ?? "TWD");
+  const [costCategory, setCostCategory] = useState<CostCategoryValue>(
+    (item?.costCategory as CostCategoryValue) ??
+      DEFAULT_COST_CATEGORY[(item?.type as ItemTypeValue) ?? "CUSTOM"]
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +134,7 @@ export default function EditItemModal({
     try {
       const startIso = toIso(startTime);
       const endIso = toIso(endTime);
+      const costValue = cost.trim() ? Number(cost) : null;
 
       if (item) {
         await updateItem(tripId, item.id, {
@@ -110,6 +143,9 @@ export default function EditItemModal({
           endTime: endIso,
           note,
           confirmationNumber,
+          cost: costValue,
+          currency,
+          costCategory,
         });
         onSaved({
           id: item.id,
@@ -118,6 +154,9 @@ export default function EditItemModal({
           endTime: endIso,
           note: note.trim() || null,
           confirmationNumber: confirmationNumber.trim() || null,
+          cost: costValue,
+          currency: costValue != null ? currency : null,
+          costCategory: costValue != null ? costCategory : null,
         });
       } else {
         const created = await addCustomItem(tripId, dayId, {
@@ -126,6 +165,9 @@ export default function EditItemModal({
           startTime: startIso,
           endTime: endIso,
           confirmationNumber,
+          cost: costValue,
+          currency,
+          costCategory,
         });
         onSaved({
           id: created.id,
@@ -134,6 +176,9 @@ export default function EditItemModal({
           endTime: endIso,
           note: note.trim() || null,
           confirmationNumber: confirmationNumber.trim() || null,
+          cost: costValue,
+          currency: costValue != null ? currency : null,
+          costCategory: costValue != null ? costCategory : null,
         });
       }
       onClose();
@@ -207,6 +252,58 @@ export default function EditItemModal({
                 onChange={(e) => setEndTime(e.target.value)}
                 className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600">
+                費用
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                placeholder="選填"
+                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="w-20">
+              <label className="block text-xs font-medium text-slate-600">
+                幣別
+              </label>
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              >
+                {CURRENCY_OPTIONS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600">
+                費用類型
+              </label>
+              <select
+                value={costCategory}
+                onChange={(e) =>
+                  setCostCategory(e.target.value as CostCategoryValue)
+                }
+                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              >
+                {COST_CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

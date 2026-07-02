@@ -119,6 +119,9 @@ export default async function TripDetailPage({
                 endTime: item.endTime,
                 note: item.note,
                 confirmationNumber: item.confirmationNumber,
+                cost: item.cost,
+                currency: item.currency,
+                costCategory: item.costCategory,
                 place: item.place
                   ? {
                       name: item.place.name,

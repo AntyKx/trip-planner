@@ -32,6 +32,15 @@ enum TravelMode {
   BIKE
 }
 
+enum CostCategory {
+  TRANSPORT
+  FOOD
+  LODGING
+  TICKET
+  SHOPPING
+  OTHER
+}
+
 model User {
   id            String         @id @default(cuid())
   name          String
@@ -91,6 +100,9 @@ model Item {
   sortOrder          Int
   note               String?
   confirmationNumber String? // hotel booking ref, flight PNR, ticket number, ...
+  cost               Float?
+  currency           String? // "TWD" | "JPY" | "USD" | ...
+  costCategory       CostCategory?
 
   routesFrom Route[] @relation("RouteFrom")
   routesTo   Route[] @relation("RouteTo")
