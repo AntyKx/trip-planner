@@ -19,6 +19,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  ExternalLink,
   MapPin,
   Navigation,
   Pencil,
@@ -32,6 +33,7 @@ import {
   reorderItems,
   deleteItem,
   saveRoutes,
+  getEkispertTransitLink,
   type TravelModeValue,
 } from "@/app/trips/actions";
 import {
@@ -91,24 +93,29 @@ function SortableItemCard({
   hasNextStop,
   isRecomputing,
   isAutoFilling,
+  isLoadingEkispertLink,
   onDelete,
   onEdit,
   onModeChange,
   onViewAlternatives,
+  onOpenEkispertLink,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
   hasNextStop: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
+  isLoadingEkispertLink: boolean;
   onDelete: () => void;
   onEdit: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
+  onOpenEkispertLink: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
   const transitSupported = isGoogleTransitSupported(item.place?.country);
+  const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -267,6 +274,17 @@ function SortableItemCard({
               路線選項
             </button>
           )}
+          {isJapan && (
+            <button
+              type="button"
+              onClick={onOpenEkispertLink}
+              disabled={isLoadingEkispertLink}
+              className="ml-auto flex items-center gap-1 text-xs text-teal-600 hover:underline disabled:opacity-50"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {isLoadingEkispertLink ? "查詢中…" : "查看日本轉乘建議"}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -292,6 +310,9 @@ export default function DayTimeline({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [ekispertLoadingKey, setEkispertLoadingKey] = useState<string | null>(
+    null
+  );
   const [viewingLeg, setViewingLeg] = useState<{
     from: TimelineItem;
     to: TimelineItem;
@@ -486,6 +507,34 @@ export default function DayTimeline({
         newItems.map((i) => i.id)
       );
     });
+  }
+
+  async function handleOpenEkispertLink(from: TimelineItem, to: TimelineItem) {
+    const key = `${from.id}->${to.id}`;
+    setEkispertLoadingKey(key);
+    setRouteError(null);
+    // Open the tab synchronously (still tied to the click's user gesture) and
+    // navigate it once the URL is ready — awaiting first would make browsers
+    // treat a later window.open() as an unrequested popup and block it. Can't
+    // pass "noopener" here or we'd lose the handle needed to redirect it.
+    const newTab = window.open("", "_blank");
+    try {
+      const result = await getEkispertTransitLink(
+        from.place!.lat,
+        from.place!.lng,
+        to.place!.lat,
+        to.place!.lng
+      );
+      if (result.ok) {
+        if (newTab) newTab.location.href = result.url;
+        else window.open(result.url, "_blank", "noopener,noreferrer");
+      } else {
+        newTab?.close();
+        setRouteError(result.error);
+      }
+    } finally {
+      setEkispertLoadingKey(null);
+    }
   }
 
   function openAlternatives(from: TimelineItem, to: TimelineItem) {
@@ -686,6 +735,9 @@ export default function DayTimeline({
                   hasNextStop={nextId != null}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
+                  isLoadingEkispertLink={
+                    ekispertLoadingKey === `${item.id}->${nextId}`
+                  }
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
                   onModeChange={(mode) => {
@@ -695,6 +747,10 @@ export default function DayTimeline({
                   onViewAlternatives={() => {
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) openAlternatives(item, to);
+                  }}
+                  onOpenEkispertLink={() => {
+                    const to = placeItems.find((i) => i.id === nextId);
+                    if (to) handleOpenEkispertLink(item, to);
                   }}
                 />
               );

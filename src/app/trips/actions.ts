@@ -284,3 +284,72 @@ export async function createTrip(formData: FormData) {
   revalidatePath("/");
   redirect(`/trips/${trip.id}`);
 }
+
+type EkispertPoint = {
+  Station?: { code?: string };
+};
+
+async function findNearestEkispertStation(
+  key: string,
+  lat: number,
+  lng: number
+): Promise<string | null> {
+  const url = new URL("https://api.ekispert.jp/v1/json/geo/station");
+  url.searchParams.set("key", key);
+  url.searchParams.set("geoPoint", `${lat},${lng},wgs84,2000`);
+  url.searchParams.set("stationCount", "1");
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return null;
+  const data: { ResultSet?: { Point?: EkispertPoint | EkispertPoint[] } } =
+    await res.json();
+  const point = data.ResultSet?.Point;
+  const first = Array.isArray(point) ? point[0] : point;
+  return first?.Station?.code ?? null;
+}
+
+export type EkispertLinkResult =
+  | { ok: true; url: string }
+  | { ok: false; error: string };
+
+// Ekispert's free plan doesn't expose structured route data (that needs a
+// paid plan) — /search/course/light only hands back a URL to Ekispert's own
+// results page. We still use it because it's the only source that actually
+// has Japanese train/subway routing (Google's transit data excludes Japan).
+export async function getEkispertTransitLink(
+  originLat: number,
+  originLng: number,
+  destLat: number,
+  destLng: number
+): Promise<EkispertLinkResult> {
+  const key = process.env.EKISPERT_ACCESS_KEY;
+  if (!key) {
+    return { ok: false, error: "尚未設定 EKISPERT_ACCESS_KEY" };
+  }
+
+  try {
+    const [fromStation, toStation] = await Promise.all([
+      findNearestEkispertStation(key, originLat, originLng),
+      findNearestEkispertStation(key, destLat, destLng),
+    ]);
+    if (!fromStation || !toStation) {
+      return { ok: false, error: "找不到附近的車站" };
+    }
+
+    const url = new URL("https://api.ekispert.jp/v1/json/search/course/light");
+    url.searchParams.set("key", key);
+    url.searchParams.set("from", fromStation);
+    url.searchParams.set("to", toStation);
+    url.searchParams.set("searchType", "departure");
+
+    const res = await fetch(url.toString());
+    if (!res.ok) return { ok: false, error: "查詢失敗，請稍後再試" };
+    const data: { ResultSet?: { ResourceURI?: string } } = await res.json();
+    const resourceUri = data.ResultSet?.ResourceURI;
+    if (!resourceUri) return { ok: false, error: "查詢失敗，請稍後再試" };
+
+    return { ok: true, url: resourceUri };
+  } catch {
+    return { ok: false, error: "查詢失敗，請稍後再試" };
+  }
+}

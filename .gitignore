@@ -48,3 +48,6 @@ prisma/dev.db
 
 .vercel
 .env*
+
+# local screenshots that may contain secrets (API keys, etc.)
+擷取*.PNG
