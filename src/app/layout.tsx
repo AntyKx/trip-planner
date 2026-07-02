@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import InstallPrompt from "@/components/InstallPrompt";
 import UpdateChecker from "@/components/UpdateChecker";
+import VersionBadge from "@/components/VersionBadge";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,6 +47,7 @@ export default function RootLayout({
         <UpdateChecker />
         {children}
         <InstallPrompt />
+        <VersionBadge />
       </body>
     </html>
   );

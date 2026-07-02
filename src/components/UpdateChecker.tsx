@@ -1,16 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 const CURRENT_BUILD_ID = process.env.NEXT_PUBLIC_BUILD_ID;
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const RELOAD_DELAY_MS = 2200;
+// If the user is mid-edit (typing in a field / modal open), don't yank the
+// page out from under them — recheck at this cadence until it's safe.
+const SAFE_RECHECK_MS = 3000;
+
+function isEditingSomething() {
+  const active = document.activeElement;
+  if (!active) return false;
+  const tag = active.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+}
 
 export default function UpdateChecker() {
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    function scheduleReloadWhenSafe() {
+      if (reloadTimerRef.current) return;
+      if (isEditingSomething()) {
+        reloadTimerRef.current = setTimeout(() => {
+          reloadTimerRef.current = null;
+          scheduleReloadWhenSafe();
+        }, SAFE_RECHECK_MS);
+        return;
+      }
+      setUpdating(true);
+      reloadTimerRef.current = setTimeout(() => {
+        window.location.reload();
+      }, RELOAD_DELAY_MS);
+    }
 
     async function checkVersion() {
       try {
@@ -18,7 +45,7 @@ export default function UpdateChecker() {
         if (!res.ok) return;
         const data: { buildId?: string } = await res.json();
         if (!cancelled && data.buildId && data.buildId !== CURRENT_BUILD_ID) {
-          setUpdateAvailable(true);
+          scheduleReloadWhenSafe();
         }
       } catch {
         // Offline or request failed — ignore, just try again later.
@@ -36,23 +63,33 @@ export default function UpdateChecker() {
     return () => {
       cancelled = true;
       clearInterval(interval);
+      if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
-  if (!updateAvailable) return null;
+  if (!updating) return null;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-teal-600 px-4 py-2 text-sm text-white">
-      <span>有新版本可以更新</span>
-      <button
-        type="button"
-        onClick={() => window.location.reload()}
-        className="flex items-center gap-1 rounded-md bg-white/20 px-3 py-1 font-medium hover:bg-white/30"
-      >
-        <RefreshCw className="h-3.5 w-3.5" />
-        重新整理
-      </button>
+    <div className="fixed inset-x-0 top-0 z-[9999] flex flex-col gap-1.5 bg-teal-600 px-4 py-2.5 text-white shadow-md">
+      <div className="flex items-center gap-2 text-sm">
+        <RefreshCw className="h-4 w-4 animate-spin" />
+        <span className="font-medium">偵測到新版本，正在自動更新…</span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-white/25">
+        <div
+          className="h-full rounded-full bg-white"
+          style={{
+            animation: `update-progress ${RELOAD_DELAY_MS}ms linear forwards`,
+          }}
+        />
+      </div>
+      <style>{`
+        @keyframes update-progress {
+          from { width: 0% }
+          to { width: 100% }
+        }
+      `}</style>
     </div>
   );
 }
