@@ -6,6 +6,7 @@ import { MapPin, Search, Check } from "lucide-react";
 import { searchPlaces, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
+import { TYPE_LABEL } from "@/lib/labels";
 
 export type TripOption = {
   id: string;
@@ -51,12 +52,12 @@ export default function ExploreClient({
     });
   }
 
-  function handleAdd(place: PlaceResult, type: "PLACE" | "RESTAURANT" | "HOTEL") {
+  function handleAdd(place: PlaceResult) {
     if (!selectedDayId) return;
     startAdding(async () => {
-      await addPlaceToDay(selectedTripId, selectedDayId, type, {
+      await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
         name: place.name,
-        category: place.category || type,
+        category: place.category || place.suggestedType,
         country,
         address: place.address,
         lat: place.lat,
@@ -82,21 +83,16 @@ export default function ExploreClient({
     }
     return (
       <>
+        <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-600">
+          {TYPE_LABEL[place.suggestedType]}
+        </span>
         <button
           type="button"
           disabled={!selectedDayId || isAdding}
-          onClick={() => handleAdd(place, "RESTAURANT")}
+          onClick={() => handleAdd(place)}
           className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
         >
-          加為餐廳
-        </button>
-        <button
-          type="button"
-          disabled={!selectedDayId || isAdding}
-          onClick={() => handleAdd(place, "PLACE")}
-          className="rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
-        >
-          加為景點
+          加入行程
         </button>
       </>
     );
@@ -141,7 +137,7 @@ export default function ExploreClient({
               const t = trips.find((tr) => tr.id === tripId);
               setSelectedDayId(t?.days[0]?.id ?? "");
             }}
-            className="rounded-md border border-slate-200 px-2 py-1"
+            className="rounded-md border border-slate-200 px-2 py-1 text-base"
           >
             {trips.map((t) => (
               <option key={t.id} value={t.id}>
@@ -152,7 +148,7 @@ export default function ExploreClient({
           <select
             value={selectedDayId}
             onChange={(e) => setSelectedDayId(e.target.value)}
-            className="rounded-md border border-slate-200 px-2 py-1"
+            className="rounded-md border border-slate-200 px-2 py-1 text-base"
           >
             {selectedTrip?.days.map((d) => (
               <option key={d.id} value={d.id}>
@@ -167,7 +163,7 @@ export default function ExploreClient({
         <select
           value={country}
           onChange={(e) => setCountry(e.target.value as "JP" | "TW")}
-          className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className="rounded-lg border border-slate-200 px-3 py-2 text-base"
         >
           <option value="JP">🇯🇵 日本</option>
           <option value="TW">🇹🇼 台灣</option>
@@ -176,7 +172,7 @@ export default function ExploreClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="搜尋景點、餐廳關鍵字，例如：淺草 拉麵"
-          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+          className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-base"
         />
         <button
           type="submit"
