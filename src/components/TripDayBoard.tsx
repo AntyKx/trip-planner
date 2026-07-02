@@ -5,7 +5,12 @@ import { Map as MapIcon, MapPin } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
-import { weatherLabel, type DailyWeather } from "@/lib/weather";
+import {
+  weatherLabel,
+  getWeatherReminders,
+  WEATHER_UNAVAILABLE_MESSAGE,
+  type DailyWeather,
+} from "@/lib/weather";
 
 export type BoardDay = {
   id: string;
@@ -73,6 +78,21 @@ export default function TripDayBoard({
                 </span>
               )}
             </h2>
+
+            {selectedDay.weather ? (
+              getWeatherReminders(selectedDay.weather).map((reminder) => (
+                <p
+                  key={reminder}
+                  className="mt-1 text-sm text-sky-700"
+                >
+                  {reminder}
+                </p>
+              ))
+            ) : (
+              <p className="mt-1 text-xs text-slate-400">
+                {WEATHER_UNAVAILABLE_MESSAGE}
+              </p>
+            )}
 
             <div className="mt-4">
               <DayTimeline

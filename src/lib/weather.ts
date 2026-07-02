@@ -32,6 +32,36 @@ export function weatherLabel(code: number) {
   return WEATHER_LABEL[code] ?? { emoji: "🌡️", label: "" };
 }
 
+const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99]);
+const SNOW_CODES = new Set([71, 73, 75]);
+const HOT_THRESHOLD_C = 30;
+const COLD_THRESHOLD_C = 10;
+
+// Turns raw weather data into short, actionable reminders instead of just
+// a temperature readout — a day can trigger more than one (e.g. hot AND
+// rainy), so this returns a list.
+export function getWeatherReminders(weather: DailyWeather): string[] {
+  const reminders: string[] = [];
+
+  if (RAIN_CODES.has(weather.weatherCode)) {
+    reminders.push("☔ 記得帶傘，可以安排室內備案");
+  }
+  if (SNOW_CODES.has(weather.weatherCode)) {
+    reminders.push("❄️ 有降雪，注意保暖與交通狀況");
+  }
+  if (weather.maxTemp >= HOT_THRESHOLD_C) {
+    reminders.push("🥵 氣溫偏高，記得補水，戶外景點避開中午");
+  }
+  if (weather.minTemp <= COLD_THRESHOLD_C) {
+    reminders.push("🧥 氣溫偏低，記得保暖");
+  }
+
+  return reminders;
+}
+
+export const WEATHER_UNAVAILABLE_MESSAGE =
+  "目前太早，天氣資料要出發前才能查詢";
+
 // Open-Meteo requires no API key and only serves forecasts within roughly
 // the next 16 days, so trips outside that window simply get no weather.
 export async function getDailyWeather(
