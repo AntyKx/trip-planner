@@ -5,7 +5,8 @@ import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import {
   DndContext,
   closestCenter,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -17,7 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MapPin, Navigation, GripVertical, X, RefreshCw } from "lucide-react";
+import { MapPin, Navigation, X, RefreshCw } from "lucide-react";
 import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
 import { reorderItems, deleteItem } from "@/app/trips/actions";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
@@ -69,7 +70,11 @@ function SortableItemCard({
 
   return (
     <div ref={setNodeRef} style={style} className="mb-3">
-      <div className="flex items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex touch-manipulation items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
+      >
         {item.place?.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -107,15 +112,6 @@ function SortableItemCard({
                   <Navigation className="h-4 w-4" />
                 </a>
               )}
-              <button
-                {...attributes}
-                {...listeners}
-                type="button"
-                className="cursor-grab touch-none select-none p-1 text-slate-400 [-webkit-touch-callout:none] hover:text-slate-700"
-                aria-label="長按拖曳排序"
-              >
-                <GripVertical className="h-4 w-4" />
-              </button>
               <button
                 type="button"
                 onClick={onDelete}
@@ -184,10 +180,14 @@ export default function DayTimeline({
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      // Long-press to start dragging instead of activating on the
-      // slightest movement — avoids hijacking scroll gestures on mobile.
-      activationConstraint: { delay: 250, tolerance: 12 },
+    // Mouse: quick distance-based activation (no scroll to conflict with).
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Touch: long-press activation. TouchSensor (unlike PointerSensor) can
+    // preventDefault() on touchmove after the delay elapses instead of
+    // needing touch-action: none up front, so a quick swipe before the
+    // hold completes still scrolls the page natively.
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 8 },
     })
   );
   const routesLibrary = useMapsLibrary("routes");
