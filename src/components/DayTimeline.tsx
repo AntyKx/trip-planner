@@ -33,7 +33,8 @@ import {
   reorderItems,
   deleteItem,
   saveRoutes,
-  getEkispertTransitLink,
+  getJapanTransitHint,
+  type JapanTransitHint,
   type TravelModeValue,
 } from "@/app/trips/actions";
 import {
@@ -47,6 +48,7 @@ import {
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
+import JapanTransitHintModal from "./JapanTransitHintModal";
 
 export type TimelineItem = {
   id: string;
@@ -93,24 +95,24 @@ function SortableItemCard({
   hasNextStop,
   isRecomputing,
   isAutoFilling,
-  isLoadingEkispertLink,
+  isLoadingJapanHint,
   onDelete,
   onEdit,
   onModeChange,
   onViewAlternatives,
-  onOpenEkispertLink,
+  onOpenJapanHint,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
   hasNextStop: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
-  isLoadingEkispertLink: boolean;
+  isLoadingJapanHint: boolean;
   onDelete: () => void;
   onEdit: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
-  onOpenEkispertLink: () => void;
+  onOpenJapanHint: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -277,12 +279,12 @@ function SortableItemCard({
           {isJapan && (
             <button
               type="button"
-              onClick={onOpenEkispertLink}
-              disabled={isLoadingEkispertLink}
+              onClick={onOpenJapanHint}
+              disabled={isLoadingJapanHint}
               className="ml-auto flex items-center gap-1 text-xs text-teal-600 hover:underline disabled:opacity-50"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              {isLoadingEkispertLink ? "查詢中…" : "查看日本轉乘建議"}
+              {isLoadingJapanHint ? "查詢中…" : "查看轉乘建議"}
             </button>
           )}
         </div>
@@ -310,9 +312,6 @@ export default function DayTimeline({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [ekispertLoadingKey, setEkispertLoadingKey] = useState<string | null>(
-    null
-  );
   const [viewingLeg, setViewingLeg] = useState<{
     from: TimelineItem;
     to: TimelineItem;
@@ -322,6 +321,12 @@ export default function DayTimeline({
   const [alternativesError, setAlternativesError] = useState<string | null>(
     null
   );
+  const [japanHintLeg, setJapanHintLeg] = useState<{
+    from: TimelineItem;
+    to: TimelineItem;
+  } | null>(null);
+  const [japanHint, setJapanHint] = useState<JapanTransitHint | null>(null);
+  const [isLoadingJapanHint, setIsLoadingJapanHint] = useState(false);
   // Legs we've already tried to auto-fill this session, so a leg Directions
   // can't find a route for isn't retried on every items/routes change.
   const attemptedAutoFillRef = useRef<Set<string>>(new Set());
@@ -509,32 +514,20 @@ export default function DayTimeline({
     });
   }
 
-  async function handleOpenEkispertLink(from: TimelineItem, to: TimelineItem) {
-    const key = `${from.id}->${to.id}`;
-    setEkispertLoadingKey(key);
-    setRouteError(null);
-    // Open the tab synchronously (still tied to the click's user gesture) and
-    // navigate it once the URL is ready — awaiting first would make browsers
-    // treat a later window.open() as an unrequested popup and block it. Can't
-    // pass "noopener" here or we'd lose the handle needed to redirect it.
-    const newTab = window.open("", "_blank");
-    try {
-      const result = await getEkispertTransitLink(
+  function openJapanHint(from: TimelineItem, to: TimelineItem) {
+    setJapanHintLeg({ from, to });
+    setJapanHint(null);
+    setIsLoadingJapanHint(true);
+    (async () => {
+      const result = await getJapanTransitHint(
         from.place!.lat,
         from.place!.lng,
         to.place!.lat,
         to.place!.lng
       );
-      if (result.ok) {
-        if (newTab) newTab.location.href = result.url;
-        else window.open(result.url, "_blank", "noopener,noreferrer");
-      } else {
-        newTab?.close();
-        setRouteError(result.error);
-      }
-    } finally {
-      setEkispertLoadingKey(null);
-    }
+      setJapanHint(result);
+      setIsLoadingJapanHint(false);
+    })();
   }
 
   function openAlternatives(from: TimelineItem, to: TimelineItem) {
@@ -735,8 +728,10 @@ export default function DayTimeline({
                   hasNextStop={nextId != null}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
-                  isLoadingEkispertLink={
-                    ekispertLoadingKey === `${item.id}->${nextId}`
+                  isLoadingJapanHint={
+                    isLoadingJapanHint &&
+                    japanHintLeg?.from.id === item.id &&
+                    japanHintLeg?.to.id === nextId
                   }
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
@@ -748,9 +743,9 @@ export default function DayTimeline({
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) openAlternatives(item, to);
                   }}
-                  onOpenEkispertLink={() => {
+                  onOpenJapanHint={() => {
                     const to = placeItems.find((i) => i.id === nextId);
-                    if (to) handleOpenEkispertLink(item, to);
+                    if (to) openJapanHint(item, to);
                   }}
                 />
               );
@@ -769,6 +764,20 @@ export default function DayTimeline({
           error={alternativesError}
           onChoose={handleChooseAlternative}
           onClose={() => setViewingLeg(null)}
+        />
+      )}
+
+      {japanHintLeg && (
+        <JapanTransitHintModal
+          fromPlaceName={japanHintLeg.from.place?.name ?? ""}
+          toPlaceName={japanHintLeg.to.place?.name ?? ""}
+          isLoading={isLoadingJapanHint}
+          error={japanHint && !japanHint.ok ? japanHint.error : null}
+          from={japanHint && japanHint.ok ? japanHint.from : null}
+          to={japanHint && japanHint.ok ? japanHint.to : null}
+          sameLine={japanHint && japanHint.ok ? japanHint.sameLine : false}
+          externalUrl={japanHint && japanHint.ok ? japanHint.externalUrl : null}
+          onClose={() => setJapanHintLeg(null)}
         />
       )}
     </div>

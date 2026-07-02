@@ -285,15 +285,18 @@ export async function createTrip(formData: FormData) {
   redirect(`/trips/${trip.id}`);
 }
 
-type EkispertPoint = {
-  Station?: { code?: string };
+type EkispertStationPoint = {
+  Station?: { code?: string; Name?: string };
+  Distance?: string;
 };
+
+type EkispertNearestStation = { code: string; name: string; walkMeters: number };
 
 async function findNearestEkispertStation(
   key: string,
   lat: number,
   lng: number
-): Promise<string | null> {
+): Promise<EkispertNearestStation | null> {
   const url = new URL("https://api.ekispert.jp/v1/json/geo/station");
   url.searchParams.set("key", key);
   url.searchParams.set("geoPoint", `${lat},${lng},wgs84,2000`);
@@ -301,27 +304,72 @@ async function findNearestEkispertStation(
 
   const res = await fetch(url.toString());
   if (!res.ok) return null;
-  const data: { ResultSet?: { Point?: EkispertPoint | EkispertPoint[] } } =
-    await res.json();
+  const data: {
+    ResultSet?: { Point?: EkispertStationPoint | EkispertStationPoint[] };
+  } = await res.json();
   const point = data.ResultSet?.Point;
   const first = Array.isArray(point) ? point[0] : point;
-  return first?.Station?.code ?? null;
+  const code = first?.Station?.code;
+  const name = first?.Station?.Name;
+  const walkMeters = first?.Distance != null ? Number(first.Distance) : NaN;
+  if (!code || !name || Number.isNaN(walkMeters)) return null;
+  return { code, name, walkMeters };
 }
 
-export type EkispertLinkResult =
-  | { ok: true; url: string }
+type EkispertLine = { Name?: string };
+
+// The line serving a station, e.g. "福岡市地下鉄空港線" — free plan can't
+// tell us which line a *route* takes, but it can tell us which line each
+// station itself sits on, which is enough to hint "same line, no transfer"
+// vs. "different lines, you'll need to change trains".
+async function findStationLine(
+  key: string,
+  stationCode: string
+): Promise<string | null> {
+  const url = new URL("https://api.ekispert.jp/v1/json/station/info");
+  url.searchParams.set("key", key);
+  url.searchParams.set("code", stationCode);
+  url.searchParams.set("type", "operationLine");
+
+  const res = await fetch(url.toString());
+  if (!res.ok) return null;
+  const data: {
+    ResultSet?: { Information?: { Line?: EkispertLine | EkispertLine[] } };
+  } = await res.json();
+  const line = data.ResultSet?.Information?.Line;
+  const first = Array.isArray(line) ? line[0] : line;
+  return first?.Name ?? null;
+}
+
+export type JapanTransitStationHint = {
+  name: string;
+  walkMeters: number;
+  lineName?: string;
+};
+
+export type JapanTransitHint =
+  | {
+      ok: true;
+      from: JapanTransitStationHint;
+      to: JapanTransitStationHint;
+      sameLine: boolean;
+      externalUrl: string;
+    }
   | { ok: false; error: string };
 
-// Ekispert's free plan doesn't expose structured route data (that needs a
-// paid plan) — /search/course/light only hands back a URL to Ekispert's own
-// results page. We still use it because it's the only source that actually
-// has Japanese train/subway routing (Google's transit data excludes Japan).
-export async function getEkispertTransitLink(
+// Ekispert's free plan doesn't expose structured route data (durations,
+// fares, transfer count — that's search/course/extreme, a paid-plan-only
+// endpoint that rejects free-plan keys outright). What it does give us for
+// free: the nearest station + walking distance on each end, and which line
+// that station sits on. That's enough to show something useful in-app
+// instead of a blind "open external site" link; the external Ekispert
+// results page is still offered for the full itinerary/fare.
+export async function getJapanTransitHint(
   originLat: number,
   originLng: number,
   destLat: number,
   destLng: number
-): Promise<EkispertLinkResult> {
+): Promise<JapanTransitHint> {
   const key = process.env.EKISPERT_ACCESS_KEY;
   if (!key) {
     return { ok: false, error: "尚未設定 EKISPERT_ACCESS_KEY" };
@@ -336,19 +384,36 @@ export async function getEkispertTransitLink(
       return { ok: false, error: "找不到附近的車站" };
     }
 
-    const url = new URL("https://api.ekispert.jp/v1/json/search/course/light");
-    url.searchParams.set("key", key);
-    url.searchParams.set("from", fromStation);
-    url.searchParams.set("to", toStation);
-    url.searchParams.set("searchType", "departure");
+    const [fromLine, toLine] = await Promise.all([
+      findStationLine(key, fromStation.code),
+      findStationLine(key, toStation.code),
+    ]);
 
-    const res = await fetch(url.toString());
-    if (!res.ok) return { ok: false, error: "查詢失敗，請稍後再試" };
-    const data: { ResultSet?: { ResourceURI?: string } } = await res.json();
-    const resourceUri = data.ResultSet?.ResourceURI;
-    if (!resourceUri) return { ok: false, error: "查詢失敗，請稍後再試" };
+    const linkUrl = new URL("https://api.ekispert.jp/v1/json/search/course/light");
+    linkUrl.searchParams.set("key", key);
+    linkUrl.searchParams.set("from", fromStation.code);
+    linkUrl.searchParams.set("to", toStation.code);
+    linkUrl.searchParams.set("searchType", "departure");
+    const linkRes = await fetch(linkUrl.toString());
+    const linkData: { ResultSet?: { ResourceURI?: string } } = linkRes.ok
+      ? await linkRes.json()
+      : {};
 
-    return { ok: true, url: resourceUri };
+    return {
+      ok: true,
+      from: {
+        name: fromStation.name,
+        walkMeters: fromStation.walkMeters,
+        lineName: fromLine ?? undefined,
+      },
+      to: {
+        name: toStation.name,
+        walkMeters: toStation.walkMeters,
+        lineName: toLine ?? undefined,
+      },
+      sameLine: !!fromLine && !!toLine && fromLine === toLine,
+      externalUrl: linkData.ResultSet?.ResourceURI ?? "",
+    };
   } catch {
     return { ok: false, error: "查詢失敗，請稍後再試" };
   }
