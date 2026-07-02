@@ -18,7 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MapPin, Navigation, Pencil, Plus, X } from "lucide-react";
+import { MapPin, Navigation, Pencil, Plus, Route as RouteIcon, X } from "lucide-react";
 import { TYPE_LABEL, formatTime } from "@/lib/labels";
 import {
   reorderItems,
@@ -29,10 +29,13 @@ import {
 import {
   GOOGLE_TRAVEL_MODE,
   computeBestLeg,
+  fetchTransitAlternatives,
   isGoogleTransitSupported,
+  type TransitAlternative,
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
+import TransitAlternativesModal from "./TransitAlternativesModal";
 
 export type TimelineItem = {
   id: string;
@@ -82,6 +85,7 @@ function SortableItemCard({
   onDelete,
   onEdit,
   onModeChange,
+  onViewAlternatives,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
@@ -91,6 +95,7 @@ function SortableItemCard({
   onDelete: () => void;
   onEdit: () => void;
   onModeChange: (mode: TravelModeValue) => void;
+  onViewAlternatives: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -243,6 +248,16 @@ function SortableItemCard({
               無法自動規劃，請手動選擇交通方式
             </span>
           )}
+          {transitSupported && (
+            <button
+              type="button"
+              onClick={onViewAlternatives}
+              className="ml-auto flex items-center gap-1 text-xs text-teal-600 hover:underline"
+            >
+              <RouteIcon className="h-3.5 w-3.5" />
+              路線選項
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -268,6 +283,15 @@ export default function DayTimeline({
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [viewingLeg, setViewingLeg] = useState<{
+    from: TimelineItem;
+    to: TimelineItem;
+  } | null>(null);
+  const [alternatives, setAlternatives] = useState<TransitAlternative[]>([]);
+  const [isLoadingAlternatives, setIsLoadingAlternatives] = useState(false);
+  const [alternativesError, setAlternativesError] = useState<string | null>(
+    null
+  );
   // Legs we've already tried to auto-fill this session, so a leg Directions
   // can't find a route for isn't retried on every items/routes change.
   const attemptedAutoFillRef = useRef<Set<string>>(new Set());
@@ -345,25 +369,7 @@ export default function DayTimeline({
       setIsAutoFilling(false);
       if (computed.length === 0) return;
 
-      const merged = [...routes, ...computed];
-      setRoutes(merged);
-      const country = placeItems[0]?.place?.country ?? "TW";
-      startTransition(() => {
-        saveRoutes(
-          tripId,
-          dayId,
-          country,
-          merged
-            .filter((r) => r.durationMin != null && r.distanceKm != null)
-            .map((r) => ({
-              fromItemId: r.fromItemId,
-              toItemId: r.toItemId,
-              mode: r.mode as TravelModeValue,
-              durationMin: r.durationMin!,
-              distanceKm: r.distanceKm!,
-            }))
-        );
-      });
+      persistRoutes([...routes, ...computed]);
     })();
 
     return () => {
@@ -371,6 +377,39 @@ export default function DayTimeline({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routesLibrary, items, routes]);
+
+  // Saves whatever the current in-memory route list is, replacing any
+  // legs that share the same from/to pair as an entry already in newRoutes.
+  function persistRoutes(newRoutes: TimelineRoute[]) {
+    setRoutes(newRoutes);
+    const country = placeItems[0]?.place?.country ?? "TW";
+    startTransition(() => {
+      saveRoutes(
+        tripId,
+        dayId,
+        country,
+        newRoutes
+          .filter((r) => r.durationMin != null && r.distanceKm != null)
+          .map((r) => ({
+            fromItemId: r.fromItemId,
+            toItemId: r.toItemId,
+            mode: r.mode as TravelModeValue,
+            durationMin: r.durationMin!,
+            distanceKm: r.distanceKm!,
+          }))
+      );
+    });
+  }
+
+  function upsertRoute(newRoute: TimelineRoute) {
+    persistRoutes([
+      ...routes.filter(
+        (r) =>
+          !(r.fromItemId === newRoute.fromItemId && r.toItemId === newRoute.toItemId)
+      ),
+      newRoute,
+    ]);
+  }
 
   async function handleLegModeChange(
     from: TimelineItem,
@@ -397,7 +436,7 @@ export default function DayTimeline({
           : {}),
       });
       const leg = result.routes[0]?.legs?.[0];
-      const newRoute: TimelineRoute = {
+      upsertRoute({
         fromItemId: from.id,
         toItemId: to.id,
         mode,
@@ -406,36 +445,48 @@ export default function DayTimeline({
           ? Math.round((leg.distance.value / 1000) * 10) / 10
           : null,
         provider: "google",
-      };
-      const merged = [
-        ...routes.filter(
-          (r) => !(r.fromItemId === from.id && r.toItemId === to.id)
-        ),
-        newRoute,
-      ];
-      setRoutes(merged);
-      const country = placeItems[0]?.place?.country ?? "TW";
-      startTransition(() => {
-        saveRoutes(
-          tripId,
-          dayId,
-          country,
-          merged
-            .filter((r) => r.durationMin != null && r.distanceKm != null)
-            .map((r) => ({
-              fromItemId: r.fromItemId,
-              toItemId: r.toItemId,
-              mode: r.mode as TravelModeValue,
-              durationMin: r.durationMin!,
-              distanceKm: r.distanceKm!,
-            }))
-        );
       });
     } catch {
       setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
     } finally {
       setRecomputingKey(null);
     }
+  }
+
+  function openAlternatives(from: TimelineItem, to: TimelineItem) {
+    if (!routesLibrary) return;
+    setViewingLeg({ from, to });
+    setAlternatives([]);
+    setAlternativesError(null);
+    setIsLoadingAlternatives(true);
+    (async () => {
+      const directionsService = new routesLibrary.DirectionsService();
+      const alts = await fetchTransitAlternatives(
+        directionsService,
+        { lat: from.place!.lat, lng: from.place!.lng },
+        { lat: to.place!.lat, lng: to.place!.lng },
+        from.place!.country.toLowerCase()
+      );
+      setAlternatives(alts);
+      if (alts.length === 0) {
+        setAlternativesError("找不到大眾運輸路線建議");
+      }
+      setIsLoadingAlternatives(false);
+    })();
+  }
+
+  function handleChooseAlternative(alt: TransitAlternative) {
+    if (!viewingLeg) return;
+    const { from, to } = viewingLeg;
+    upsertRoute({
+      fromItemId: from.id,
+      toItemId: to.id,
+      mode: "TRANSIT",
+      durationMin: alt.durationMin,
+      distanceKm: alt.distanceKm,
+      provider: "google",
+    });
+    setViewingLeg(null);
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -592,12 +643,28 @@ export default function DayTimeline({
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) handleLegModeChange(item, to, mode);
                   }}
+                  onViewAlternatives={() => {
+                    const to = placeItems.find((i) => i.id === nextId);
+                    if (to) openAlternatives(item, to);
+                  }}
                 />
               );
             })}
           </div>
         </SortableContext>
       </DndContext>
+      )}
+
+      {viewingLeg && (
+        <TransitAlternativesModal
+          fromName={viewingLeg.from.place?.name ?? ""}
+          toName={viewingLeg.to.place?.name ?? ""}
+          alternatives={alternatives}
+          isLoading={isLoadingAlternatives}
+          error={alternativesError}
+          onChoose={handleChooseAlternative}
+          onClose={() => setViewingLeg(null)}
+        />
       )}
     </div>
   );

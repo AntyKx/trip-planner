@@ -128,3 +128,73 @@ export async function computeBestLeg(
   }
   return walk ?? estimateWalk(straightLineKm);
 }
+
+export type TransitStepSummary = {
+  mode: "WALK" | "TRANSIT";
+  vehicleType?: string; // google.maps.VehicleType, e.g. "SUBWAY", "BUS", "TRAM"
+  lineName?: string;
+  stops?: number;
+  durationMin: number;
+};
+
+export type TransitAlternative = {
+  summary: string;
+  durationMin: number;
+  distanceKm: number;
+  fareText?: string;
+  steps: TransitStepSummary[];
+};
+
+function summarizeSteps(steps: google.maps.DirectionsStep[]): TransitStepSummary[] {
+  return steps.map((step) => {
+    const durationMin = step.duration ? Math.round(step.duration.value / 60) : 0;
+    const transit = step.transit_details ?? step.transit;
+    if (step.travel_mode === "TRANSIT" && transit) {
+      return {
+        mode: "TRANSIT" as const,
+        vehicleType: transit.line?.vehicle?.type,
+        lineName: transit.line?.short_name || transit.line?.name,
+        stops: transit.num_stops,
+        durationMin,
+      };
+    }
+    return { mode: "WALK" as const, durationMin };
+  });
+}
+
+// Fetches every transit itinerary Google offers for a leg (subway vs. bus
+// vs. mixed, etc.) so the UI can let the user pick one instead of silently
+// taking whichever Directions returns first.
+export async function fetchTransitAlternatives(
+  directionsService: google.maps.DirectionsService,
+  origin: google.maps.LatLngLiteral,
+  destination: google.maps.LatLngLiteral,
+  region?: string
+): Promise<TransitAlternative[]> {
+  if (!isGoogleTransitSupported(region)) return [];
+  try {
+    const result = await directionsService.route({
+      origin,
+      destination,
+      travelMode: GOOGLE_TRAVEL_MODE.TRANSIT,
+      region,
+      provideRouteAlternatives: true,
+      transitOptions: { departureTime: new Date() },
+    });
+    return result.routes
+      .map((route): TransitAlternative | null => {
+        const leg = route.legs[0];
+        if (!leg?.duration || !leg?.distance) return null;
+        return {
+          summary: route.summary || "",
+          durationMin: Math.round(leg.duration.value / 60),
+          distanceKm: Math.round((leg.distance.value / 1000) * 10) / 10,
+          fareText: route.fare?.text,
+          steps: summarizeSteps(leg.steps ?? []),
+        };
+      })
+      .filter((a): a is TransitAlternative => a != null);
+  } catch {
+    return [];
+  }
+}
