@@ -13,6 +13,17 @@ export type ComputedLeg = {
   distanceKm: number;
 };
 
+// Google's Directions/Routes API transit data explicitly excludes these
+// countries' transit partners (per Google's own Maps Platform FAQ), so a
+// TRANSIT query there always fails — no point calling it, and the manual
+// mode picker should say so instead of offering a mode that can't work.
+// https://developers.google.com/maps/faq
+const GOOGLE_TRANSIT_UNSUPPORTED_COUNTRIES = new Set(["JP", "IN"]);
+
+export function isGoogleTransitSupported(country: string | undefined): boolean {
+  return !GOOGLE_TRANSIT_UNSUPPORTED_COUNTRIES.has((country ?? "").toUpperCase());
+}
+
 // Below this walking time, walking beats waiting for + riding transit or
 // finding parking, so we don't bother comparing other modes.
 const WALK_GOOD_ENOUGH_MIN = 20;
@@ -99,8 +110,11 @@ export async function computeBestLeg(
   const walk = await fetchLeg(directionsService, origin, destination, "WALK", region);
   if (walk && walk.durationMin <= WALK_GOOD_ENOUGH_MIN) return walk;
 
+  const transitSupported = isGoogleTransitSupported(region);
   const [transit, drive] = await Promise.all([
-    fetchLeg(directionsService, origin, destination, "TRANSIT", region),
+    transitSupported
+      ? fetchLeg(directionsService, origin, destination, "TRANSIT", region)
+      : Promise.resolve(null),
     fetchLeg(directionsService, origin, destination, "DRIVE", region),
   ]);
 

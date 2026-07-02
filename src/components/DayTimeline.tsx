@@ -26,7 +26,11 @@ import {
   saveRoutes,
   type TravelModeValue,
 } from "@/app/trips/actions";
-import { GOOGLE_TRAVEL_MODE, computeBestLeg } from "@/lib/routeMode";
+import {
+  GOOGLE_TRAVEL_MODE,
+  computeBestLeg,
+  isGoogleTransitSupported,
+} from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 
@@ -90,6 +94,7 @@ function SortableItemCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
+  const transitSupported = isGoogleTransitSupported(item.place?.country);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -206,11 +211,25 @@ function SortableItemCard({
             disabled={isRecomputing}
             className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs disabled:opacity-50"
           >
-            {TRAVEL_MODE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
+            {TRAVEL_MODE_OPTIONS.map((opt) => {
+              const disabled =
+                opt.value === "TRANSIT" && !transitSupported;
+              return (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  disabled={disabled}
+                  title={
+                    disabled
+                      ? "Google 目前沒有這個國家的大眾運輸資料"
+                      : undefined
+                  }
+                >
+                  {opt.label}
+                  {disabled ? "（Google 無資料）" : ""}
+                </option>
+              );
+            })}
           </select>
           {isRecomputing || (isAutoFilling && !route) ? (
             <span className="text-xs text-slate-400">計算中…</span>
@@ -359,6 +378,10 @@ export default function DayTimeline({
     mode: TravelModeValue
   ) {
     if (!routesLibrary) return;
+    if (mode === "TRANSIT" && !isGoogleTransitSupported(from.place?.country)) {
+      setRouteError("Google 目前沒有這個國家的大眾運輸資料，請選開車或步行");
+      return;
+    }
     const key = `${from.id}->${to.id}`;
     setRecomputingKey(key);
     setRouteError(null);
