@@ -100,6 +100,65 @@ export async function deleteItem(tripId: string, itemId: string) {
   revalidatePath(`/trips/${tripId}`);
 }
 
+export type ItemTypeValue =
+  | "PLACE"
+  | "RESTAURANT"
+  | "HOTEL"
+  | "TRANSPORT"
+  | "CUSTOM";
+
+export async function updateItem(
+  tripId: string,
+  itemId: string,
+  data: {
+    type: ItemTypeValue;
+    startTime: string | null;
+    endTime: string | null;
+    note: string | null;
+  }
+) {
+  await prisma.item.update({
+    where: { id: itemId },
+    data: {
+      type: data.type,
+      startTime: data.startTime ? new Date(data.startTime) : null,
+      endTime: data.endTime ? new Date(data.endTime) : null,
+      note: data.note?.trim() || null,
+    },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export async function addCustomItem(
+  tripId: string,
+  dayId: string,
+  data: {
+    type: ItemTypeValue;
+    note: string;
+    startTime: string | null;
+    endTime: string | null;
+  }
+) {
+  const lastItem = await prisma.item.findFirst({
+    where: { dayId },
+    orderBy: { sortOrder: "desc" },
+  });
+
+  const item = await prisma.item.create({
+    data: {
+      dayId,
+      type: data.type,
+      note: data.note.trim() || null,
+      startTime: data.startTime ? new Date(data.startTime) : null,
+      endTime: data.endTime ? new Date(data.endTime) : null,
+      sortOrder: (lastItem?.sortOrder ?? 0) + 1,
+    },
+  });
+
+  revalidatePath(`/trips/${tripId}`);
+  return { id: item.id };
+}
+
 export async function updateTripCoverImage(
   tripId: string,
   coverImage: string | null

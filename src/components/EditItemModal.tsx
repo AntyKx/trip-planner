@@ -1,0 +1,222 @@
+"use client";
+
+import { useEffect, useState, type FormEvent } from "react";
+import { X } from "lucide-react";
+import {
+  updateItem,
+  addCustomItem,
+  type ItemTypeValue,
+} from "@/app/trips/actions";
+
+const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
+  { value: "PLACE", label: "景點" },
+  { value: "RESTAURANT", label: "餐廳" },
+  { value: "HOTEL", label: "住宿" },
+  { value: "TRANSPORT", label: "交通" },
+  { value: "CUSTOM", label: "自訂" },
+];
+
+export type EditableItem = {
+  id: string;
+  type: string;
+  startTime: string | Date | null;
+  endTime: string | Date | null;
+  note: string | null;
+  placeName: string | null;
+};
+
+export type SavedItemResult = {
+  id: string;
+  type: ItemTypeValue;
+  startTime: string | null;
+  endTime: string | null;
+  note: string | null;
+};
+
+function toHHMM(value: string | Date | null): string {
+  if (!value) return "";
+  const d = typeof value === "string" ? new Date(value) : value;
+  return d.toISOString().slice(11, 16);
+}
+
+export default function EditItemModal({
+  tripId,
+  dayId,
+  dayDate,
+  item,
+  onClose,
+  onSaved,
+}: {
+  tripId: string;
+  dayId: string;
+  dayDate: string;
+  item: EditableItem | null;
+  onClose: () => void;
+  onSaved: (result: SavedItemResult) => void;
+}) {
+  const [type, setType] = useState<ItemTypeValue>(
+    (item?.type as ItemTypeValue) ?? "CUSTOM"
+  );
+  const [startTime, setStartTime] = useState(toHHMM(item?.startTime ?? null));
+  const [endTime, setEndTime] = useState(toHHMM(item?.endTime ?? null));
+  const [note, setNote] = useState(item?.note ?? "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  function toIso(hhmm: string): string | null {
+    if (!hhmm) return null;
+    return `${dayDate}T${hhmm}:00`;
+  }
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!item && !note.trim()) {
+      setError("請填寫項目說明");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const startIso = toIso(startTime);
+      const endIso = toIso(endTime);
+
+      if (item) {
+        await updateItem(tripId, item.id, {
+          type,
+          startTime: startIso,
+          endTime: endIso,
+          note,
+        });
+        onSaved({
+          id: item.id,
+          type,
+          startTime: startIso,
+          endTime: endIso,
+          note: note.trim() || null,
+        });
+      } else {
+        const created = await addCustomItem(tripId, dayId, {
+          type,
+          note,
+          startTime: startIso,
+          endTime: endIso,
+        });
+        onSaved({
+          id: created.id,
+          type,
+          startTime: startIso,
+          endTime: endIso,
+          note: note.trim() || null,
+        });
+      }
+      onClose();
+    } catch {
+      setError("儲存失敗，請再試一次");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-2xl bg-white p-5 sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold text-slate-900">
+            {item ? (item.placeName ?? "編輯項目") : "新增自訂項目"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="關閉"
+            className="p-1 text-slate-400 hover:text-slate-700"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-slate-600">
+              類型
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as ItemTypeValue)}
+              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            >
+              {TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600">
+                開始時間
+              </label>
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-600">
+                結束時間
+              </label>
+              <input
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600">
+              備註{!item && "（例如：買票、集合、Check-in）"}
+            </label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              placeholder={item ? "" : "買票 / 集合 / Check-in ..."}
+              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            />
+          </div>
+
+          {error && <p className="text-xs text-red-500">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+          >
+            {isSaving ? "儲存中…" : "儲存"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

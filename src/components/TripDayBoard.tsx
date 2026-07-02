@@ -79,6 +79,7 @@ export default function TripDayBoard({
                 key={selectedDay.id}
                 tripId={tripId}
                 dayId={selectedDay.id}
+                dayDate={selectedDay.date}
                 items={selectedDay.timelineItems}
                 routes={selectedDay.timelineRoutes}
               />

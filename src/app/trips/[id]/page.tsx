@@ -115,6 +115,7 @@ export default async function TripDetailPage({
                 id: item.id,
                 type: item.type,
                 startTime: item.startTime,
+                endTime: item.endTime,
                 note: item.note,
                 place: item.place
                   ? {

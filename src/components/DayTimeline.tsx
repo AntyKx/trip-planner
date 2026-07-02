@@ -18,15 +18,17 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MapPin, Navigation, X, RefreshCw } from "lucide-react";
+import { MapPin, Navigation, Pencil, Plus, X, RefreshCw } from "lucide-react";
 import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
 import { reorderItems, deleteItem } from "@/app/trips/actions";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
+import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 
 export type TimelineItem = {
   id: string;
   type: string;
   startTime: string | Date | null;
+  endTime: string | Date | null;
   note: string | null;
   place: {
     name: string;
@@ -54,10 +56,12 @@ function SortableItemCard({
   item,
   route,
   onDelete,
+  onEdit,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -101,6 +105,14 @@ function SortableItemCard({
               </span>
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="編輯項目"
+                className="p-1 text-slate-400 hover:text-teal-600"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
               {item.place && (
                 <a
                   href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
@@ -167,11 +179,13 @@ function SortableItemCard({
 export default function DayTimeline({
   tripId,
   dayId,
+  dayDate,
   items: initialItems,
   routes,
 }: {
   tripId: string;
   dayId: string;
+  dayDate: string;
   items: TimelineItem[];
   routes: TimelineRoute[];
 }) {
@@ -179,6 +193,9 @@ export default function DayTimeline({
   const [isPending, startTransition] = useTransition();
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<TimelineItem | "new" | null>(
+    null
+  );
   const sensors = useSensors(
     // Mouse: quick distance-based activation (no scroll to conflict with).
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -272,13 +289,51 @@ export default function DayTimeline({
     });
   }
 
-  if (items.length === 0) {
-    return <p className="text-sm text-slate-600">這天還沒有安排項目。</p>;
+  function handleItemSaved(result: SavedItemResult) {
+    setItems((prev) => {
+      const exists = prev.some((i) => i.id === result.id);
+      if (exists) {
+        return prev.map((i) =>
+          i.id === result.id
+            ? {
+                ...i,
+                type: result.type,
+                startTime: result.startTime,
+                endTime: result.endTime,
+                note: result.note,
+              }
+            : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: result.id,
+          type: result.type,
+          startTime: result.startTime,
+          endTime: result.endTime,
+          note: result.note,
+          place: null,
+        },
+      ];
+    });
   }
+
+  const editingAsEditable: EditableItem | null =
+    editingItem && editingItem !== "new"
+      ? {
+          id: editingItem.id,
+          type: editingItem.type,
+          startTime: editingItem.startTime,
+          endTime: editingItem.endTime,
+          note: editingItem.note,
+          placeName: editingItem.place?.name ?? null,
+        }
+      : null;
 
   return (
     <div>
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={handleOptimize}
@@ -287,6 +342,14 @@ export default function DayTimeline({
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
           {isOptimizing ? "優化中…" : "自動優化路線"}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEditingItem("new")}
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新增自訂項目
         </button>
         {!canOptimize && items.length >= 2 && (
           <span className="text-xs text-slate-600">
@@ -301,6 +364,20 @@ export default function DayTimeline({
         </p>
       )}
 
+      {(editingItem === "new" || editingAsEditable) && (
+        <EditItemModal
+          tripId={tripId}
+          dayId={dayId}
+          dayDate={dayDate}
+          item={editingAsEditable}
+          onClose={() => setEditingItem(null)}
+          onSaved={handleItemSaved}
+        />
+      )}
+
+      {items.length === 0 ? (
+        <p className="text-sm text-slate-600">這天還沒有安排項目。</p>
+      ) : (
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -319,12 +396,14 @@ export default function DayTimeline({
                   item={item}
                   route={route}
                   onDelete={() => handleDeleteItem(item.id)}
+                  onEdit={() => setEditingItem(item)}
                 />
               );
             })}
           </div>
         </SortableContext>
       </DndContext>
+      )}
     </div>
   );
 }
