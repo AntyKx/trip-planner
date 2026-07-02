@@ -132,12 +132,11 @@ function SortableItemCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-3 flex gap-2">
-      {/* Time rail */}
-      <div className="flex w-11 shrink-0 flex-col items-center pt-2">
-        <span className="text-xs font-medium text-ink-500">
-          {formatTime(item.startTime)}
-        </span>
+    <div ref={setNodeRef} style={style} className="mb-3 flex gap-1.5">
+      {/* Timeline rail: just a dot + connecting line, no reserved text width
+          so the card stays flush left even when items have no start time. */}
+      <div className="flex w-3 shrink-0 flex-col items-center pt-4">
+        <div className={`h-2 w-2 shrink-0 rounded-full ${typeColor.text.replace("text-", "bg-")}`} />
         {hasNextStop && <div className="mt-1 w-px flex-1 bg-slate-200" />}
       </div>
 
@@ -145,19 +144,19 @@ function SortableItemCard({
         <div
           {...attributes}
           {...listeners}
-          className="flex touch-manipulation items-stretch overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
+          className="flex touch-manipulation items-stretch rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
         >
           {item.place?.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.place.photoUrl}
               alt={item.place.name}
-              className="w-20 shrink-0 object-cover sm:w-28"
+              className="w-20 shrink-0 rounded-l-xl object-cover sm:w-28"
             />
           ) : (
             item.place && (
               <div
-                className={`flex w-20 shrink-0 items-center justify-center sm:w-28 ${typeColor.bg}`}
+                className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
               >
                 <TypeIcon className={`h-6 w-6 ${typeColor.text}`} />
               </div>
@@ -167,6 +166,11 @@ function SortableItemCard({
           <div className="min-w-0 flex-1 p-3">
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 flex-wrap items-center gap-2">
+                {formatTime(item.startTime) && (
+                  <span className="shrink-0 text-xs font-medium text-ink-500">
+                    {formatTime(item.startTime)}
+                  </span>
+                )}
                 <span
                   className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
                 >
@@ -197,7 +201,7 @@ function SortableItemCard({
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
                 {showMenu && (
-                  <div className="absolute right-0 top-full z-10 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+                  <div className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
                     {item.place && (
                       <a
                         href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
