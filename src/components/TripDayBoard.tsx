@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Map as MapIcon, MapPin } from "lucide-react";
+import { Map as MapIcon, MapPin, Luggage, ListChecks } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
+import TravelModeView from "./TravelModeView";
 import {
   weatherLabel,
   getWeatherReminders,
@@ -35,10 +36,53 @@ export default function TripDayBoard({
   collaborators: Collaborator[];
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
+  const [mode, setMode] = useState<"edit" | "travel">("edit");
   const selectedDay = days.find((d) => d.id === selectedDayId) ?? days[0];
 
+  function switchToTravelMode() {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const today = days.find((d) => d.date === todayStr);
+    if (today) setSelectedDayId(today.id);
+    setMode("travel");
+  }
+
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+    <div>
+      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
+        <button
+          type="button"
+          onClick={() => setMode("edit")}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+            mode === "edit"
+              ? "bg-teal-600 text-white"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <ListChecks className="h-4 w-4" />
+          編輯模式
+        </button>
+        <button
+          type="button"
+          onClick={switchToTravelMode}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+            mode === "travel"
+              ? "bg-teal-600 text-white"
+              : "text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <Luggage className="h-4 w-4" />
+          旅行模式
+        </button>
+      </div>
+
+      {mode === "travel" ? (
+        selectedDay ? (
+          <TravelModeView day={selectedDay} />
+        ) : (
+          <p className="text-sm text-slate-600">這個行程還沒有天數。</p>
+        )
+      ) : (
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       {/* Day timeline */}
       <div>
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -155,6 +199,8 @@ export default function TripDayBoard({
 
         <CollaboratorsPanel tripId={tripId} collaborators={collaborators} />
       </aside>
+      </div>
+      )}
     </div>
   );
 }
