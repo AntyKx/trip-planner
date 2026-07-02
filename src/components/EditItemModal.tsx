@@ -22,6 +22,7 @@ export type EditableItem = {
   startTime: string | Date | null;
   endTime: string | Date | null;
   note: string | null;
+  confirmationNumber: string | null;
   placeName: string | null;
 };
 
@@ -31,6 +32,15 @@ export type SavedItemResult = {
   startTime: string | null;
   endTime: string | null;
   note: string | null;
+  confirmationNumber: string | null;
+};
+
+const CONFIRMATION_LABEL: Record<ItemTypeValue, string> = {
+  HOTEL: "訂房編號",
+  TRANSPORT: "航班/車票編號",
+  PLACE: "票券編號",
+  RESTAURANT: "訂位編號",
+  CUSTOM: "確認碼/編號",
 };
 
 function toHHMM(value: string | Date | null): string {
@@ -60,6 +70,9 @@ export default function EditItemModal({
   const [startTime, setStartTime] = useState(toHHMM(item?.startTime ?? null));
   const [endTime, setEndTime] = useState(toHHMM(item?.endTime ?? null));
   const [note, setNote] = useState(item?.note ?? "");
+  const [confirmationNumber, setConfirmationNumber] = useState(
+    item?.confirmationNumber ?? ""
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,6 +109,7 @@ export default function EditItemModal({
           startTime: startIso,
           endTime: endIso,
           note,
+          confirmationNumber,
         });
         onSaved({
           id: item.id,
@@ -103,6 +117,7 @@ export default function EditItemModal({
           startTime: startIso,
           endTime: endIso,
           note: note.trim() || null,
+          confirmationNumber: confirmationNumber.trim() || null,
         });
       } else {
         const created = await addCustomItem(tripId, dayId, {
@@ -110,6 +125,7 @@ export default function EditItemModal({
           note,
           startTime: startIso,
           endTime: endIso,
+          confirmationNumber,
         });
         onSaved({
           id: created.id,
@@ -117,6 +133,7 @@ export default function EditItemModal({
           startTime: startIso,
           endTime: endIso,
           note: note.trim() || null,
+          confirmationNumber: confirmationNumber.trim() || null,
         });
       }
       onClose();
@@ -191,6 +208,19 @@ export default function EditItemModal({
                 className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-600">
+              {CONFIRMATION_LABEL[type]}
+            </label>
+            <input
+              type="text"
+              value={confirmationNumber}
+              onChange={(e) => setConfirmationNumber(e.target.value)}
+              placeholder="選填"
+              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            />
           </div>
 
           <div>

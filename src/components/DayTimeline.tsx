@@ -35,6 +35,7 @@ export type TimelineItem = {
   startTime: string | Date | null;
   endTime: string | Date | null;
   note: string | null;
+  confirmationNumber: string | null;
   place: {
     name: string;
     address: string | null;
@@ -178,6 +179,11 @@ function SortableItemCard({
             <h3 className="mt-1 truncate font-semibold text-slate-900">
               {item.note ?? "未命名項目"}
             </h3>
+          )}
+          {item.confirmationNumber && (
+            <p className="mt-0.5 truncate text-xs text-slate-500">
+              🔖 {item.confirmationNumber}
+            </p>
           )}
         </div>
       </div>
@@ -393,6 +399,7 @@ export default function DayTimeline({
                 startTime: result.startTime,
                 endTime: result.endTime,
                 note: result.note,
+                confirmationNumber: result.confirmationNumber,
               }
             : i
         );
@@ -405,6 +412,7 @@ export default function DayTimeline({
           startTime: result.startTime,
           endTime: result.endTime,
           note: result.note,
+          confirmationNumber: result.confirmationNumber,
           place: null,
         },
       ];
@@ -419,6 +427,7 @@ export default function DayTimeline({
           startTime: editingItem.startTime,
           endTime: editingItem.endTime,
           note: editingItem.note,
+          confirmationNumber: editingItem.confirmationNumber,
           placeName: editingItem.place?.name ?? null,
         }
       : null;

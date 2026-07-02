@@ -69,6 +69,11 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
           {nextStop.place?.address && (
             <p className="mt-1 text-sm text-teal-100">{nextStop.place.address}</p>
           )}
+          {nextStop.confirmationNumber && (
+            <p className="mt-1 text-sm text-teal-100">
+              🔖 {nextStop.confirmationNumber}
+            </p>
+          )}
           {nextStop.place && (
             <a
               href={navUrl(nextStop.place.lat, nextStop.place.lng)}

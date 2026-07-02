@@ -5,6 +5,7 @@ import { Map as MapIcon, MapPin, Luggage, ListChecks } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
+import EmergencyInfoCard from "./EmergencyInfoCard";
 import TravelModeView from "./TravelModeView";
 import {
   weatherLabel,
@@ -29,11 +30,13 @@ export default function TripDayBoard({
   apiKey,
   days,
   collaborators,
+  emergencyInfo,
 }: {
   tripId: string;
   apiKey?: string;
   days: BoardDay[];
   collaborators: Collaborator[];
+  emergencyInfo: string | null;
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel">("edit");
@@ -196,6 +199,8 @@ export default function TripDayBoard({
             )}
           </ul>
         </div>
+
+        <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} />
 
         <CollaboratorsPanel tripId={tripId} collaborators={collaborators} />
       </aside>

@@ -51,6 +51,7 @@ model Trip {
   endDate       DateTime
   coverImage    String?
   status        String         @default("planning") // planning | confirmed | archived
+  emergencyInfo String? // passport copy location, insurance policy #, emergency contacts, ...
   days          TripDay[]
   collaborators Collaborator[]
   createdAt     DateTime       @default(now())
@@ -79,16 +80,17 @@ model TripDay {
 }
 
 model Item {
-  id        String    @id @default(cuid())
-  day       TripDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  dayId     String
-  type      ItemType
-  place     Place?    @relation(fields: [placeId], references: [id])
-  placeId   String?
-  startTime DateTime?
-  endTime   DateTime?
-  sortOrder Int
-  note      String?
+  id                 String    @id @default(cuid())
+  day                TripDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  dayId              String
+  type               ItemType
+  place              Place?    @relation(fields: [placeId], references: [id])
+  placeId            String?
+  startTime          DateTime?
+  endTime            DateTime?
+  sortOrder          Int
+  note               String?
+  confirmationNumber String? // hotel booking ref, flight PNR, ticket number, ...
 
   routesFrom Route[] @relation("RouteFrom")
   routesTo   Route[] @relation("RouteTo")

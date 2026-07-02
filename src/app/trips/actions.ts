@@ -154,6 +154,7 @@ export async function updateItem(
     startTime: string | null;
     endTime: string | null;
     note: string | null;
+    confirmationNumber: string | null;
   }
 ) {
   await prisma.item.update({
@@ -163,6 +164,7 @@ export async function updateItem(
       startTime: data.startTime ? new Date(data.startTime) : null,
       endTime: data.endTime ? new Date(data.endTime) : null,
       note: data.note?.trim() || null,
+      confirmationNumber: data.confirmationNumber?.trim() || null,
     },
   });
   revalidatePath(`/trips/${tripId}`);
@@ -176,6 +178,7 @@ export async function addCustomItem(
     note: string;
     startTime: string | null;
     endTime: string | null;
+    confirmationNumber: string | null;
   }
 ) {
   const lastItem = await prisma.item.findFirst({
@@ -190,12 +193,21 @@ export async function addCustomItem(
       note: data.note.trim() || null,
       startTime: data.startTime ? new Date(data.startTime) : null,
       endTime: data.endTime ? new Date(data.endTime) : null,
+      confirmationNumber: data.confirmationNumber?.trim() || null,
       sortOrder: (lastItem?.sortOrder ?? 0) + 1,
     },
   });
 
   revalidatePath(`/trips/${tripId}`);
   return { id: item.id };
+}
+
+export async function updateEmergencyInfo(tripId: string, text: string) {
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { emergencyInfo: text.trim() || null },
+  });
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function updateTripCoverImage(

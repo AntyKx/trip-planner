@@ -106,6 +106,7 @@ export default async function TripDetailPage({
             tripId={trip.id}
             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
             collaborators={collaborators}
+            emergencyInfo={trip.emergencyInfo}
             days={trip.days.map((day, dayIdx) => ({
               id: day.id,
               dayIndex: day.dayIndex,
@@ -117,6 +118,7 @@ export default async function TripDetailPage({
                 startTime: item.startTime,
                 endTime: item.endTime,
                 note: item.note,
+                confirmationNumber: item.confirmationNumber,
                 place: item.place
                   ? {
                       name: item.place.name,
