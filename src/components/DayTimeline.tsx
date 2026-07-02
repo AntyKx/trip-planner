@@ -282,6 +282,52 @@ export default function DayTimeline({
     }));
   }
 
+  // Google's Directions API rejects waypoints[] entirely for TRANSIT mode
+  // (unlike WALK/DRIVE/BIKE, which just can't optimize them). So for
+  // transit we fetch each consecutive leg as its own request instead of
+  // one batched multi-waypoint request.
+  async function fetchLegsForMode(
+    orderedPlaceItems: TimelineItem[],
+    mode: TravelModeValue
+  ): Promise<google.maps.DirectionsLeg[]> {
+    if (!routesLibrary) return [];
+    const directionsService = new routesLibrary.DirectionsService();
+
+    if (mode === "TRANSIT") {
+      const legs: google.maps.DirectionsLeg[] = [];
+      for (let i = 0; i < orderedPlaceItems.length - 1; i++) {
+        const result = await directionsService.route({
+          origin: {
+            lat: orderedPlaceItems[i].place!.lat,
+            lng: orderedPlaceItems[i].place!.lng,
+          },
+          destination: {
+            lat: orderedPlaceItems[i + 1].place!.lat,
+            lng: orderedPlaceItems[i + 1].place!.lng,
+          },
+          travelMode: GOOGLE_TRAVEL_MODE[mode],
+        });
+        const leg = result.routes[0]?.legs?.[0];
+        if (leg) legs.push(leg);
+      }
+      return legs;
+    }
+
+    const origin = orderedPlaceItems[0];
+    const destination = orderedPlaceItems[orderedPlaceItems.length - 1];
+    const waypoints = orderedPlaceItems.slice(1, -1).map((item) => ({
+      location: { lat: item.place!.lat, lng: item.place!.lng },
+      stopover: true,
+    }));
+    const result = await directionsService.route({
+      origin: { lat: origin.place!.lat, lng: origin.place!.lng },
+      destination: { lat: destination.place!.lat, lng: destination.place!.lng },
+      waypoints,
+      travelMode: GOOGLE_TRAVEL_MODE[mode],
+    });
+    return result.routes[0]?.legs ?? [];
+  }
+
   function saveComputedRoutes(newRoutes: TimelineRoute[]) {
     setRoutes(newRoutes);
     const country = placeItems[0]?.place?.country ?? "TW";
@@ -353,22 +399,7 @@ export default function DayTimeline({
     setIsComputingRoutes(true);
 
     try {
-      const origin = placeItems[0];
-      const destination = placeItems[placeItems.length - 1];
-      const waypoints = placeItems.slice(1, -1).map((item) => ({
-        location: { lat: item.place!.lat, lng: item.place!.lng },
-        stopover: true,
-      }));
-
-      const directionsService = new routesLibrary.DirectionsService();
-      const result = await directionsService.route({
-        origin: { lat: origin.place!.lat, lng: origin.place!.lng },
-        destination: { lat: destination.place!.lat, lng: destination.place!.lng },
-        waypoints,
-        travelMode: GOOGLE_TRAVEL_MODE[travelMode],
-      });
-
-      const legs = result.routes[0]?.legs ?? [];
+      const legs = await fetchLegsForMode(placeItems, travelMode);
       saveComputedRoutes(legsToRoutes(placeItems, legs));
     } catch {
       setOptimizeError("計算交通路線失敗，可能是地點距離太遠或無法規劃路線");
@@ -466,7 +497,12 @@ export default function DayTimeline({
         <button
           type="button"
           onClick={handleOptimize}
-          disabled={!canOptimize || !routesLibrary || isOptimizing}
+          disabled={!canOptimize || !routesLibrary || isOptimizing || travelMode === "TRANSIT"}
+          title={
+            travelMode === "TRANSIT"
+              ? "Google 大眾運輸路線不支援自動排序，請改用「計算交通路線」"
+              : undefined
+          }
           className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
@@ -492,6 +528,11 @@ export default function DayTimeline({
         {!canOptimize && items.length >= 2 && (
           <span className="text-xs text-slate-600">
             需要至少 3 個都有地點資料的項目才能優化
+          </span>
+        )}
+        {canOptimize && travelMode === "TRANSIT" && (
+          <span className="text-xs text-slate-600">
+            大眾運輸不支援自動排序，請用「計算交通路線」依目前順序計算
           </span>
         )}
       </div>
