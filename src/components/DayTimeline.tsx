@@ -18,7 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MapPin, Navigation, Pencil, Plus, X, RefreshCw } from "lucide-react";
+import { MapPin, Navigation, Pencil, Plus, X } from "lucide-react";
 import { TYPE_LABEL, formatTime } from "@/lib/labels";
 import {
   reorderItems,
@@ -246,10 +246,7 @@ export default function DayTimeline({
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
   const [isPending, startTransition] = useTransition();
-  const [isOptimizing, setIsOptimizing] = useState(false);
-  const [isComputingRoutes, setIsComputingRoutes] = useState(false);
-  const [optimizeError, setOptimizeError] = useState<string | null>(null);
-  const [travelMode, setTravelMode] = useState<TravelModeValue>("WALK");
+  const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   // Legs we've already tried to auto-fill this session, so a leg Directions
@@ -272,7 +269,6 @@ export default function DayTimeline({
   const routesLibrary = useMapsLibrary("routes");
 
   const placeItems = items.filter((i) => i.place);
-  const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
 
   // Maps an item to the id of the next place-item after it, so the route
   // badge under a card always reflects the *current* adjacency instead of a
@@ -312,7 +308,8 @@ export default function DayTimeline({
         const leg = await computeBestLeg(
           directionsService,
           { lat: from.place!.lat, lng: from.place!.lng },
-          { lat: to.place!.lat, lng: to.place!.lng }
+          { lat: to.place!.lat, lng: to.place!.lng },
+          from.place!.country.toLowerCase()
         );
         if (leg) {
           computed.push({
@@ -364,13 +361,17 @@ export default function DayTimeline({
     if (!routesLibrary) return;
     const key = `${from.id}->${to.id}`;
     setRecomputingKey(key);
-    setOptimizeError(null);
+    setRouteError(null);
     try {
       const directionsService = new routesLibrary.DirectionsService();
       const result = await directionsService.route({
         origin: { lat: from.place!.lat, lng: from.place!.lng },
         destination: { lat: to.place!.lat, lng: to.place!.lng },
         travelMode: GOOGLE_TRAVEL_MODE[mode],
+        region: from.place!.country.toLowerCase(),
+        ...(mode === "TRANSIT"
+          ? { transitOptions: { departureTime: new Date() } }
+          : {}),
       });
       const leg = result.routes[0]?.legs?.[0];
       const newRoute: TimelineRoute = {
@@ -408,7 +409,7 @@ export default function DayTimeline({
         );
       });
     } catch {
-      setOptimizeError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
+      setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
     } finally {
       setRecomputingKey(null);
     }
@@ -430,148 +431,6 @@ export default function DayTimeline({
         newItems.map((i) => i.id)
       );
     });
-  }
-
-  function legsToRoutes(
-    orderedPlaceItems: TimelineItem[],
-    legs: google.maps.DirectionsLeg[]
-  ): TimelineRoute[] {
-    return legs.map((leg, i) => ({
-      fromItemId: orderedPlaceItems[i].id,
-      toItemId: orderedPlaceItems[i + 1].id,
-      mode: travelMode,
-      durationMin: leg.duration ? Math.round(leg.duration.value / 60) : null,
-      distanceKm: leg.distance
-        ? Math.round((leg.distance.value / 1000) * 10) / 10
-        : null,
-      provider: "google",
-    }));
-  }
-
-  // Google's Directions API rejects waypoints[] entirely for TRANSIT mode
-  // (unlike WALK/DRIVE/BIKE, which just can't optimize them). So for
-  // transit we fetch each consecutive leg as its own request instead of
-  // one batched multi-waypoint request.
-  async function fetchLegsForMode(
-    orderedPlaceItems: TimelineItem[],
-    mode: TravelModeValue
-  ): Promise<google.maps.DirectionsLeg[]> {
-    if (!routesLibrary) return [];
-    const directionsService = new routesLibrary.DirectionsService();
-
-    if (mode === "TRANSIT") {
-      const legs: google.maps.DirectionsLeg[] = [];
-      for (let i = 0; i < orderedPlaceItems.length - 1; i++) {
-        const result = await directionsService.route({
-          origin: {
-            lat: orderedPlaceItems[i].place!.lat,
-            lng: orderedPlaceItems[i].place!.lng,
-          },
-          destination: {
-            lat: orderedPlaceItems[i + 1].place!.lat,
-            lng: orderedPlaceItems[i + 1].place!.lng,
-          },
-          travelMode: GOOGLE_TRAVEL_MODE[mode],
-        });
-        const leg = result.routes[0]?.legs?.[0];
-        if (leg) legs.push(leg);
-      }
-      return legs;
-    }
-
-    const origin = orderedPlaceItems[0];
-    const destination = orderedPlaceItems[orderedPlaceItems.length - 1];
-    const waypoints = orderedPlaceItems.slice(1, -1).map((item) => ({
-      location: { lat: item.place!.lat, lng: item.place!.lng },
-      stopover: true,
-    }));
-    const result = await directionsService.route({
-      origin: { lat: origin.place!.lat, lng: origin.place!.lng },
-      destination: { lat: destination.place!.lat, lng: destination.place!.lng },
-      waypoints,
-      travelMode: GOOGLE_TRAVEL_MODE[mode],
-    });
-    return result.routes[0]?.legs ?? [];
-  }
-
-  function saveComputedRoutes(newRoutes: TimelineRoute[]) {
-    setRoutes(newRoutes);
-    const country = placeItems[0]?.place?.country ?? "TW";
-    startTransition(() => {
-      saveRoutes(
-        tripId,
-        dayId,
-        country,
-        newRoutes
-          .filter((r) => r.durationMin != null && r.distanceKm != null)
-          .map((r) => ({
-            fromItemId: r.fromItemId,
-            toItemId: r.toItemId,
-            mode: r.mode as TravelModeValue,
-            durationMin: r.durationMin!,
-            distanceKm: r.distanceKm!,
-          }))
-      );
-    });
-  }
-
-  async function handleOptimize() {
-    if (!routesLibrary || !canOptimize) return;
-    setOptimizeError(null);
-    setIsOptimizing(true);
-
-    try {
-      const origin = placeItems[0];
-      const destination = placeItems[placeItems.length - 1];
-      const waypoints = placeItems.slice(1, -1).map((item) => ({
-        location: { lat: item.place!.lat, lng: item.place!.lng },
-        stopover: true,
-      }));
-
-      const directionsService = new routesLibrary.DirectionsService();
-      const result = await directionsService.route({
-        origin: { lat: origin.place!.lat, lng: origin.place!.lng },
-        destination: { lat: destination.place!.lat, lng: destination.place!.lng },
-        waypoints,
-        optimizeWaypoints: true,
-        travelMode: GOOGLE_TRAVEL_MODE[travelMode],
-      });
-
-      const order = result.routes[0]?.waypoint_order ?? [];
-      const optimizedMiddle = order.map((i: number) => placeItems[1 + i]);
-      const newItems = [origin, ...optimizedMiddle, destination];
-
-      setItems(newItems);
-      startTransition(() => {
-        reorderItems(
-          tripId,
-          dayId,
-          newItems.map((i) => i.id)
-        );
-      });
-
-      const legs = result.routes[0]?.legs ?? [];
-      saveComputedRoutes(legsToRoutes(newItems, legs));
-    } catch {
-      setOptimizeError("路線優化失敗，可能是地點距離太遠或無法規劃路線");
-    } finally {
-      setIsOptimizing(false);
-    }
-  }
-
-  async function handleComputeRoutes() {
-    if (!routesLibrary || placeItems.length < 2) return;
-    setOptimizeError(null);
-    setIsComputingRoutes(true);
-
-    try {
-      const legs = await fetchLegsForMode(placeItems, travelMode);
-      saveComputedRoutes(legsToRoutes(placeItems, legs));
-    } catch {
-      setOptimizeError("計算交通路線失敗，可能是地點距離太遠或無法規劃路線");
-    } finally {
-      setIsComputingRoutes(false);
-    }
   }
 
   function handleDeleteItem(itemId: string) {
@@ -649,40 +508,6 @@ export default function DayTimeline({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <select
-          value={travelMode}
-          onChange={(e) => setTravelMode(e.target.value as TravelModeValue)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600"
-        >
-          {TRAVEL_MODE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={handleOptimize}
-          disabled={!canOptimize || !routesLibrary || isOptimizing || travelMode === "TRANSIT"}
-          title={
-            travelMode === "TRANSIT"
-              ? "Google 大眾運輸路線不支援自動排序，請改用「計算交通路線」"
-              : undefined
-          }
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
-          {isOptimizing ? "優化中…" : "自動優化路線"}
-        </button>
-        <button
-          type="button"
-          onClick={handleComputeRoutes}
-          disabled={!routesLibrary || placeItems.length < 2 || isComputingRoutes}
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isComputingRoutes ? "animate-spin" : ""}`} />
-          {isComputingRoutes ? "計算中…" : "計算交通路線"}
-        </button>
         <button
           type="button"
           onClick={() => setEditingItem("new")}
@@ -691,21 +516,11 @@ export default function DayTimeline({
           <Plus className="h-3.5 w-3.5" />
           新增自訂項目
         </button>
-        {!canOptimize && items.length >= 2 && (
-          <span className="text-xs text-slate-600">
-            需要至少 3 個都有地點資料的項目才能優化
-          </span>
-        )}
-        {canOptimize && travelMode === "TRANSIT" && (
-          <span className="text-xs text-slate-600">
-            大眾運輸不支援自動排序，請用「計算交通路線」依目前順序計算
-          </span>
-        )}
       </div>
 
-      {optimizeError && (
+      {routeError && (
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
-          {optimizeError}
+          {routeError}
         </p>
       )}
 
