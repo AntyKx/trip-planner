@@ -115,7 +115,7 @@ function PlaceDetailsModal({
       >
       <div className="overflow-y-auto p-5">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-ink-900">
             {details?.name || fallback.name}
           </h2>
           <button
@@ -172,7 +172,7 @@ function PlaceDetailsModal({
           {details?.phoneNumber && (
             <a
               href={`tel:${details.phoneNumber}`}
-              className="flex items-center gap-2 text-slate-700 hover:text-teal-600"
+              className="flex items-center gap-2 text-ink-700 hover:text-brand-600"
             >
               <Phone className="h-4 w-4 text-slate-400" />
               {details.phoneNumber}
@@ -184,7 +184,7 @@ function PlaceDetailsModal({
               href={details.websiteUri}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-teal-600 hover:underline"
+              className="flex items-center gap-2 text-brand-600 hover:underline"
             >
               <Globe className="h-4 w-4" />
               前往官網
@@ -249,7 +249,7 @@ function PlaceDetailsModal({
               href={details.googleMapsUri}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-teal-600 hover:bg-slate-50"
+              className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-brand-600 hover:bg-slate-50"
             >
               <ExternalLink className="h-4 w-4" />
               在 Google Maps 開啟

@@ -19,6 +19,7 @@ export type BoardDay = {
   id: string;
   dayIndex: number;
   date: string;
+  note?: string | null;
   weather: DailyWeather | null;
   timelineItems: TimelineItem[];
   timelineRoutes: TimelineRoute[];
@@ -58,8 +59,8 @@ export default function TripDayBoard({
           onClick={() => setMode("edit")}
           className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
             mode === "edit"
-              ? "bg-teal-600 text-white"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-brand-600 text-white"
+              : "text-ink-700 hover:bg-slate-50"
           }`}
         >
           <ListChecks className="h-4 w-4" />
@@ -70,8 +71,8 @@ export default function TripDayBoard({
           onClick={switchToTravelMode}
           className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
             mode === "travel"
-              ? "bg-teal-600 text-white"
-              : "text-slate-600 hover:bg-slate-50"
+              ? "bg-brand-600 text-white"
+              : "text-ink-700 hover:bg-slate-50"
           }`}
         >
           <Luggage className="h-4 w-4" />
@@ -83,13 +84,13 @@ export default function TripDayBoard({
         selectedDay ? (
           <TravelModeView day={selectedDay} />
         ) : (
-          <p className="text-sm text-slate-600">這個行程還沒有天數。</p>
+          <p className="text-sm text-ink-700">這個行程還沒有天數。</p>
         )
       ) : (
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       {/* Day timeline */}
       <div>
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
           {days.map((day) => {
             const isActive = day.id === selectedDay?.id;
             return (
@@ -97,14 +98,30 @@ export default function TripDayBoard({
                 key={day.id}
                 type="button"
                 onClick={() => setSelectedDayId(day.id)}
-                className={
+                className={`shrink-0 snap-start rounded-2xl border p-3 text-left min-w-[92px] ${
                   isActive
-                    ? "shrink-0 rounded-full bg-teal-600 px-4 py-1.5 text-sm font-medium text-white"
-                    : "shrink-0 rounded-full bg-slate-100 px-4 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200"
-                }
+                    ? "border-brand-600 bg-brand-600 text-white"
+                    : "border-slate-200 bg-white text-ink-700 hover:border-brand-300"
+                }`}
               >
-                Day {day.dayIndex}
-                {day.weather && ` ${weatherLabel(day.weather.weatherCode).emoji}`}
+                <div className="flex items-center gap-1 text-sm font-semibold">
+                  <span>Day {day.dayIndex}</span>
+                  {day.weather && <span>{weatherLabel(day.weather.weatherCode).emoji}</span>}
+                </div>
+                <div
+                  className={`mt-0.5 text-xs ${isActive ? "text-white/80" : "text-ink-500"}`}
+                >
+                  {day.date.slice(5)}
+                </div>
+                {day.note && (
+                  <div
+                    className={`mt-0.5 truncate text-xs ${
+                      isActive ? "text-white/80" : "text-ink-500"
+                    }`}
+                  >
+                    {day.note}
+                  </div>
+                )}
               </button>
             );
           })}
@@ -112,7 +129,7 @@ export default function TripDayBoard({
 
         {selectedDay ? (
           <section className="mt-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
               <span>
                 Day {selectedDay.dayIndex} · {selectedDay.date}
               </span>
@@ -126,6 +143,9 @@ export default function TripDayBoard({
                 </span>
               )}
             </h2>
+            {selectedDay.note && (
+              <p className="mt-0.5 text-sm text-ink-500">{selectedDay.note}</p>
+            )}
 
             {selectedDay.weather ? (
               getWeatherReminders(selectedDay.weather).map((reminder) => (
@@ -154,18 +174,18 @@ export default function TripDayBoard({
             </div>
           </section>
         ) : (
-          <p className="mt-4 text-sm text-slate-600">這個行程還沒有天數。</p>
+          <p className="mt-4 text-sm text-ink-700">這個行程還沒有天數。</p>
         )}
       </div>
 
       {/* Map panel — always scoped to the day selected above */}
       <aside className="space-y-4 lg:sticky lg:top-10">
         <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <MapIcon className="h-4 w-4" />
             地圖{selectedDay && ` · Day ${selectedDay.dayIndex}`}
           </h3>
-          <div className="mt-3">
+          <div className="mt-3 h-[260px] lg:h-[480px]">
             <TripMap
               apiKey={apiKey}
               days={
@@ -186,17 +206,17 @@ export default function TripDayBoard({
             {selectedDay?.mapItems.map((item) => (
               <li
                 key={item.id}
-                className="flex items-center gap-2 text-sm text-slate-600"
+                className="flex items-center gap-2 text-sm text-ink-700"
               >
-                <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
+                <MapPin className="h-4 w-4 shrink-0 text-ink-500" />
                 <span className="flex-1">{item.name}</span>
-                <span className="text-xs text-slate-600">
+                <span className="text-xs text-ink-500">
                   {item.lat.toFixed(3)}, {item.lng.toFixed(3)}
                 </span>
               </li>
             ))}
             {selectedDay?.mapItems.length === 0 && (
-              <p className="text-xs text-slate-400">這天還沒有地點。</p>
+              <p className="text-xs text-ink-500">這天還沒有地點。</p>
             )}
           </ul>
         </div>

@@ -85,11 +85,11 @@ export default function CoverImagePicker({
   }
 
   return (
-    <div className="relative mt-3">
+    <div className="absolute inset-0">
       <button
         type="button"
         onClick={() => setShowEditButton((v) => !v)}
-        className="group block w-full"
+        className="group block h-full w-full"
         aria-label="編輯封面圖片"
       >
         {coverImage ? (
@@ -97,17 +97,17 @@ export default function CoverImagePicker({
           <img
             src={coverImage}
             alt={tripTitle}
-            className="h-40 w-full rounded-xl object-cover transition group-hover:brightness-95 sm:h-56"
+            className="h-full w-full object-cover transition group-hover:brightness-95"
           />
         ) : (
-          <div className="flex h-32 w-full items-center justify-center rounded-xl bg-slate-100 text-sm text-slate-500 transition group-hover:bg-slate-200 sm:h-40">
+          <div className="flex h-full w-full items-center justify-center text-sm text-white/80 transition group-hover:bg-black/10">
             點擊設定封面圖片
           </div>
         )}
       </button>
 
       {showEditButton && (
-        <div className="absolute bottom-3 right-3">
+        <div className="absolute right-3 top-3">
           <button
             type="button"
             onClick={() => setIsOpen((v) => !v)}
@@ -131,7 +131,7 @@ export default function CoverImagePicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
               >
                 <Camera className="h-4 w-4" />
                 {isUploading ? "上傳中…" : "從手機相簿選擇"}
@@ -151,7 +151,7 @@ export default function CoverImagePicker({
                         key={url}
                         type="button"
                         onClick={() => apply(url)}
-                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-teal-400"
+                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-brand-400"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="" className="h-14 w-full object-cover" />
@@ -170,7 +170,7 @@ export default function CoverImagePicker({
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-md bg-teal-600 px-3 py-1 text-sm text-white hover:bg-teal-700"
+                  className="shrink-0 rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700"
                 >
                   套用
                 </button>

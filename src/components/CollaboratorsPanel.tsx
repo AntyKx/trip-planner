@@ -120,7 +120,7 @@ export default function CollaboratorsPanel({
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-teal-600 px-3 py-1 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
+          className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
         >
           邀請
         </button>

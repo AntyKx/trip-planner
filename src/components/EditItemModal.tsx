@@ -199,7 +199,7 @@ export default function EditItemModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-lg font-bold text-ink-900">
             {item ? (item.placeName ?? "編輯項目") : "新增自訂項目"}
           </h2>
           <button
@@ -338,7 +338,7 @@ export default function EditItemModal({
           <button
             type="submit"
             disabled={isSaving}
-            className="w-full rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+            className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
           >
             {isSaving ? "儲存中…" : "儲存"}
           </button>

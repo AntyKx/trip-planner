@@ -40,7 +40,7 @@ export default function TransitAlternativesModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
-          <h2 className="min-w-0 truncate text-base font-bold text-slate-900">
+          <h2 className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromName} → {toName}
           </h2>
           <button
@@ -68,10 +68,10 @@ export default function TransitAlternativesModal({
                 key={i}
                 type="button"
                 onClick={() => onChoose(alt)}
-                className="w-full rounded-xl border border-slate-200 p-3 text-left hover:border-teal-400 hover:bg-teal-50"
+                className="w-full rounded-xl border border-slate-200 p-3 text-left hover:border-brand-400 hover:bg-brand-50"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-ink-900">
                     {alt.durationMin} 分鐘
                   </span>
                   <span className="text-xs text-slate-500">

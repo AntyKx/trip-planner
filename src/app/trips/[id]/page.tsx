@@ -4,9 +4,11 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import { getDailyWeather } from "@/lib/weather";
+import { getDailyWeather, weatherLabel } from "@/lib/weather";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
+import { formatTime } from "@/lib/labels";
+import { getNextStop } from "@/lib/timeline";
 
 export default async function TripDetailPage({
   params,
@@ -63,41 +65,80 @@ export default async function TripDetailPage({
     })
   );
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const currentDayIndex = trip.days.findIndex(
+    (d) => d.date.toISOString().slice(0, 10) === todayStr
+  );
+  const heroDayIndex = currentDayIndex >= 0 ? currentDayIndex : 0;
+  const heroDay = trip.days[heroDayIndex];
+  const heroWeather = dayWeather[heroDayIndex];
+  const heroNextStop = heroDay ? getNextStop(heroDay.items) : null;
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-      <Link href="/" className="text-sm text-slate-700 hover:underline">
+      <Link href="/" className="text-sm text-ink-700 hover:underline">
         ← 回我的行程
       </Link>
 
-      <CoverImagePicker
-        tripId={trip.id}
-        tripTitle={trip.title}
-        coverImage={coverImage}
-        currentCoverImage={trip.coverImage}
-        availablePhotos={availablePhotos}
-      />
+      <section className="relative mt-3 h-56 overflow-hidden rounded-2xl shadow-sm sm:h-72">
+        {!coverImage && (
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-500 to-brand-700" />
+        )}
+        <CoverImagePicker
+          tripId={trip.id}
+          tripTitle={trip.title}
+          coverImage={coverImage}
+          currentCoverImage={trip.coverImage}
+          availablePhotos={availablePhotos}
+        />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">{trip.title}</h1>
-          <p className="mt-1 text-sm text-slate-700">
-            {trip.startDate.toISOString().slice(0, 10)} ~{" "}
-            {trip.endDate.toISOString().slice(0, 10)}
-          </p>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
+          <h1 className="text-2xl font-bold drop-shadow-sm sm:text-3xl">
+            {trip.title}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+              {trip.startDate.toISOString().slice(0, 10)} ~{" "}
+              {trip.endDate.toISOString().slice(0, 10)}
+            </span>
+            {heroDay && (
+              <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+                Day {heroDay.dayIndex}
+              </span>
+            )}
+            {heroWeather && (
+              <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+                {weatherLabel(heroWeather.weatherCode).emoji}{" "}
+                {Math.round(heroWeather.maxTemp)}° / {Math.round(heroWeather.minTemp)}°
+              </span>
+            )}
+          </div>
+          {heroNextStop && (
+            <p className="mt-2 text-xs text-white/90 sm:text-sm">
+              <span className="font-medium">下一站</span>{" "}
+              {heroNextStop.place?.name ?? heroNextStop.note ?? "未命名項目"}
+              {heroNextStop.startTime &&
+                ` · ${formatTime(heroNextStop.startTime)}`}
+            </p>
+          )}
         </div>
+      </section>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link
             href={`/explore?tripId=${trip.id}`}
-            className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
           >
             <Plus className="h-4 w-4" />
             加入景點/餐廳
           </Link>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600">
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-ink-700">
             {trip.status}
           </span>
-          <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />
         </div>
+        <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />
       </div>
 
       <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
@@ -111,6 +152,7 @@ export default async function TripDetailPage({
               id: day.id,
               dayIndex: day.dayIndex,
               date: day.date.toISOString().slice(0, 10),
+              note: day.note,
               weather: dayWeather[dayIdx],
               timelineItems: day.items.map((item) => ({
                 id: item.id,

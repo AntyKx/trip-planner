@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d9488",
+  themeColor: "#2b6094",
 };
 
 export default function RootLayout({
@@ -43,7 +43,7 @@ export default function RootLayout({
       lang="zh-TW"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-gradient-to-b from-teal-50 via-sky-50 to-white text-slate-900">
+      <body className="min-h-full flex flex-col bg-paper text-ink-900">
         <UpdateChecker />
         {children}
         <InstallPrompt />

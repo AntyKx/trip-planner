@@ -83,7 +83,7 @@ export default function ExploreClient({
     }
     return (
       <>
-        <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-600">
+        <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
           {TYPE_LABEL[place.suggestedType]}
         </span>
         <button
@@ -113,7 +113,7 @@ export default function ExploreClient({
           回首頁
         </Link>
       </div>
-      <h1 className="mt-2 text-2xl font-bold text-slate-900">探索景點 / 餐廳</h1>
+      <h1 className="mt-2 text-2xl font-bold text-ink-900">探索景點 / 餐廳</h1>
       <p className="mt-1 text-sm text-slate-700">
         搜尋結果來自 Google Places API，選好行程與日期後可直接加入。
       </p>
@@ -121,7 +121,7 @@ export default function ExploreClient({
       {trips.length === 0 ? (
         <p className="mt-6 text-sm text-slate-700">
           尚無行程，請先
-          <Link href="/trips/new" className="mx-1 text-teal-600 underline">
+          <Link href="/trips/new" className="mx-1 text-brand-600 underline">
             建立行程
           </Link>
           再來加點。
@@ -177,7 +177,7 @@ export default function ExploreClient({
         <button
           type="submit"
           disabled={isSearching}
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+          className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
         >
           <Search className="h-4 w-4" />
           {isSearching ? "搜尋中..." : "搜尋"}
@@ -225,7 +225,7 @@ export default function ExploreClient({
                     </div>
                   }
                 >
-                  <h3 className="truncate font-semibold text-slate-900 hover:text-teal-700">
+                  <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
                     {place.name}
                   </h3>
                   <p className="mt-0.5 truncate text-sm text-slate-600">

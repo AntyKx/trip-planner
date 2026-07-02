@@ -24,7 +24,7 @@ function StationRow({
         <p className="text-xs text-slate-500">{label}</p>
         {stations.map((station, i) => (
           <div key={`${station.name}-${i}`}>
-            <p className="font-medium text-slate-900">
+            <p className="font-medium text-ink-900">
               {station.name}
               {station.lines.map((line) => (
                 <span
@@ -85,7 +85,7 @@ export default function JapanTransitHintModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
-          <h2 className="min-w-0 truncate text-base font-bold text-slate-900">
+          <h2 className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromPlaceName} → {toPlaceName}
           </h2>
           <button
@@ -130,7 +130,7 @@ export default function JapanTransitHintModal({
                   href={externalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-teal-600 hover:bg-slate-50"
+                  className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-brand-600 hover:bg-slate-50"
                 >
                   <ExternalLink className="h-4 w-4" />
                   在 Ekispert 查看完整轉乘時間與票價

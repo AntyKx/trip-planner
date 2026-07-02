@@ -37,7 +37,7 @@ export default function EmergencyInfoCard({
             type="button"
             onClick={() => setIsEditing(true)}
             aria-label="編輯緊急資訊"
-            className="p-1 text-slate-400 hover:text-teal-600"
+            className="p-1 text-ink-500 hover:text-brand-600"
           >
             <Pencil className="h-4 w-4" />
           </button>
@@ -58,7 +58,7 @@ export default function EmergencyInfoCard({
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="rounded-md bg-teal-600 px-3 py-1 text-sm text-white hover:bg-teal-700 disabled:opacity-50"
+              className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
             >
               {isPending ? "儲存中…" : "儲存"}
             </button>
