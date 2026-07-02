@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import {
   DndContext,
@@ -19,13 +19,14 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { MapPin, Navigation, Pencil, Plus, X, RefreshCw } from "lucide-react";
-import { TYPE_LABEL, MODE_LABEL, MODE_ICON, formatTime } from "@/lib/labels";
+import { TYPE_LABEL, formatTime } from "@/lib/labels";
 import {
   reorderItems,
   deleteItem,
   saveRoutes,
   type TravelModeValue,
 } from "@/app/trips/actions";
+import { GOOGLE_TRAVEL_MODE, computeBestLeg } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 
@@ -68,23 +69,24 @@ const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
   { value: "BIKE", label: "🚲 騎車" },
 ];
 
-const GOOGLE_TRAVEL_MODE: Record<TravelModeValue, google.maps.TravelMode> = {
-  WALK: "WALKING" as google.maps.TravelMode,
-  TRANSIT: "TRANSIT" as google.maps.TravelMode,
-  DRIVE: "DRIVING" as google.maps.TravelMode,
-  BIKE: "BICYCLING" as google.maps.TravelMode,
-};
-
 function SortableItemCard({
   item,
   route,
+  hasNextStop,
+  isRecomputing,
+  isAutoFilling,
   onDelete,
   onEdit,
+  onModeChange,
 }: {
   item: TimelineItem;
   route?: TimelineRoute;
+  hasNextStop: boolean;
+  isRecomputing: boolean;
+  isAutoFilling: boolean;
   onDelete: () => void;
   onEdit: () => void;
+  onModeChange: (mode: TravelModeValue) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id });
@@ -196,13 +198,32 @@ function SortableItemCard({
         </div>
       </div>
 
-      {route && (
+      {hasNextStop && (
         <div className="flex items-center gap-2 py-2 pl-3 text-sm text-slate-700">
-          <span>{MODE_ICON[route.mode]}</span>
-          <span>{MODE_LABEL[route.mode]}</span>
-          {route.durationMin != null && <span>· {route.durationMin} 分鐘</span>}
-          {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
-          <span className="text-xs text-slate-600">({route.provider})</span>
+          <select
+            value={route?.mode ?? "WALK"}
+            onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
+            disabled={isRecomputing}
+            className="rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-xs disabled:opacity-50"
+          >
+            {TRAVEL_MODE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          {isRecomputing || (isAutoFilling && !route) ? (
+            <span className="text-xs text-slate-400">計算中…</span>
+          ) : route && route.durationMin != null ? (
+            <>
+              <span>{route.durationMin} 分鐘</span>
+              {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
+            </>
+          ) : (
+            <span className="text-xs text-slate-400">
+              無法自動規劃，請手動選擇交通方式
+            </span>
+          )}
         </div>
       )}
     </div>
@@ -229,6 +250,11 @@ export default function DayTimeline({
   const [isComputingRoutes, setIsComputingRoutes] = useState(false);
   const [optimizeError, setOptimizeError] = useState<string | null>(null);
   const [travelMode, setTravelMode] = useState<TravelModeValue>("WALK");
+  const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  // Legs we've already tried to auto-fill this session, so a leg Directions
+  // can't find a route for isn't retried on every items/routes change.
+  const attemptedAutoFillRef = useRef<Set<string>>(new Set());
   const [editingItem, setEditingItem] = useState<TimelineItem | "new" | null>(
     null
   );
@@ -247,6 +273,146 @@ export default function DayTimeline({
 
   const placeItems = items.filter((i) => i.place);
   const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
+
+  // Maps an item to the id of the next place-item after it, so the route
+  // badge under a card always reflects the *current* adjacency instead of a
+  // stale leg left over from before a reorder or delete.
+  const nextPlaceItemId = new Map<string, string>();
+  for (let i = 0; i < placeItems.length - 1; i++) {
+    nextPlaceItemId.set(placeItems[i].id, placeItems[i + 1].id);
+  }
+
+  // Auto-fill legs Tabikoto-style: whenever two consecutive place-items
+  // don't have a saved route yet (e.g. a place card was just added), pick
+  // the best travel mode for that hop and compute it automatically.
+  useEffect(() => {
+    if (!routesLibrary) return;
+
+    const missingPairs: { from: TimelineItem; to: TimelineItem; key: string }[] = [];
+    for (let i = 0; i < placeItems.length - 1; i++) {
+      const from = placeItems[i];
+      const to = placeItems[i + 1];
+      const key = `${from.id}->${to.id}`;
+      const hasRoute = routes.some(
+        (r) => r.fromItemId === from.id && r.toItemId === to.id
+      );
+      if (!hasRoute && !attemptedAutoFillRef.current.has(key)) {
+        missingPairs.push({ from, to, key });
+      }
+    }
+    if (missingPairs.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      setIsAutoFilling(true);
+      const directionsService = new routesLibrary.DirectionsService();
+      const computed: TimelineRoute[] = [];
+      for (const { from, to, key } of missingPairs) {
+        attemptedAutoFillRef.current.add(key);
+        const leg = await computeBestLeg(
+          directionsService,
+          { lat: from.place!.lat, lng: from.place!.lng },
+          { lat: to.place!.lat, lng: to.place!.lng }
+        );
+        if (leg) {
+          computed.push({
+            fromItemId: from.id,
+            toItemId: to.id,
+            mode: leg.mode,
+            durationMin: leg.durationMin,
+            distanceKm: leg.distanceKm,
+            provider: "google",
+          });
+        }
+      }
+      if (cancelled) return;
+      setIsAutoFilling(false);
+      if (computed.length === 0) return;
+
+      const merged = [...routes, ...computed];
+      setRoutes(merged);
+      const country = placeItems[0]?.place?.country ?? "TW";
+      startTransition(() => {
+        saveRoutes(
+          tripId,
+          dayId,
+          country,
+          merged
+            .filter((r) => r.durationMin != null && r.distanceKm != null)
+            .map((r) => ({
+              fromItemId: r.fromItemId,
+              toItemId: r.toItemId,
+              mode: r.mode as TravelModeValue,
+              durationMin: r.durationMin!,
+              distanceKm: r.distanceKm!,
+            }))
+        );
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routesLibrary, items, routes]);
+
+  async function handleLegModeChange(
+    from: TimelineItem,
+    to: TimelineItem,
+    mode: TravelModeValue
+  ) {
+    if (!routesLibrary) return;
+    const key = `${from.id}->${to.id}`;
+    setRecomputingKey(key);
+    setOptimizeError(null);
+    try {
+      const directionsService = new routesLibrary.DirectionsService();
+      const result = await directionsService.route({
+        origin: { lat: from.place!.lat, lng: from.place!.lng },
+        destination: { lat: to.place!.lat, lng: to.place!.lng },
+        travelMode: GOOGLE_TRAVEL_MODE[mode],
+      });
+      const leg = result.routes[0]?.legs?.[0];
+      const newRoute: TimelineRoute = {
+        fromItemId: from.id,
+        toItemId: to.id,
+        mode,
+        durationMin: leg?.duration ? Math.round(leg.duration.value / 60) : null,
+        distanceKm: leg?.distance
+          ? Math.round((leg.distance.value / 1000) * 10) / 10
+          : null,
+        provider: "google",
+      };
+      const merged = [
+        ...routes.filter(
+          (r) => !(r.fromItemId === from.id && r.toItemId === to.id)
+        ),
+        newRoute,
+      ];
+      setRoutes(merged);
+      const country = placeItems[0]?.place?.country ?? "TW";
+      startTransition(() => {
+        saveRoutes(
+          tripId,
+          dayId,
+          country,
+          merged
+            .filter((r) => r.durationMin != null && r.distanceKm != null)
+            .map((r) => ({
+              fromItemId: r.fromItemId,
+              toItemId: r.toItemId,
+              mode: r.mode as TravelModeValue,
+              durationMin: r.durationMin!,
+              distanceKm: r.distanceKm!,
+            }))
+        );
+      });
+    } catch {
+      setOptimizeError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
+    } finally {
+      setRecomputingKey(null);
+    }
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -568,14 +734,26 @@ export default function DayTimeline({
         >
           <div className={isPending ? "opacity-70" : undefined}>
             {items.map((item) => {
-              const route = routes.find((r) => r.fromItemId === item.id);
+              const nextId = nextPlaceItemId.get(item.id);
+              const route = nextId
+                ? routes.find(
+                    (r) => r.fromItemId === item.id && r.toItemId === nextId
+                  )
+                : undefined;
               return (
                 <SortableItemCard
                   key={item.id}
                   item={item}
                   route={route}
+                  hasNextStop={nextId != null}
+                  isRecomputing={recomputingKey === `${item.id}->${nextId}`}
+                  isAutoFilling={isAutoFilling}
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
+                  onModeChange={(mode) => {
+                    const to = placeItems.find((i) => i.id === nextId);
+                    if (to) handleLegModeChange(item, to, mode);
+                  }}
                 />
               );
             })}
