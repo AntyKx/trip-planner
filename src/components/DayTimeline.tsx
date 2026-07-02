@@ -18,7 +18,15 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { MapPin, Navigation, Pencil, Plus, Route as RouteIcon, X } from "lucide-react";
+import {
+  MapPin,
+  Navigation,
+  Pencil,
+  Plus,
+  Route as RouteIcon,
+  Waypoints,
+  X,
+} from "lucide-react";
 import { TYPE_LABEL, formatTime } from "@/lib/labels";
 import {
   reorderItems,
@@ -31,6 +39,7 @@ import {
   computeBestLeg,
   fetchTransitAlternatives,
   isGoogleTransitSupported,
+  optimizeStopOrder,
   type TransitAlternative,
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
@@ -312,6 +321,7 @@ export default function DayTimeline({
   const routesLibrary = useMapsLibrary("routes");
 
   const placeItems = items.filter((i) => i.place);
+  const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
 
   // Maps an item to the id of the next place-item after it, so the route
   // badge under a card always reflects the *current* adjacency instead of a
@@ -453,6 +463,31 @@ export default function DayTimeline({
     }
   }
 
+  // "自動安排最順路線": reorders stops by straight-line distance (first and
+  // last stop stay put) so the day doesn't zigzag. No Directions calls here
+  // — the existing auto-fill effect picks up the new adjacency afterward and
+  // computes each leg's real travel mode/time on its own.
+  function handleOrganizeRoute() {
+    if (!canOptimize) return;
+    const points = placeItems.map((item) => ({
+      id: item.id,
+      lat: item.place!.lat,
+      lng: item.place!.lng,
+    }));
+    const ordered = optimizeStopOrder(points);
+    const newItems = ordered.map(
+      (p) => placeItems.find((item) => item.id === p.id)!
+    );
+    setItems(newItems);
+    startTransition(() => {
+      reorderItems(
+        tripId,
+        dayId,
+        newItems.map((i) => i.id)
+      );
+    });
+  }
+
   function openAlternatives(from: TimelineItem, to: TimelineItem) {
     if (!routesLibrary) return;
     setViewingLeg({ from, to });
@@ -589,6 +624,20 @@ export default function DayTimeline({
         >
           <Plus className="h-3.5 w-3.5" />
           新增自訂項目
+        </button>
+        <button
+          type="button"
+          onClick={handleOrganizeRoute}
+          disabled={!canOptimize}
+          title={
+            !canOptimize
+              ? "需要至少 3 個都有地點資料的項目才能排序"
+              : undefined
+          }
+          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Waypoints className="h-3.5 w-3.5" />
+          自動安排最順路線
         </button>
       </div>
 

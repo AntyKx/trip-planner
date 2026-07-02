@@ -129,6 +129,70 @@ export async function computeBestLeg(
   return walk ?? estimateWalk(straightLineKm);
 }
 
+// Local search over the interior of the path (endpoints at index 0 and
+// length-1 stay fixed) that keeps reversing whichever segment shortens the
+// total distance, until no more improvement is found.
+function improveWith2Opt(path: google.maps.LatLngLiteral[]): void {
+  let improved = true;
+  while (improved) {
+    improved = false;
+    for (let i = 1; i < path.length - 2; i++) {
+      for (let j = i + 1; j < path.length - 1; j++) {
+        const before =
+          haversineKm(path[i - 1], path[i]) + haversineKm(path[j], path[j + 1]);
+        const after =
+          haversineKm(path[i - 1], path[j]) + haversineKm(path[i], path[j + 1]);
+        if (after + 1e-9 < before) {
+          let lo = i;
+          let hi = j;
+          while (lo < hi) {
+            [path[lo], path[hi]] = [path[hi], path[lo]];
+            lo++;
+            hi--;
+          }
+          improved = true;
+        }
+      }
+    }
+  }
+}
+
+// Reorders stops to minimize total straight-line distance for the day,
+// keeping the first and last stop fixed (matches "自動安排最順路線" —
+// no Directions calls, no per-mode limitation, just geography). Nearest-
+// neighbor gives a starting order, then 2-opt cleans up the obvious
+// crossings/detours it tends to leave behind.
+export function optimizeStopOrder<T extends google.maps.LatLngLiteral>(
+  points: T[]
+): T[] {
+  if (points.length <= 2) return points;
+
+  const first = points[0];
+  const last = points[points.length - 1];
+  const remaining = points.slice(1, -1);
+  const ordered: T[] = [];
+  let current: google.maps.LatLngLiteral = first;
+
+  while (remaining.length > 0) {
+    let nearestIndex = 0;
+    let nearestDistance = Infinity;
+    for (let i = 0; i < remaining.length; i++) {
+      const distance = haversineKm(current, remaining[i]);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+    const [next] = remaining.splice(nearestIndex, 1);
+    ordered.push(next);
+    current = next;
+  }
+
+  const path = [first, ...ordered, last];
+  improveWith2Opt(path);
+  return path;
+}
+
 export type TransitStepSummary = {
   mode: "WALK" | "TRANSIT";
   vehicleType?: string; // google.maps.VehicleType, e.g. "SUBWAY", "BUS", "TRAM"
