@@ -248,7 +248,7 @@ function SortableItemCard({
               無法自動規劃，請手動選擇交通方式
             </span>
           )}
-          {transitSupported && (
+          {transitSupported && route?.mode === "TRANSIT" && (
             <button
               type="button"
               onClick={onViewAlternatives}
