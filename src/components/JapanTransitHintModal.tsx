@@ -12,28 +12,35 @@ function walkMinutes(meters: number): number {
 
 function StationRow({
   label,
-  station,
+  stations,
 }: {
   label: string;
-  station: JapanTransitStationHint;
+  stations: JapanTransitStationHint[];
 }) {
   return (
     <div className="flex items-start gap-2">
       <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1 space-y-2">
         <p className="text-xs text-slate-500">{label}</p>
-        <p className="font-medium text-slate-900">
-          {station.name}
-          {station.lineName && (
-            <span className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-600">
-              {station.lineName}
-            </span>
-          )}
-        </p>
-        <p className="text-xs text-slate-500">
-          步行約 {station.walkMeters} 公尺（約 {walkMinutes(station.walkMeters)}{" "}
-          分鐘）
-        </p>
+        {stations.map((station, i) => (
+          <div key={`${station.name}-${i}`}>
+            <p className="font-medium text-slate-900">
+              {station.name}
+              {station.lines.map((line) => (
+                <span
+                  key={line}
+                  className="ml-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-normal text-slate-600"
+                >
+                  {line}
+                </span>
+              ))}
+            </p>
+            <p className="text-xs text-slate-500">
+              步行約 {station.walkMeters} 公尺（約{" "}
+              {walkMinutes(station.walkMeters)} 分鐘）
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -54,8 +61,8 @@ export default function JapanTransitHintModal({
   toPlaceName: string;
   isLoading: boolean;
   error: string | null;
-  from: JapanTransitStationHint | null;
-  to: JapanTransitStationHint | null;
+  from: JapanTransitStationHint[] | null;
+  to: JapanTransitStationHint[] | null;
   sameLine: boolean;
   externalUrl: string | null;
   onClose: () => void;
@@ -100,12 +107,12 @@ export default function JapanTransitHintModal({
           {!isLoading && from && to && (
             <div className="space-y-4">
               <p className="text-xs text-slate-500">
-                資料來源：駅すぱあと（Ekispert）。免費方案只提供最近車站與所屬路線，正確搭乘時間、轉乘站與票價請按下方連結查看完整建議。
+                資料來源：駅すぱあと（Ekispert）。免費方案只提供附近車站與所屬路線，正確搭乘時間、轉乘站與票價請按下方連結查看完整建議。
               </p>
 
-              <div className="space-y-3 rounded-xl border border-slate-200 p-3">
-                <StationRow label="起點最近車站" station={from} />
-                <StationRow label="終點最近車站" station={to} />
+              <div className="space-y-4 rounded-xl border border-slate-200 p-3">
+                <StationRow label="起點附近車站（可選其一搭乘）" stations={from} />
+                <StationRow label="終點附近車站（可選其一下車）" stations={to} />
               </div>
 
               {sameLine ? (
