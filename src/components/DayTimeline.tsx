@@ -232,7 +232,7 @@ function SortableItemCard({
             value={route?.mode ?? "WALK"}
             onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
             disabled={isRecomputing}
-            className="w-20 shrink-0 truncate rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+            className="w-[6.5rem] shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
           >
             {TRAVEL_MODE_OPTIONS.map((opt) => {
               const disabled =
