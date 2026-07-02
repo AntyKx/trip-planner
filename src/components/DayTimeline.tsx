@@ -132,202 +132,193 @@ function SortableItemCard({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-3 flex gap-1.5">
-      {/* Timeline rail: just a dot + connecting line, no reserved text width
-          so the card stays flush left even when items have no start time. */}
-      <div className="flex w-3 shrink-0 flex-col items-center pt-4">
-        <div className={`h-2 w-2 shrink-0 rounded-full ${typeColor.text.replace("text-", "bg-")}`} />
-        {hasNextStop && <div className="mt-1 w-px flex-1 bg-slate-200" />}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div
-          {...attributes}
-          {...listeners}
-          className="flex touch-manipulation items-stretch rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
-        >
-          {item.place?.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.place.photoUrl}
-              alt={item.place.name}
-              className="w-20 shrink-0 rounded-l-xl object-cover sm:w-28"
-            />
-          ) : (
-            item.place && (
-              <div
-                className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
-              >
-                <TypeIcon className={`h-6 w-6 ${typeColor.text}`} />
-              </div>
-            )
-          )}
-
-          <div className="min-w-0 flex-1 p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 flex-wrap items-center gap-2">
-                {formatTime(item.startTime) && (
-                  <span className="shrink-0 text-xs font-medium text-ink-500">
-                    {formatTime(item.startTime)}
-                  </span>
-                )}
-                <span
-                  className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
-                >
-                  <TypeIcon className="h-3 w-3" />
-                  {TYPE_LABEL[item.type]}
-                </span>
-                {item.cost != null && (
-                  <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    {item.currency} {item.cost.toLocaleString()}
-                  </span>
-                )}
-              </div>
-              <div className="relative flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  onClick={onEdit}
-                  aria-label="編輯項目"
-                  className="p-2 text-ink-500 hover:text-brand-600"
-                >
-                  <Pencil className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowMenu((v) => !v)}
-                  aria-label="更多操作"
-                  className="p-2 text-ink-500 hover:text-brand-600"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-                {showMenu && (
-                  <div className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
-                    {item.place && (
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => setShowMenu(false)}
-                        className="flex items-center gap-2 px-3 py-2 text-ink-700 hover:bg-slate-50"
-                      >
-                        <Navigation className="h-4 w-4" />
-                        導航
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMenu(false);
-                        onDelete();
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                      刪除
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-            {item.place ? (
-              <PlaceDetailsTrigger
-                provider={item.place.provider}
-                externalId={item.place.externalId}
-                fallback={{
-                  name: item.place.name,
-                  address: item.place.address,
-                  rating: item.place.rating,
-                  photoUrl: item.place.photoUrl,
-                }}
-              >
-                <h3 className="mt-1 truncate text-base font-bold text-ink-900 hover:text-brand-700">
-                  {item.place.name}
-                </h3>
-                <p className="mt-0.5 truncate text-sm text-ink-500">
-                  {item.place.address}
-                  {item.place.rating != null && (
-                    <span className="text-amber-500"> · ★ {item.place.rating.toFixed(1)}</span>
-                  )}
-                </p>
-              </PlaceDetailsTrigger>
-            ) : (
-              <h3 className="mt-1 truncate text-base font-bold text-ink-900">
-                {item.note ?? "未命名項目"}
-              </h3>
-            )}
-            {item.confirmationNumber && (
-              <p className="mt-0.5 truncate text-xs text-ink-500">
-                🔖 {item.confirmationNumber}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {hasNextStop && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
-            <select
-              value={route?.mode ?? "WALK"}
-              onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
-              disabled={isRecomputing}
-              className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+    <div ref={setNodeRef} style={style} className="mb-3">
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex touch-manipulation items-stretch rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
+      >
+        {item.place?.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.place.photoUrl}
+            alt={item.place.name}
+            className="w-20 shrink-0 rounded-l-xl object-cover sm:w-28"
+          />
+        ) : (
+          item.place && (
+            <div
+              className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
             >
-              {TRAVEL_MODE_OPTIONS.map((opt) => {
-                const disabled =
-                  opt.value === "TRANSIT" && !transitSupported;
-                return (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    disabled={disabled}
-                    title={
-                      disabled
-                        ? "Google 目前沒有這個國家的大眾運輸資料"
-                        : undefined
-                    }
-                  >
-                    {opt.label}
-                    {disabled ? "（Google 無資料）" : ""}
-                  </option>
-                );
-              })}
-            </select>
-            {isRecomputing || (isAutoFilling && !route) ? (
-              <span className="text-xs text-ink-500">計算中…</span>
-            ) : route && route.durationMin != null ? (
-              <span className="flex items-center gap-1">
-                <span>{MODE_ICON[route.mode]}</span>
-                <span>{route.durationMin} 分鐘</span>
-                {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
-              </span>
-            ) : (
-              <span className="text-xs text-ink-500">
-                無法自動規劃，請手動選擇交通方式
-              </span>
-            )}
-            {transitSupported && route?.mode === "TRANSIT" && (
-              <button
-                type="button"
-                onClick={onViewAlternatives}
-                className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline"
-              >
-                <RouteIcon className="h-3.5 w-3.5" />
-                路線選項
-              </button>
-            )}
-            {isJapan && (
-              <button
-                type="button"
-                onClick={onOpenJapanHint}
-                disabled={isLoadingJapanHint}
-                className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline disabled:opacity-50"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                {isLoadingJapanHint ? "查詢中…" : "查看轉乘建議"}
-              </button>
-            )}
-          </div>
+              <TypeIcon className={`h-6 w-6 ${typeColor.text}`} />
+            </div>
+          )
         )}
+
+        <div className="min-w-0 flex-1 p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {formatTime(item.startTime) && (
+                <span className="shrink-0 text-xs font-medium text-ink-500">
+                  {formatTime(item.startTime)}
+                </span>
+              )}
+              <span
+                className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
+              >
+                <TypeIcon className="h-3 w-3" />
+                {TYPE_LABEL[item.type]}
+              </span>
+              {item.cost != null && (
+                <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                  {item.currency} {item.cost.toLocaleString()}
+                </span>
+              )}
+            </div>
+            <div className="relative flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="編輯項目"
+                className="p-2 text-ink-500 hover:text-brand-600"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMenu((v) => !v)}
+                aria-label="更多操作"
+                className="p-2 text-ink-500 hover:text-brand-600"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+                  {item.place && (
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setShowMenu(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-ink-700 hover:bg-slate-50"
+                    >
+                      <Navigation className="h-4 w-4" />
+                      導航
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMenu(false);
+                      onDelete();
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                  >
+                    <X className="h-4 w-4" />
+                    刪除
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+          {item.place ? (
+            <PlaceDetailsTrigger
+              provider={item.place.provider}
+              externalId={item.place.externalId}
+              fallback={{
+                name: item.place.name,
+                address: item.place.address,
+                rating: item.place.rating,
+                photoUrl: item.place.photoUrl,
+              }}
+            >
+              <h3 className="mt-1 truncate text-base font-bold text-ink-900 hover:text-brand-700">
+                {item.place.name}
+              </h3>
+              <p className="mt-0.5 truncate text-sm text-ink-500">
+                {item.place.address}
+                {item.place.rating != null && (
+                  <span className="text-amber-500"> · ★ {item.place.rating.toFixed(1)}</span>
+                )}
+              </p>
+            </PlaceDetailsTrigger>
+          ) : (
+            <h3 className="mt-1 truncate text-base font-bold text-ink-900">
+              {item.note ?? "未命名項目"}
+            </h3>
+          )}
+          {item.confirmationNumber && (
+            <p className="mt-0.5 truncate text-xs text-ink-500">
+              🔖 {item.confirmationNumber}
+            </p>
+          )}
+        </div>
       </div>
+
+      {hasNextStop && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
+          <select
+            value={route?.mode ?? "WALK"}
+            onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
+            disabled={isRecomputing}
+            className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+          >
+            {TRAVEL_MODE_OPTIONS.map((opt) => {
+              const disabled =
+                opt.value === "TRANSIT" && !transitSupported;
+              return (
+                <option
+                  key={opt.value}
+                  value={opt.value}
+                  disabled={disabled}
+                  title={
+                    disabled
+                      ? "Google 目前沒有這個國家的大眾運輸資料"
+                      : undefined
+                  }
+                >
+                  {opt.label}
+                  {disabled ? "（Google 無資料）" : ""}
+                </option>
+              );
+            })}
+          </select>
+          {isRecomputing || (isAutoFilling && !route) ? (
+            <span className="text-xs text-ink-500">計算中…</span>
+          ) : route && route.durationMin != null ? (
+            <span className="flex items-center gap-1">
+              <span>{MODE_ICON[route.mode]}</span>
+              <span>{route.durationMin} 分鐘</span>
+              {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
+            </span>
+          ) : (
+            <span className="text-xs text-ink-500">
+              無法自動規劃，請手動選擇交通方式
+            </span>
+          )}
+          {transitSupported && route?.mode === "TRANSIT" && (
+            <button
+              type="button"
+              onClick={onViewAlternatives}
+              className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline"
+            >
+              <RouteIcon className="h-3.5 w-3.5" />
+              路線選項
+            </button>
+          )}
+          {isJapan && (
+            <button
+              type="button"
+              onClick={onOpenJapanHint}
+              disabled={isLoadingJapanHint}
+              className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline disabled:opacity-50"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {isLoadingJapanHint ? "查詢中…" : "查看轉乘建議"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
