@@ -24,8 +24,8 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "Trip Planner 雛型",
-  description: "旅遊行程規劃 APP 原型",
+  title: "Trip Planner",
+  description: "你的旅行手帳與行程規劃助手",
   icons: {
     icon: "/icons/icon-192.png",
     apple: "/icons/apple-touch-icon.png",

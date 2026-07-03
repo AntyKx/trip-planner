@@ -71,9 +71,6 @@ export default async function LoginPage() {
       <div className="px-6 pb-10 pt-8 sm:mt-6">
         <div className="mx-auto w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <GoogleSignInButton />
-          <p className="mt-4 text-center text-xs text-ink-500">
-            只有你自己看得到你的行程
-          </p>
         </div>
       </div>
     </main>

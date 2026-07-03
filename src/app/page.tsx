@@ -58,9 +58,6 @@ export default async function TripsPage() {
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink-900">我的行程</h1>
-          <p className="mt-1 text-sm text-ink-700">
-            旅遊規劃 APP 原型 — 資料來自 Prisma + SQLite
-          </p>
         </div>
         <Link
           href="/trips/new"
@@ -133,10 +130,6 @@ export default async function TripsPage() {
             <MapPinned className="h-10 w-10 text-brand-300" />
             <p className="text-sm text-ink-700">
               尚無行程，先建立第一個行程開始規劃旅行吧
-              <br />
-              <span className="text-xs text-ink-500">
-                （或執行 <code>npm run seed</code> 建立範例資料）
-              </span>
             </p>
             <Link
               href="/trips/new"

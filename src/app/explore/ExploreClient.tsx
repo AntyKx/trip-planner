@@ -115,7 +115,7 @@ export default function ExploreClient({
       </div>
       <h1 className="mt-2 text-2xl font-bold text-ink-900">探索景點 / 餐廳</h1>
       <p className="mt-1 text-sm text-slate-700">
-        搜尋結果來自 Google Places API，選好行程與日期後可直接加入。
+        選好行程與日期後可直接加入。
       </p>
 
       {trips.length === 0 ? (
