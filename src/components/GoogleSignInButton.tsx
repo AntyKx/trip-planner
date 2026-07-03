@@ -34,16 +34,19 @@ function isInAppBrowser() {
   return /Line\/|FBAN|FBAV|Instagram/i.test(ua);
 }
 
-function isIosSafari() {
-  const ua = navigator.userAgent || "";
-  const isIos = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return isIos && isSafari;
-}
-
 function preferRedirect() {
   if (isStandalonePwa()) return false;
-  return isInAppBrowser() || isIosSafari();
+  // Only force redirect for in-app browsers (LINE/FB/Instagram), where
+  // popups are reliably blocked outright. iOS Safari can handle a
+  // popup fine when it's opened synchronously from a click, and
+  // signInWithRedirect there actually fails with a "missing initial
+  // state" error — Firebase's redirect flow bounces through the
+  // *.firebaseapp.com authDomain (a different origin than this app),
+  // and Safari's storage partitioning drops the pending-redirect state
+  // across that hop. So iOS Safari falls through to the popup path
+  // below, with signInWithPopup's own popup-blocked catch as the
+  // fallback to redirect if a popup genuinely can't open.
+  return isInAppBrowser();
 }
 
 export default function GoogleSignInButton() {
