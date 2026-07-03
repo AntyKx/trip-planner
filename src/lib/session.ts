@@ -39,3 +39,7 @@ export function verifySession(cookieValue: string | undefined): { userId: string
 
 export const SESSION_COOKIE_NAME = "tp_session";
 export const SESSION_MAX_AGE = MAX_AGE_SECONDS;
+
+// Set client-side once the splash screen's "開始旅程" button is clicked, so
+// returning (still-unauthenticated) visitors skip straight to /login.
+export const SPLASH_SEEN_COOKIE_NAME = "tp_seen_splash";

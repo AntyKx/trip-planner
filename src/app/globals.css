@@ -28,4 +28,7 @@
   --color-ink-500: #78716c;
   --color-ink-700: #44403c;
   --color-ink-900: #292524;
+
+  /* 手寫風強調字體（開頭/登入畫面的品牌字樣、便條式標語） */
+  --font-script: var(--font-caveat), cursive;
 }
