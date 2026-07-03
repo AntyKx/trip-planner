@@ -51,6 +51,13 @@ export default function GoogleSignInButton() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  function describeError(err: unknown): string {
+    const code = (err as { code?: string })?.code;
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Google sign-in failed:", err);
+    return code ? `登入失敗（${code}）` : `登入失敗：${message}`;
+  }
+
   async function completeSignIn(result: UserCredential) {
     const idToken = await result.user.getIdToken();
     await signInWithGoogle(idToken);
@@ -69,9 +76,9 @@ export default function GoogleSignInButton() {
         }
       })
       .catch((err) => {
-        const code = err?.code as string | undefined;
+        const code = (err as { code?: string })?.code;
         if (code && USER_CANCELLED_CODES.has(code)) return;
-        setError("登入失敗，請再試一次");
+        setError(describeError(err));
       })
       .finally(() => setIsPending(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -97,11 +104,11 @@ export default function GoogleSignInButton() {
         try {
           await signInWithRedirect(auth, googleProvider);
           return;
-        } catch {
-          setError("登入失敗，請再試一次");
+        } catch (redirectErr) {
+          setError(describeError(redirectErr));
         }
       } else {
-        setError("登入失敗，請再試一次");
+        setError(describeError(err));
       }
       setIsPending(false);
     }
