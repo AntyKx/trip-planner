@@ -129,8 +129,7 @@ export default function CollaboratorsPanel({
       {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
 
       <p className="mt-3 text-xs text-slate-600">
-        目前是原型階段，還沒有登入系統，所以這裡只管理「誰有存取權」的名單，
-        還不會限制實際編輯權限。
+        目前協作者名單僅供記錄，尚未實際限制編輯權限（每個人登入後仍只會看到自己擁有的行程）。
       </p>
     </div>
   );

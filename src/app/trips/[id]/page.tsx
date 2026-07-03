@@ -9,6 +9,7 @@ import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 import { formatTime } from "@/lib/labels";
 import { getNextStop } from "@/lib/timeline";
+import { requireTripOwner } from "@/lib/auth";
 
 export default async function TripDetailPage({
   params,
@@ -36,6 +37,7 @@ export default async function TripDetailPage({
   });
 
   if (!trip) notFound();
+  await requireTripOwner(trip.id);
 
   const collaborators = [
     { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },

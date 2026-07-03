@@ -46,6 +46,7 @@ model User {
   name          String
   email         String         @unique
   avatarUrl     String?
+  googleUid     String?        @unique
   trips         Trip[]
   collaborating Collaborator[]
   createdAt     DateTime       @default(now())

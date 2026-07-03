@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { Plus, Luggage, MapPinned } from "lucide-react";
+import { Plus, Luggage, MapPinned, LogOut } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/auth";
+import { signOutAction } from "@/app/login/actions";
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
@@ -9,7 +11,9 @@ const FALLBACK_GRADIENTS = [
 ];
 
 export default async function TripsPage() {
+  const user = await requireUser();
   const trips = await prisma.trip.findMany({
+    where: { ownerId: user.id },
     include: {
       days: {
         orderBy: { dayIndex: "asc" },
@@ -26,7 +30,32 @@ export default async function TripsPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-end gap-3 text-sm text-ink-700">
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatarUrl}
+            alt={user.name}
+            className="h-7 w-7 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
+            {user.name.slice(0, 1)}
+          </div>
+        )}
+        <span className="max-w-[8rem] truncate">{user.name}</span>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="flex items-center gap-1 text-xs text-ink-500 hover:text-brand-600"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            登出
+          </button>
+        </form>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-ink-900">我的行程</h1>
           <p className="mt-1 text-sm text-ink-700">

@@ -3,12 +3,14 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireUser, requireTripOwner } from "@/lib/auth";
 
 export async function reorderItems(
   tripId: string,
   dayId: string,
   orderedItemIds: string[]
 ) {
+  await requireTripOwner(tripId);
   await prisma.$transaction(
     orderedItemIds.map((id, index) =>
       prisma.item.update({ where: { id }, data: { sortOrder: index + 1 } })
@@ -36,6 +38,7 @@ export async function saveRoutes(
   country: string,
   routes: RouteInput[]
 ) {
+  await requireTripOwner(tripId);
   await prisma.$transaction([
     prisma.route.deleteMany({ where: { dayId } }),
     ...routes.map((r) =>
@@ -76,6 +79,7 @@ export async function addPlaceToDay(
   itemType: "PLACE" | "RESTAURANT" | "HOTEL" | "CUSTOM",
   place: NewPlaceInput
 ) {
+  await requireTripOwner(tripId);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -109,6 +113,7 @@ export async function addCollaborator(
   email: string,
   role: "EDITOR" | "VIEWER"
 ) {
+  await requireTripOwner(tripId);
   const trimmedEmail = email.trim().toLowerCase();
   if (!trimmedEmail) return;
 
@@ -128,6 +133,7 @@ export async function addCollaborator(
 }
 
 export async function removeCollaborator(tripId: string, userId: string) {
+  await requireTripOwner(tripId);
   await prisma.collaborator.delete({
     where: { tripId_userId: { tripId, userId } },
   });
@@ -135,6 +141,7 @@ export async function removeCollaborator(tripId: string, userId: string) {
 }
 
 export async function deleteItem(tripId: string, itemId: string) {
+  await requireTripOwner(tripId);
   await prisma.item.delete({ where: { id: itemId } });
   revalidatePath(`/trips/${tripId}`);
 }
@@ -168,6 +175,7 @@ export async function updateItem(
     costCategory: CostCategoryValue | null;
   }
 ) {
+  await requireTripOwner(tripId);
   await prisma.item.update({
     where: { id: itemId },
     data: {
@@ -198,6 +206,7 @@ export async function addCustomItem(
     costCategory: CostCategoryValue | null;
   }
 ) {
+  await requireTripOwner(tripId);
   const lastItem = await prisma.item.findFirst({
     where: { dayId },
     orderBy: { sortOrder: "desc" },
@@ -223,6 +232,7 @@ export async function addCustomItem(
 }
 
 export async function updateEmergencyInfo(tripId: string, text: string) {
+  await requireTripOwner(tripId);
   await prisma.trip.update({
     where: { id: tripId },
     data: { emergencyInfo: text.trim() || null },
@@ -234,6 +244,7 @@ export async function updateTripCoverImage(
   tripId: string,
   coverImage: string | null
 ) {
+  await requireTripOwner(tripId);
   await prisma.trip.update({
     where: { id: tripId },
     data: { coverImage: coverImage?.trim() || null },
@@ -243,22 +254,17 @@ export async function updateTripCoverImage(
 }
 
 export async function deleteTrip(tripId: string) {
+  await requireTripOwner(tripId);
   await prisma.trip.delete({ where: { id: tripId } });
   revalidatePath("/");
   redirect("/");
 }
 
 export async function createTrip(formData: FormData) {
+  const owner = await requireUser();
   const title = formData.get("title") as string;
   const startDate = new Date(formData.get("startDate") as string);
   const endDate = new Date(formData.get("endDate") as string);
-
-  let owner = await prisma.user.findFirst();
-  if (!owner) {
-    owner = await prisma.user.create({
-      data: { name: "Anty", email: "antyk123@gmail.com" },
-    });
-  }
 
   const dayCount =
     Math.round(
