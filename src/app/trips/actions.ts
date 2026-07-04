@@ -4,6 +4,21 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser, requireTripOwner } from "@/lib/auth";
+import { getDailyWeather, type DailyWeather } from "@/lib/weather";
+
+// Weather is fetched from the client after the trip page has already
+// rendered, not during SSR — open-meteo has no SLA, and blocking the whole
+// page on N external calls (one per day) meant a single slow/unreachable
+// call held up the entire page load. This is public, non-sensitive data,
+// so no ownership check is needed beyond a normal signed-in user.
+export async function fetchDayWeather(
+  lat: number,
+  lng: number,
+  dateIso: string
+): Promise<DailyWeather | null> {
+  await requireUser();
+  return getDailyWeather(lat, lng, new Date(dateIso));
+}
 
 // No revalidatePath here on purpose: item order isn't read by any other
 // server-rendered piece of this page (map/budget both key routes and costs

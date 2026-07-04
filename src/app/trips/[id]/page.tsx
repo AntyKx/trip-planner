@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import { getDailyWeather, weatherLabel } from "@/lib/weather";
+import HeroWeatherBadge from "@/components/HeroWeatherBadge";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 import { formatTime } from "@/lib/labels";
@@ -17,8 +17,6 @@ export default async function TripDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
-  const t0 = Date.now();
 
   // requireUser() and the trip query are independent (both keyed off the
   // request, not each other), so run them concurrently instead of checking
@@ -51,9 +49,6 @@ export default async function TripDetailPage({
 
   if (!trip) notFound();
   if (trip.ownerId !== user.id) redirect("/");
-  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
-  const t1 = Date.now();
-  console.log(`[perf] ${id} auth+trip query: ${t1 - t0}ms`);
 
   const collaborators = [
     { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },
@@ -75,24 +70,13 @@ export default async function TripDetailPage({
     new Set(allPlaces.map((p) => p.photoUrl).filter((url): url is string => !!url))
   );
 
-  const dayWeather = await Promise.all(
-    trip.days.map(async (day) => {
-      const firstPlace = day.items.find((item) => item.place)?.place;
-      if (!firstPlace) return null;
-      return getDailyWeather(firstPlace.lat, firstPlace.lng, day.date);
-    })
-  );
-  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
-  const t2 = Date.now();
-  console.log(`[perf] ${id} weather (${trip.days.length} days): ${t2 - t1}ms, total so far: ${t2 - t0}ms`);
-
   const todayStr = new Date().toISOString().slice(0, 10);
   const currentDayIndex = trip.days.findIndex(
     (d) => d.date.toISOString().slice(0, 10) === todayStr
   );
   const heroDayIndex = currentDayIndex >= 0 ? currentDayIndex : 0;
   const heroDay = trip.days[heroDayIndex];
-  const heroWeather = dayWeather[heroDayIndex];
+  const heroFirstPlace = heroDay?.items.find((item) => item.place)?.place;
   const heroNextStop = heroDay ? getNextStop(heroDay.items) : null;
 
   return (
@@ -128,11 +112,12 @@ export default async function TripDetailPage({
                 Day {heroDay.dayIndex}
               </span>
             )}
-            {heroWeather && (
-              <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
-                {weatherLabel(heroWeather.weatherCode).emoji}{" "}
-                {Math.round(heroWeather.maxTemp)}° / {Math.round(heroWeather.minTemp)}°
-              </span>
+            {heroFirstPlace && heroDay && (
+              <HeroWeatherBadge
+                lat={heroFirstPlace.lat}
+                lng={heroFirstPlace.lng}
+                dateIso={heroDay.date.toISOString()}
+              />
             )}
           </div>
           {heroNextStop && (
@@ -169,12 +154,15 @@ export default async function TripDetailPage({
             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
             collaborators={collaborators}
             emergencyInfo={trip.emergencyInfo}
-            days={trip.days.map((day, dayIdx) => ({
+            days={trip.days.map((day) => ({
               id: day.id,
               dayIndex: day.dayIndex,
               date: day.date.toISOString().slice(0, 10),
               note: day.note,
-              weather: dayWeather[dayIdx],
+              // Fetched client-side after the page loads (see TripDayBoard) —
+              // open-meteo has no SLA and blocking SSR on it made every trip
+              // page load wait on the slowest of N external calls.
+              weather: null,
               timelineItems: day.items.map((item) => ({
                 id: item.id,
                 type: item.type,

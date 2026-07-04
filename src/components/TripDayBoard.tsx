@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Map as MapIcon, MapPin, Luggage, ListChecks } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
@@ -8,6 +8,7 @@ import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
+import { fetchDayWeather } from "@/app/trips/actions";
 import {
   weatherLabel,
   getWeatherReminders,
@@ -42,11 +43,42 @@ export default function TripDayBoard({
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel">("edit");
-  const selectedDay = days.find((d) => d.id === selectedDayId) ?? days[0];
+  // Weather is fetched client-side, after this page has already rendered —
+  // open-meteo has no SLA, and fetching it during SSR for every day meant
+  // the whole trip page waited on the slowest of N external calls.
+  const [weatherByDay, setWeatherByDay] = useState<Record<string, DailyWeather | null>>(
+    {}
+  );
+  const dayIdsKey = days.map((d) => d.id).join(",");
+
+  useEffect(() => {
+    let cancelled = false;
+    for (const day of days) {
+      const firstPlace = day.timelineItems.find((i) => i.place)?.place;
+      if (!firstPlace) continue;
+      fetchDayWeather(firstPlace.lat, firstPlace.lng, day.date).then((result) => {
+        if (!cancelled) {
+          setWeatherByDay((prev) => ({ ...prev, [day.id]: result }));
+        }
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dayIdsKey]);
+
+  const daysWithWeather = days.map((day) => ({
+    ...day,
+    weather: weatherByDay[day.id] ?? day.weather,
+  }));
+
+  const selectedDay =
+    daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
 
   function switchToTravelMode() {
     const todayStr = new Date().toISOString().slice(0, 10);
-    const today = days.find((d) => d.date === todayStr);
+    const today = daysWithWeather.find((d) => d.date === todayStr);
     if (today) setSelectedDayId(today.id);
     setMode("travel");
   }
@@ -91,7 +123,7 @@ export default function TripDayBoard({
       {/* Day timeline */}
       <div>
         <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
-          {days.map((day) => {
+          {daysWithWeather.map((day) => {
             const isActive = day.id === selectedDay?.id;
             return (
               <button
@@ -221,7 +253,7 @@ export default function TripDayBoard({
           </ul>
         </div>
 
-        <BudgetSummary days={days} />
+        <BudgetSummary days={daysWithWeather} />
 
         <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} />
 
