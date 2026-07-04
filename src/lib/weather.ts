@@ -80,7 +80,14 @@ export async function getDailyWeather(
     url.searchParams.set("start_date", dateStr);
     url.searchParams.set("end_date", dateStr);
 
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    // Open-Meteo has no SLA; without a timeout, one slow/unresponsive call
+    // would block the whole trip page (all days are fetched in parallel,
+    // so the page waits for the slowest one) instead of just skipping
+    // weather for that day.
+    const res = await fetch(url, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(4000),
+    });
     if (!res.ok) return null;
 
     const data = await res.json();

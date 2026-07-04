@@ -17,6 +17,8 @@ export default async function TripDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
+  const t0 = Date.now();
 
   // requireUser() and the trip query are independent (both keyed off the
   // request, not each other), so run them concurrently instead of checking
@@ -49,6 +51,9 @@ export default async function TripDetailPage({
 
   if (!trip) notFound();
   if (trip.ownerId !== user.id) redirect("/");
+  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
+  const t1 = Date.now();
+  console.log(`[perf] ${id} auth+trip query: ${t1 - t0}ms`);
 
   const collaborators = [
     { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },
@@ -77,6 +82,9 @@ export default async function TripDetailPage({
       return getDailyWeather(firstPlace.lat, firstPlace.lng, day.date);
     })
   );
+  // eslint-disable-next-line react-hooks/purity -- temporary perf logging, removed after diagnosis
+  const t2 = Date.now();
+  console.log(`[perf] ${id} weather (${trip.days.length} days): ${t2 - t1}ms, total so far: ${t2 - t0}ms`);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const currentDayIndex = trip.days.findIndex(
