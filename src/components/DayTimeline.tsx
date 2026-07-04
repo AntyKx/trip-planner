@@ -77,6 +77,7 @@ export type TimelineItem = {
     photoUrl: string | null;
     lat: number;
     lng: number;
+    openHours: string | null;
   } | null;
 };
 
@@ -773,9 +774,10 @@ export default function DayTimeline({
   function handleAnchorSet(result: AnchorItemResult) {
     setItems((prev) => {
       const exists = prev.some((i) => i.id === result.id);
+      const place = { ...result.place, openHours: null };
       if (exists) {
         return prev.map((i) =>
-          i.id === result.id ? { ...i, type: result.type, place: result.place } : i
+          i.id === result.id ? { ...i, type: result.type, place } : i
         );
       }
       return [
@@ -789,7 +791,7 @@ export default function DayTimeline({
           cost: null,
           currency: null,
           costCategory: null,
-          place: result.place,
+          place,
         },
         ...prev,
       ];
@@ -815,6 +817,7 @@ export default function DayTimeline({
           currency: editingItem.currency,
           costCategory: editingItem.costCategory,
           placeName: editingItem.place?.name ?? null,
+          placeOpenHours: editingItem.place?.openHours ?? null,
         }
       : null;
 

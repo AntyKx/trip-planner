@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { X } from "lucide-react";
+import { TriangleAlert, X } from "lucide-react";
 import {
   updateItem,
   addCustomItem,
   type ItemTypeValue,
   type CostCategoryValue,
 } from "@/app/trips/actions";
+import { isTimeOutsideHours, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 import ModalOverlay from "./ModalOverlay";
 
 const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
@@ -48,6 +49,7 @@ export type EditableItem = {
   currency: string | null;
   costCategory: string | null;
   placeName: string | null;
+  placeOpenHours: string | null;
 };
 
 export type SavedItemResult = {
@@ -108,6 +110,25 @@ export default function EditItemModal({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Non-blocking hints, not validation — the user can save regardless.
+  const openPeriods: OpeningPeriod[] | null = (() => {
+    if (!item?.placeOpenHours) return null;
+    try {
+      return JSON.parse(item.placeOpenHours);
+    } catch {
+      return null;
+    }
+  })();
+  const dayDateObj = new Date(`${dayDate}T00:00:00`);
+  const startTimeWarning =
+    openPeriods && startTime && isTimeOutsideHours(openPeriods, dayDateObj, startTime)
+      ? `${weekdayLabel(dayDateObj)}的開始時間可能超出營業時間`
+      : null;
+  const endTimeWarning =
+    openPeriods && endTime && isTimeOutsideHours(openPeriods, dayDateObj, endTime)
+      ? `${weekdayLabel(dayDateObj)}的結束時間可能超出營業時間`
+      : null;
 
   function toIso(hhmm: string): string | null {
     if (!hhmm) return null;
@@ -233,6 +254,12 @@ export default function EditItemModal({
               onChange={(e) => setStartTime(e.target.value)}
               className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
+            {startTimeWarning && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                {startTimeWarning}
+              </p>
+            )}
           </div>
           <div className="flex-1">
             <label htmlFor="edit-item-end" className="block text-xs font-medium text-slate-600">
@@ -245,6 +272,12 @@ export default function EditItemModal({
               onChange={(e) => setEndTime(e.target.value)}
               className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
             />
+            {endTimeWarning && (
+              <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+                <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                {endTimeWarning}
+              </p>
+            )}
           </div>
         </div>
 

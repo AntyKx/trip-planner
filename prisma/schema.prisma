@@ -130,7 +130,7 @@ model Place {
   lng        Float
   rating     Float?
   priceLevel Int?
-  openHours  String? // JSON string: { mon: "09:00-18:00", ... }
+  openHours  String? // JSON: OpeningPeriod[] from src/lib/businessHours.ts
   photoUrl   String?
   provider   String // "google" | "hotpepper" | "tdx" | ...
   externalId String

@@ -197,6 +197,7 @@ export default async function TripDetailPage({
                       photoUrl: item.place.photoUrl,
                       lat: item.place.lat,
                       lng: item.place.lng,
+                      openHours: item.place.openHours,
                     }
                   : null,
               })),

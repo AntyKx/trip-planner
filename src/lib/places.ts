@@ -1,3 +1,5 @@
+import { parseOpeningPeriods, type RawPeriod } from "./businessHours";
+
 export type PlaceResult = {
   externalId: string;
   name: string;
@@ -159,6 +161,11 @@ export type PlaceDetails = {
   googleMapsUri?: string;
   openNow?: boolean;
   weekdayDescriptions?: string[];
+  // Structured periods (see src/lib/businessHours.ts), pre-serialized to
+  // JSON so callers can drop it straight into Place.openHours without
+  // caring about the parsing — this is what makes the add-time "closed
+  // this day" check and the item card's time-range check possible.
+  openHoursJson?: string;
   reviews: PlaceReview[];
   photoUrl?: string;
 };
@@ -182,7 +189,11 @@ type RawPlaceDetails = {
   nationalPhoneNumber?: string;
   websiteUri?: string;
   googleMapsUri?: string;
-  regularOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] };
+  regularOpeningHours?: {
+    openNow?: boolean;
+    weekdayDescriptions?: string[];
+    periods?: RawPeriod[];
+  };
   reviews?: RawReview[];
   photos?: { name: string }[];
 };
@@ -244,6 +255,9 @@ export async function getPlaceDetails(
       googleMapsUri: data.googleMapsUri,
       openNow: data.regularOpeningHours?.openNow,
       weekdayDescriptions: data.regularOpeningHours?.weekdayDescriptions,
+      openHoursJson: data.regularOpeningHours?.periods
+        ? JSON.stringify(parseOpeningPeriods(data.regularOpeningHours.periods))
+        : undefined,
       reviews,
       photoUrl: data.photos?.[0]
         ? `https://places.googleapis.com/v1/${data.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`

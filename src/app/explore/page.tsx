@@ -30,7 +30,11 @@ export default async function ExplorePage({
       trips={trips.map((t) => ({
         id: t.id,
         title: t.title,
-        days: t.days.map((d) => ({ id: d.id, dayIndex: d.dayIndex })),
+        days: t.days.map((d) => ({
+          id: d.id,
+          dayIndex: d.dayIndex,
+          date: d.date.toISOString().slice(0, 10),
+        })),
       }))}
       initialTripId={tripId}
     />

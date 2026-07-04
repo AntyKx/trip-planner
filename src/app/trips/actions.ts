@@ -91,6 +91,11 @@ export type NewPlaceInput = {
   photoUrl?: string;
   provider: string;
   externalId: string;
+  // Structured opening-hours JSON (see src/lib/businessHours.ts) — stored
+  // once so later time-range checks (EditItemModal) don't need to hit
+  // Google again. Only present when the caller already fetched it (e.g.
+  // ExploreClient checking the day-of-week before adding).
+  openHours?: string;
 };
 
 export async function addPlaceToDay(
@@ -107,7 +112,10 @@ export async function addPlaceToDay(
         externalId: place.externalId,
       },
     },
-    update: { photoUrl: place.photoUrl },
+    update: {
+      photoUrl: place.photoUrl,
+      ...(place.openHours ? { openHours: place.openHours } : {}),
+    },
     create: place,
   });
 
@@ -168,7 +176,10 @@ export async function setDayAnchor(
         externalId: place.externalId,
       },
     },
-    update: { photoUrl: place.photoUrl },
+    update: {
+      photoUrl: place.photoUrl,
+      ...(place.openHours ? { openHours: place.openHours } : {}),
+    },
     create: place,
   });
 

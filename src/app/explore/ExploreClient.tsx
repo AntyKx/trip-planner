@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
-import { MapPin, Search, Check } from "lucide-react";
-import { searchPlaces, type PlaceResult } from "@/lib/places";
+import { MapPin, Search, Check, TriangleAlert } from "lucide-react";
+import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
 import { TYPE_LABEL } from "@/lib/labels";
+import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 
 export type TripOption = {
   id: string;
   title: string;
-  days: { id: string; dayIndex: number }[];
+  days: { id: string; dayIndex: number; date: string }[];
 };
 
 export default function ExploreClient({
@@ -34,6 +35,10 @@ export default function ExploreClient({
   );
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [isAdding, startAdding] = useTransition();
+  // "This day might be closed" warning per place, shown on the search
+  // result card right after adding — not shown *before* adding since we
+  // don't want to block the add flow on it, just flag it.
+  const [closedWarnings, setClosedWarnings] = useState<Record<string, string>>({});
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId);
 
@@ -54,7 +59,30 @@ export default function ExploreClient({
 
   function handleAdd(place: PlaceResult) {
     if (!selectedDayId) return;
+    const targetDay = selectedTrip?.days.find((d) => d.id === selectedDayId);
+
     startAdding(async () => {
+      // Fetching hours here (instead of bulk-fetching for every search
+      // result) keeps the search list itself cheap — only the place
+      // actually being added pays for the extra Places API call.
+      let openHoursJson: string | undefined;
+      if (targetDay) {
+        const details = await getPlaceDetails(place.externalId);
+        if (details.ok) {
+          openHoursJson = details.details.openHoursJson;
+          if (openHoursJson) {
+            const periods: OpeningPeriod[] = JSON.parse(openHoursJson);
+            const date = new Date(`${targetDay.date}T00:00:00`);
+            if (isClosedAllDay(periods, date)) {
+              setClosedWarnings((prev) => ({
+                ...prev,
+                [place.externalId]: `⚠️ 這天（${weekdayLabel(date)}）可能公休，請確認營業時間`,
+              }));
+            }
+          }
+        }
+      }
+
       await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
         name: place.name,
         category: place.category || place.suggestedType,
@@ -67,6 +95,7 @@ export default function ExploreClient({
         photoUrl: place.photoUrl,
         provider: "google",
         externalId: place.externalId,
+        openHours: openHoursJson,
       });
       setAddedIds((prev) => new Set(prev).add(place.externalId));
     });
@@ -240,6 +269,12 @@ export default function ExploreClient({
                 {renderAddActions(place)}
               </div>
             </div>
+            {closedWarnings[place.externalId] && (
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
+                <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                {closedWarnings[place.externalId]}
+              </p>
+            )}
           </div>
         ))}
 
