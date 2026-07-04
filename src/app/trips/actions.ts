@@ -128,6 +128,63 @@ export async function addPlaceToDay(
   revalidatePath(`/trips/${tripId}`);
 }
 
+// "本日起點" for route optimization (e.g. the hotel the day starts from) —
+// not a timeline item, just a hint so optimizeStopOrder can free up the
+// first/last card instead of always keeping them fixed. See
+// src/lib/routeMode.ts for why that matters.
+export async function setDayAnchor(
+  tripId: string,
+  dayId: string,
+  place: NewPlaceInput,
+  applyToFollowingDays: boolean
+) {
+  await requireTripOwner(tripId);
+  const dbPlace = await prisma.place.upsert({
+    where: {
+      provider_externalId: {
+        provider: place.provider,
+        externalId: place.externalId,
+      },
+    },
+    update: { photoUrl: place.photoUrl },
+    create: place,
+  });
+
+  if (applyToFollowingDays) {
+    const day = await prisma.tripDay.findUnique({
+      where: { id: dayId },
+      select: { dayIndex: true },
+    });
+    if (day) {
+      await prisma.tripDay.updateMany({
+        where: { tripId, dayIndex: { gte: day.dayIndex } },
+        data: { anchorPlaceId: dbPlace.id },
+      });
+    }
+  } else {
+    await prisma.tripDay.update({
+      where: { id: dayId },
+      data: { anchorPlaceId: dbPlace.id },
+    });
+  }
+
+  revalidatePath(`/trips/${tripId}`);
+  return {
+    name: dbPlace.name,
+    lat: dbPlace.lat,
+    lng: dbPlace.lng,
+  };
+}
+
+export async function clearDayAnchor(tripId: string, dayId: string) {
+  await requireTripOwner(tripId);
+  await prisma.tripDay.update({
+    where: { id: dayId },
+    data: { anchorPlaceId: null },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export async function addCollaborator(
   tripId: string,
   email: string,

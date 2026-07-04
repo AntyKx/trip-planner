@@ -80,22 +80,29 @@ model Collaborator {
 }
 
 model TripDay {
-  id        String   @id @default(cuid())
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  tripId    String
-  date      DateTime
-  dayIndex  Int
-  note      String?
-  items     Item[]
-  routes    Route[]
+  id       String   @id @default(cuid())
+  trip     Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripId   String
+  date     DateTime
+  dayIndex Int
+  note     String?
+  items    Item[]
+  routes   Route[]
+
+  // "Start from" point for route optimization on this day (e.g. the hotel
+  // the day begins at) — not a timeline item, just a hint for
+  // optimizeStopOrder so a geographic outlier can land at the edge of the
+  // route instead of being sandwiched between two fixed endpoints.
+  anchorPlace   Place?  @relation("TripDayAnchor", fields: [anchorPlaceId], references: [id])
+  anchorPlaceId String?
 }
 
 model Item {
-  id                 String    @id @default(cuid())
-  day                TripDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  id                 String        @id @default(cuid())
+  day                TripDay       @relation(fields: [dayId], references: [id], onDelete: Cascade)
   dayId              String
   type               ItemType
-  place              Place?    @relation(fields: [placeId], references: [id])
+  place              Place?        @relation(fields: [placeId], references: [id])
   placeId            String?
   startTime          DateTime?
   endTime            DateTime?
@@ -111,7 +118,7 @@ model Item {
 }
 
 model Place {
-  id         String   @id @default(cuid())
+  id         String  @id @default(cuid())
   name       String
   category   String
   country    String // "TW" | "JP" | ...
@@ -126,20 +133,22 @@ model Place {
   externalId String
   items      Item[]
 
+  anchorForDays TripDay[] @relation("TripDayAnchor")
+
   @@unique([provider, externalId])
 }
 
 model Route {
-  id         String     @id @default(cuid())
-  day        TripDay    @relation(fields: [dayId], references: [id], onDelete: Cascade)
-  dayId      String
-  fromItem   Item       @relation("RouteFrom", fields: [fromItemId], references: [id], onDelete: Cascade)
-  fromItemId String
-  toItem     Item       @relation("RouteTo", fields: [toItemId], references: [id], onDelete: Cascade)
-  toItemId   String
-  mode       TravelMode
-  country    String // "TW" | "JP" | ...
-  provider   String // "google" | "tdx" | "ekispert" | ...
+  id          String     @id @default(cuid())
+  day         TripDay    @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  dayId       String
+  fromItem    Item       @relation("RouteFrom", fields: [fromItemId], references: [id], onDelete: Cascade)
+  fromItemId  String
+  toItem      Item       @relation("RouteTo", fields: [toItemId], references: [id], onDelete: Cascade)
+  toItemId    String
+  mode        TravelMode
+  country     String // "TW" | "JP" | ...
+  provider    String // "google" | "tdx" | "ekispert" | ...
   durationMin Int?
   distanceKm  Float?
   fare        Float?

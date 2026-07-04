@@ -134,19 +134,27 @@ export async function computeBestLeg(
   return walk ?? estimateWalk(straightLineKm);
 }
 
-// Local search over the interior of the path (endpoints at index 0 and
-// length-1 stay fixed) that keeps reversing whichever segment shortens the
-// total distance, until no more improvement is found.
-function improveWith2Opt(path: google.maps.LatLngLiteral[]): void {
+// Local search that keeps reversing whichever segment shortens the total
+// path distance, until no more improvement is found. path[0] always stays
+// fixed (the trip's real first stop, or a virtual anchor not included in
+// the final result — see optimizeStopOrder). The last element only stays
+// fixed when `fixLast` is true; otherwise it's free to end up anywhere,
+// which is what lets a geographic outlier land at the edge of the route
+// instead of being sandwiched between two fixed endpoints.
+function improveWith2Opt(path: google.maps.LatLngLiteral[], fixLast: boolean): void {
   let improved = true;
   while (improved) {
     improved = false;
-    for (let i = 1; i < path.length - 2; i++) {
-      for (let j = i + 1; j < path.length - 1; j++) {
+    const jMax = fixLast ? path.length - 2 : path.length - 1;
+    for (let i = 1; i < path.length - 1; i++) {
+      for (let j = i + 1; j <= jMax; j++) {
+        const hasTailEdge = j < path.length - 1;
         const before =
-          haversineKm(path[i - 1], path[i]) + haversineKm(path[j], path[j + 1]);
+          haversineKm(path[i - 1], path[i]) +
+          (hasTailEdge ? haversineKm(path[j], path[j + 1]) : 0);
         const after =
-          haversineKm(path[i - 1], path[j]) + haversineKm(path[i], path[j + 1]);
+          haversineKm(path[i - 1], path[j]) +
+          (hasTailEdge ? haversineKm(path[i], path[j + 1]) : 0);
         if (after + 1e-9 < before) {
           let lo = i;
           let hi = j;
@@ -162,39 +170,63 @@ function improveWith2Opt(path: google.maps.LatLngLiteral[]): void {
   }
 }
 
-// Reorders stops to minimize total straight-line distance for the day,
-// keeping the first and last stop fixed (matches "自動安排最順路線" —
-// no Directions calls, no per-mode limitation, just geography). Nearest-
-// neighbor gives a starting order, then 2-opt cleans up the obvious
-// crossings/detours it tends to leave behind.
+// Reorders stops to minimize total straight-line distance for the day
+// (matches "自動安排最順路線" — no Directions calls, no per-mode
+// limitation, just geography). Nearest-neighbor gives a starting order,
+// then 2-opt cleans up the obvious crossings/detours it tends to leave
+// behind.
+//
+// Without an anchor: first and last stop stay fixed, only the interior
+// gets reordered. This is wrong when neither the current first nor last
+// stop is a real "must start/end here" point — e.g. 4 stops where 3 are
+// clustered and 1 is a distant outlier, with the outlier stuck between two
+// fixed nearby endpoints, forces a there-and-back detour no reordering of
+// the interior can avoid.
+//
+// With an anchor (e.g. the day's hotel): the anchor is treated as a fixed
+// starting point that never appears in the output, and ALL real stops
+// (including whichever was first/last) become free to reorder — so an
+// outlier can end up at the end of the route instead of the middle.
 export function optimizeStopOrder<T extends google.maps.LatLngLiteral>(
-  points: T[]
+  points: T[],
+  anchor?: google.maps.LatLngLiteral
 ): T[] {
+  function nearestNeighborOrder(start: google.maps.LatLngLiteral, pool: T[]): T[] {
+    const remaining = [...pool];
+    const ordered: T[] = [];
+    let current = start;
+    while (remaining.length > 0) {
+      let nearestIndex = 0;
+      let nearestDistance = Infinity;
+      for (let i = 0; i < remaining.length; i++) {
+        const distance = haversineKm(current, remaining[i]);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = i;
+        }
+      }
+      const [next] = remaining.splice(nearestIndex, 1);
+      ordered.push(next);
+      current = next;
+    }
+    return ordered;
+  }
+
+  if (anchor) {
+    if (points.length <= 1) return points;
+    const ordered = nearestNeighborOrder(anchor, points);
+    const path: google.maps.LatLngLiteral[] = [anchor, ...ordered];
+    improveWith2Opt(path, false);
+    return path.slice(1) as T[];
+  }
+
   if (points.length <= 2) return points;
 
   const first = points[0];
   const last = points[points.length - 1];
-  const remaining = points.slice(1, -1);
-  const ordered: T[] = [];
-  let current: google.maps.LatLngLiteral = first;
-
-  while (remaining.length > 0) {
-    let nearestIndex = 0;
-    let nearestDistance = Infinity;
-    for (let i = 0; i < remaining.length; i++) {
-      const distance = haversineKm(current, remaining[i]);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestIndex = i;
-      }
-    }
-    const [next] = remaining.splice(nearestIndex, 1);
-    ordered.push(next);
-    current = next;
-  }
-
+  const ordered = nearestNeighborOrder(first, points.slice(1, -1));
   const path = [first, ...ordered, last];
-  improveWith2Opt(path);
+  improveWith2Opt(path, true);
   return path;
 }
 

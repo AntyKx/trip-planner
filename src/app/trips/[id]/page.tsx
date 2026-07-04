@@ -41,6 +41,7 @@ export default async function TripDetailPage({
               include: { place: true },
             },
             routes: true,
+            anchorPlace: true,
           },
         },
       },
@@ -163,6 +164,15 @@ export default async function TripDetailPage({
               // open-meteo has no SLA and blocking SSR on it made every trip
               // page load wait on the slowest of N external calls.
               weather: null,
+              anchor: day.anchorPlace
+                ? {
+                    name: day.anchorPlace.name,
+                    lat: day.anchorPlace.lat,
+                    lng: day.anchorPlace.lng,
+                    provider: day.anchorPlace.provider,
+                    externalId: day.anchorPlace.externalId,
+                  }
+                : null,
               timelineItems: day.items.map((item) => ({
                 id: item.id,
                 type: item.type,

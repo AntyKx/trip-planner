@@ -53,6 +53,7 @@ import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
+import DayAnchorControl, { type DayAnchor } from "./DayAnchorControl";
 
 export type TimelineItem = {
   id: string;
@@ -359,15 +360,22 @@ export default function DayTimeline({
   dayDate,
   items: initialItems,
   routes: initialRoutes,
+  anchor: initialAnchor,
+  defaultCountry,
+  hasFollowingDays,
 }: {
   tripId: string;
   dayId: string;
   dayDate: string;
   items: TimelineItem[];
   routes: TimelineRoute[];
+  anchor: DayAnchor | null;
+  defaultCountry: "TW" | "JP";
+  hasFollowingDays: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
+  const [anchor, setAnchor] = useState(initialAnchor);
   const [isPending, startTransition] = useTransition();
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
@@ -407,7 +415,12 @@ export default function DayTimeline({
   const routesLibrary = useMapsLibrary("routes");
 
   const placeItems = items.filter((i) => i.place);
-  const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
+  // Without an anchor, both endpoints stay fixed, so reordering only means
+  // something with >=3 place-items (1+ free in the interior). With an
+  // anchor, every place-item is free, so even 2 can be worth reordering.
+  const canOptimize =
+    placeItems.length === items.length &&
+    placeItems.length >= (anchor ? 2 : 3);
 
   // Maps an item to the id of the next place-item after it, so the route
   // badge under a card always reflects the *current* adjacency instead of a
@@ -554,10 +567,15 @@ export default function DayTimeline({
     }
   }
 
-  // "自動安排最順路線": reorders stops by straight-line distance (first and
-  // last stop stay put) so the day doesn't zigzag. No Directions calls here
-  // — the existing auto-fill effect picks up the new adjacency afterward and
-  // computes each leg's real travel mode/time on its own.
+  // "自動安排最順路線": reorders stops by straight-line distance so the day
+  // doesn't zigzag. No Directions calls here — the existing auto-fill
+  // effect picks up the new adjacency afterward and computes each leg's
+  // real travel mode/time on its own.
+  //
+  // Without a "本日起點" set, first/last stop stay fixed — with one set,
+  // every stop (including the current first/last) is free to reorder, so a
+  // geographic outlier can land at the edge of the route instead of being
+  // sandwiched between two endpoints that were never meant to be anchors.
   function handleOrganizeRoute() {
     if (!canOptimize) return;
     const points = placeItems.map((item) => ({
@@ -565,7 +583,10 @@ export default function DayTimeline({
       lat: item.place!.lat,
       lng: item.place!.lng,
     }));
-    const ordered = optimizeStopOrder(points);
+    const ordered = optimizeStopOrder(
+      points,
+      anchor ? { lat: anchor.lat, lng: anchor.lng } : undefined
+    );
     const newItems = ordered.map(
       (p) => placeItems.find((item) => item.id === p.id)!
     );
@@ -738,7 +759,7 @@ export default function DayTimeline({
           disabled={!canOptimize}
           title={
             !canOptimize
-              ? "需要至少 3 個都有地點資料的項目才能排序"
+              ? `需要至少 ${anchor ? 2 : 3} 個都有地點資料的項目才能排序`
               : undefined
           }
           className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -746,6 +767,17 @@ export default function DayTimeline({
           <Waypoints className="h-3.5 w-3.5" />
           自動安排最順路線
         </button>
+      </div>
+
+      <div className="mb-3">
+        <DayAnchorControl
+          tripId={tripId}
+          dayId={dayId}
+          anchor={anchor}
+          defaultCountry={defaultCountry}
+          hasFollowingDays={hasFollowingDays}
+          onAnchorChange={setAnchor}
+        />
       </div>
 
       {routeError && (
