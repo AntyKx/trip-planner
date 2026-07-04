@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
@@ -9,7 +9,7 @@ import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 import { formatTime } from "@/lib/labels";
 import { getNextStop } from "@/lib/timeline";
-import { requireTripOwner } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 
 export default async function TripDetailPage({
   params,
@@ -18,26 +18,32 @@ export default async function TripDetailPage({
 }) {
   const { id } = await params;
 
-  const trip = await prisma.trip.findUnique({
-    where: { id },
-    include: {
-      owner: true,
-      collaborators: { include: { user: true } },
-      days: {
-        orderBy: { dayIndex: "asc" },
-        include: {
-          items: {
-            orderBy: { sortOrder: "asc" },
-            include: { place: true },
+  // requireUser() and the trip query are independent (both keyed off the
+  // request, not each other), so run them concurrently instead of checking
+  // ownership as a separate sequential round trip after the trip loads.
+  const [user, trip] = await Promise.all([
+    requireUser(),
+    prisma.trip.findUnique({
+      where: { id },
+      include: {
+        owner: true,
+        collaborators: { include: { user: true } },
+        days: {
+          orderBy: { dayIndex: "asc" },
+          include: {
+            items: {
+              orderBy: { sortOrder: "asc" },
+              include: { place: true },
+            },
+            routes: true,
           },
-          routes: true,
         },
       },
-    },
-  });
+    }),
+  ]);
 
   if (!trip) notFound();
-  await requireTripOwner(trip.id);
+  if (trip.ownerId !== user.id) redirect("/");
 
   const collaborators = [
     { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },

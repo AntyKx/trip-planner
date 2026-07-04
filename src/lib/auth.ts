@@ -17,11 +17,15 @@ export async function requireUser() {
 }
 
 export async function requireTripOwner(tripId: string) {
-  const user = await requireUser();
-  const trip = await prisma.trip.findUnique({
-    where: { id: tripId },
-    select: { ownerId: true },
-  });
+  const store = await cookies();
+  const session = verifySession(store.get(SESSION_COOKIE_NAME)?.value);
+  if (!session) redirect("/login");
+
+  const [user, trip] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.userId } }),
+    prisma.trip.findUnique({ where: { id: tripId }, select: { ownerId: true } }),
+  ]);
+  if (!user) redirect("/login");
   if (!trip || trip.ownerId !== user.id) redirect("/");
   return user;
 }

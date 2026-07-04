@@ -441,26 +441,31 @@ export default function DayTimeline({
     (async () => {
       setIsAutoFilling(true);
       const directionsService = new routesLibrary.DirectionsService();
-      const computed: TimelineRoute[] = [];
-      for (const { from, to, key } of missingPairs) {
-        attemptedAutoFillRef.current.add(key);
-        const leg = await computeBestLeg(
-          directionsService,
-          { lat: from.place!.lat, lng: from.place!.lng },
-          { lat: to.place!.lat, lng: to.place!.lng },
-          from.place!.country.toLowerCase()
-        );
-        if (leg) {
-          computed.push({
+      // Compute every missing leg concurrently instead of one at a time —
+      // each leg is 1-3 independent Directions API calls, so awaiting them
+      // sequentially made a day's worth of legs take N times as long as a
+      // single leg for no reason.
+      const results = await Promise.all(
+        missingPairs.map(async ({ from, to, key }): Promise<TimelineRoute | null> => {
+          attemptedAutoFillRef.current.add(key);
+          const leg = await computeBestLeg(
+            directionsService,
+            { lat: from.place!.lat, lng: from.place!.lng },
+            { lat: to.place!.lat, lng: to.place!.lng },
+            from.place!.country.toLowerCase()
+          );
+          if (!leg) return null;
+          return {
             fromItemId: from.id,
             toItemId: to.id,
             mode: leg.mode,
             durationMin: leg.durationMin,
             distanceKm: leg.distanceKm,
             provider: "google",
-          });
-        }
-      }
+          };
+        })
+      );
+      const computed = results.filter((r): r is TimelineRoute => r != null);
       if (cancelled) return;
       setIsAutoFilling(false);
       if (computed.length === 0) return;

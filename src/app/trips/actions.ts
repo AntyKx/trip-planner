@@ -5,6 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser, requireTripOwner } from "@/lib/auth";
 
+// No revalidatePath here on purpose: item order isn't read by any other
+// server-rendered piece of this page (map/budget both key routes and costs
+// by item id, not array position), and the client already reflects the new
+// order optimistically. Revalidating would force the whole trip page's
+// query + weather fetches to re-run synchronously on every drag, which is
+// the main thing that made drag-reordering feel slow.
 export async function reorderItems(
   tripId: string,
   dayId: string,
@@ -16,7 +22,6 @@ export async function reorderItems(
       prisma.item.update({ where: { id }, data: { sortOrder: index + 1 } })
     )
   );
-  revalidatePath(`/trips/${tripId}`);
 }
 
 export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
