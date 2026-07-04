@@ -25,6 +25,11 @@ export default async function TripDetailPage({
     requireUser(),
     prisma.trip.findUnique({
       where: { id },
+      // Prisma's default strategy runs one sequential query per relation
+      // level (trip, owner, collaborators, days, items, places, routes —
+      // 7 round trips for this shape). "join" collapses it into a single
+      // SQL query, which is what actually made this page slow to load.
+      relationLoadStrategy: "join",
       include: {
         owner: true,
         collaborators: { include: { user: true } },

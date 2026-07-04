@@ -14,6 +14,9 @@ export default async function TripsPage() {
   const user = await requireUser();
   const trips = await prisma.trip.findMany({
     where: { ownerId: user.id },
+    // See src/app/trips/[id]/page.tsx — "join" avoids Prisma's default
+    // one-query-per-relation-level strategy.
+    relationLoadStrategy: "join",
     include: {
       days: {
         orderBy: { dayIndex: "asc" },
