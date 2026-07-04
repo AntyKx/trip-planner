@@ -265,9 +265,6 @@ export default function ExploreClient({
                       </span>
                     )}
                   </div>
-                  <p className="mt-0.5 truncate text-sm text-slate-600">
-                    {[place.category, place.address].filter(Boolean).join(" · ")}
-                  </p>
                 </PlaceDetailsTrigger>
               </div>
               <div className="flex shrink-0 flex-col gap-1">
