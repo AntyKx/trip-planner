@@ -130,9 +130,19 @@ export default function EditItemModal({
       ? `${weekdayLabel(dayDateObj)}的結束時間可能超出營業時間`
       : null;
 
+  // Labeling this "Z" (UTC) is what makes it unambiguous — these times are
+  // really just wall-clock digits with no true timezone, but a bare
+  // "YYYY-MM-DDTHH:mm:00" string is parsed by `new Date()` as *local time
+  // of whatever environment does the parsing*: UTC on the server (where
+  // this gets saved), but the browser's own zone when the same string is
+  // re-parsed client-side after a save (see handleItemSaved in
+  // DayTimeline.tsx, which stores this raw string, not a Date object) —
+  // that mismatch was silently shifting the displayed time by the
+  // browser's UTC offset until the next full page reload. Appending "Z"
+  // forces every parse, wherever it happens, to agree on the same instant.
   function toIso(hhmm: string): string | null {
     if (!hhmm) return null;
-    return `${dayDate}T${hhmm}:00`;
+    return `${dayDate}T${hhmm}:00Z`;
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
