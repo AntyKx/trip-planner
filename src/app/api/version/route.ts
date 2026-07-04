@@ -6,14 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   return NextResponse.json(
-    {
-      buildId: process.env.NEXT_PUBLIC_BUILD_ID,
-      // TEMPORARY — diagnosing a timezone bug in start/end time parsing,
-      // remove once confirmed.
-      serverTz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      tzEnv: process.env.TZ ?? null,
-      utcOffsetMinutes: new Date().getTimezoneOffset(),
-    },
+    { buildId: process.env.NEXT_PUBLIC_BUILD_ID },
     { headers: { "Cache-Control": "no-store" } }
   );
 }
