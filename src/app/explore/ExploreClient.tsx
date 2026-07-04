@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
-import { MapPin, Search, Check, TriangleAlert } from "lucide-react";
+import { MapPin, Search, Check, Star, TriangleAlert } from "lucide-react";
 import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
@@ -254,14 +254,19 @@ export default function ExploreClient({
                     </div>
                   }
                 >
-                  <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
-                    {place.name}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
+                      {place.name}
+                    </h3>
+                    {place.rating != null && (
+                      <span className="flex shrink-0 items-center gap-1 text-sm text-amber-500">
+                        <Star className="h-3.5 w-3.5 fill-amber-500" />
+                        {place.rating}
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-0.5 truncate text-sm text-slate-600">
                     {[place.category, place.address].filter(Boolean).join(" · ")}
-                    {place.rating != null && (
-                      <span className="text-amber-500"> · ★ {place.rating}</span>
-                    )}
                   </p>
                 </PlaceDetailsTrigger>
               </div>
