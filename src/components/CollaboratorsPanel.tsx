@@ -21,9 +21,11 @@ const ROLE_LABEL: Record<Collaborator["role"], string> = {
 export default function CollaboratorsPanel({
   tripId,
   collaborators,
+  canManage,
 }: {
   tripId: string;
   collaborators: Collaborator[];
+  canManage: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -78,7 +80,7 @@ export default function CollaboratorsPanel({
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                 {ROLE_LABEL[c.role]}
               </span>
-              {c.role !== "OWNER" && (
+              {canManage && c.role !== "OWNER" && (
                 <button
                   type="button"
                   disabled={isPending}
@@ -97,40 +99,40 @@ export default function CollaboratorsPanel({
         )}
       </ul>
 
-      <form
-        ref={formRef}
-        onSubmit={handleAdd}
-        className="mt-4 flex flex-col gap-2 sm:flex-row"
-      >
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="邀請夥伴的 email"
-          className="flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
-        />
-        <select
-          name="role"
-          defaultValue="EDITOR"
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm"
-        >
-          <option value="EDITOR">可編輯</option>
-          <option value="VIEWER">僅檢視</option>
-        </select>
-        <button
-          type="submit"
-          disabled={isPending}
-          className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
-        >
-          邀請
-        </button>
-      </form>
+      {canManage && (
+        <>
+          <form
+            ref={formRef}
+            onSubmit={handleAdd}
+            className="mt-4 flex flex-col gap-2 sm:flex-row"
+          >
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="邀請夥伴的 email"
+              className="flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
+            />
+            <select
+              name="role"
+              defaultValue="EDITOR"
+              className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+            >
+              <option value="EDITOR">可編輯</option>
+              <option value="VIEWER">僅檢視</option>
+            </select>
+            <button
+              type="submit"
+              disabled={isPending}
+              className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+            >
+              邀請
+            </button>
+          </form>
 
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
-
-      <p className="mt-3 text-xs text-slate-600">
-        目前協作者名單僅供記錄，尚未實際限制編輯權限（每個人登入後仍只會看到自己擁有的行程）。
-      </p>
+          {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+        </>
+      )}
     </div>
   );
 }

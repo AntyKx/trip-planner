@@ -101,6 +101,7 @@ function SortableItemCard({
   route,
   hasNextStop,
   isAnchor,
+  canEdit,
   isRecomputing,
   isAutoFilling,
   isLoadingJapanHint,
@@ -114,6 +115,7 @@ function SortableItemCard({
   route?: TimelineRoute;
   hasNextStop: boolean;
   isAnchor: boolean;
+  canEdit: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
   isLoadingJapanHint: boolean;
@@ -124,7 +126,7 @@ function SortableItemCard({
   onOpenJapanHint: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
+    useSortable({ id: item.id, disabled: !canEdit });
   const transitSupported = isGoogleTransitSupported(item.place?.country);
   const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
   const [showMenu, setShowMenu] = useState(false);
@@ -162,8 +164,8 @@ function SortableItemCard({
   return (
     <div ref={setNodeRef} style={style} className="mb-3">
       <div
-        {...attributes}
-        {...listeners}
+        {...(canEdit ? attributes : {})}
+        {...(canEdit ? listeners : {})}
         className="flex touch-manipulation items-stretch rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
       >
         {item.place?.photoUrl ? (
@@ -210,14 +212,16 @@ function SortableItemCard({
               )}
             </div>
             <div ref={menuRef} className="relative flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={onEdit}
-                aria-label="編輯項目"
-                className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={onEdit}
+                  aria-label="編輯項目"
+                  className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setShowMenu((v) => !v)}
@@ -245,17 +249,19 @@ function SortableItemCard({
                       導航
                     </a>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowMenu(false);
-                      onDelete();
-                    }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
-                  >
-                    <X className="h-4 w-4" />
-                    刪除
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMenu(false);
+                        onDelete();
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                    >
+                      <X className="h-4 w-4" />
+                      刪除
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -297,33 +303,40 @@ function SortableItemCard({
 
       {hasNextStop && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
-          <select
-            aria-label="交通方式"
-            value={route?.mode ?? "WALK"}
-            onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
-            disabled={isRecomputing}
-            className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
-          >
-            {TRAVEL_MODE_OPTIONS.map((opt) => {
-              const disabled =
-                opt.value === "TRANSIT" && !transitSupported;
-              return (
-                <option
-                  key={opt.value}
-                  value={opt.value}
-                  disabled={disabled}
-                  title={
-                    disabled
-                      ? "Google 目前沒有這個國家的大眾運輸資料"
-                      : undefined
-                  }
-                >
-                  {opt.label}
-                  {disabled ? "（Google 無資料）" : ""}
-                </option>
-              );
-            })}
-          </select>
+          {canEdit ? (
+            <select
+              aria-label="交通方式"
+              value={route?.mode ?? "WALK"}
+              onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
+              disabled={isRecomputing}
+              className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+            >
+              {TRAVEL_MODE_OPTIONS.map((opt) => {
+                const disabled =
+                  opt.value === "TRANSIT" && !transitSupported;
+                return (
+                  <option
+                    key={opt.value}
+                    value={opt.value}
+                    disabled={disabled}
+                    title={
+                      disabled
+                        ? "Google 目前沒有這個國家的大眾運輸資料"
+                        : undefined
+                    }
+                  >
+                    {opt.label}
+                    {disabled ? "（Google 無資料）" : ""}
+                  </option>
+                );
+              })}
+            </select>
+          ) : (
+            <span className="shrink-0 text-xs font-medium text-ink-500">
+              {TRAVEL_MODE_OPTIONS.find((opt) => opt.value === (route?.mode ?? "WALK"))
+                ?.label}
+            </span>
+          )}
           {isRecomputing || (isAutoFilling && !route) ? (
             <span className="text-xs text-ink-500">計算中…</span>
           ) : route && route.durationMin != null ? (
@@ -373,6 +386,7 @@ export default function DayTimeline({
   anchorItemId: initialAnchorItemId,
   defaultCountry,
   otherDays,
+  canEdit,
 }: {
   tripId: string;
   dayId: string;
@@ -382,6 +396,7 @@ export default function DayTimeline({
   anchorItemId: string | null;
   defaultCountry: "TW" | "JP";
   otherDays: DaySummary[];
+  canEdit: boolean;
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
@@ -805,40 +820,44 @@ export default function DayTimeline({
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setEditingItem("new")}
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          新增自訂項目
-        </button>
-        <button
-          type="button"
-          onClick={handleOrganizeRoute}
-          disabled={!canOptimize}
-          title={
-            !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
-          }
-          className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Waypoints className="h-3.5 w-3.5" />
-          自動安排最順路線
-        </button>
-      </div>
+      {canEdit && (
+        <>
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEditingItem("new")}
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              新增自訂項目
+            </button>
+            <button
+              type="button"
+              onClick={handleOrganizeRoute}
+              disabled={!canOptimize}
+              title={
+                !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
+              }
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Waypoints className="h-3.5 w-3.5" />
+              自動安排最順路線
+            </button>
+          </div>
 
-      <div className="mb-3">
-        <DayAnchorControl
-          tripId={tripId}
-          dayId={dayId}
-          anchorName={anchorItem?.place?.name ?? null}
-          defaultCountry={defaultCountry}
-          otherDays={otherDays}
-          onAnchorSet={handleAnchorSet}
-          onAnchorCleared={handleAnchorCleared}
-        />
-      </div>
+          <div className="mb-3">
+            <DayAnchorControl
+              tripId={tripId}
+              dayId={dayId}
+              anchorName={anchorItem?.place?.name ?? null}
+              defaultCountry={defaultCountry}
+              otherDays={otherDays}
+              onAnchorSet={handleAnchorSet}
+              onAnchorCleared={handleAnchorCleared}
+            />
+          </div>
+        </>
+      )}
 
       {routeError && (
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
@@ -861,25 +880,27 @@ export default function DayTimeline({
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-brand-200 bg-white px-6 py-12 text-center">
           <Compass className="h-10 w-10 text-brand-200" />
           <p className="text-sm text-ink-700">
-            今天還沒有行程，先搜尋景點或新增自訂項目吧
+            {canEdit ? "今天還沒有行程，先搜尋景點或新增自訂項目吧" : "今天還沒有行程"}
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            <Link
-              href={`/explore?tripId=${tripId}`}
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              <Search className="h-4 w-4" />
-              搜尋景點
-            </Link>
-            <button
-              type="button"
-              onClick={() => setEditingItem("new")}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
-            >
-              <Plus className="h-4 w-4" />
-              新增自訂項目
-            </button>
-          </div>
+          {canEdit && (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link
+                href={`/explore?tripId=${tripId}`}
+                className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                <Search className="h-4 w-4" />
+                搜尋景點
+              </Link>
+              <button
+                type="button"
+                onClick={() => setEditingItem("new")}
+                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
+              >
+                <Plus className="h-4 w-4" />
+                新增自訂項目
+              </button>
+            </div>
+          )}
         </div>
       ) : (
       <DndContext
@@ -906,6 +927,7 @@ export default function DayTimeline({
                   route={route}
                   hasNextStop={nextId != null}
                   isAnchor={item.id === anchorItemId}
+                  canEdit={canEdit}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
                   isLoadingJapanHint={

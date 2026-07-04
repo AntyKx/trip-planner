@@ -13,7 +13,9 @@ const FALLBACK_GRADIENTS = [
 export default async function TripsPage() {
   const user = await requireUser();
   const trips = await prisma.trip.findMany({
-    where: { ownerId: user.id },
+    where: {
+      OR: [{ ownerId: user.id }, { collaborators: { some: { userId: user.id } } }],
+    },
     // See src/app/trips/[id]/page.tsx — "join" avoids Prisma's default
     // one-query-per-relation-level strategy.
     relationLoadStrategy: "join",
@@ -103,9 +105,16 @@ export default async function TripsPage() {
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
 
-              <span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-ink-700 backdrop-blur">
-                {trip.status}
-              </span>
+              <div className="absolute right-3 top-3 flex gap-1.5">
+                {trip.ownerId !== user.id && (
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
+                    共同編輯
+                  </span>
+                )}
+                <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-ink-700 backdrop-blur">
+                  {trip.status}
+                </span>
+              </div>
 
               <div className="absolute inset-x-0 bottom-0 p-4">
                 <h2 className="truncate text-xl font-bold text-white drop-shadow-sm">

@@ -35,12 +35,16 @@ export default function TripDayBoard({
   days,
   collaborators,
   emergencyInfo,
+  canEdit,
+  isOwner,
 }: {
   tripId: string;
   apiKey?: string;
   days: BoardDay[];
   collaborators: Collaborator[];
   emergencyInfo: string | null;
+  canEdit: boolean;
+  isOwner: boolean;
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel">("edit");
@@ -214,6 +218,7 @@ export default function TripDayBoard({
                 otherDays={daysWithWeather
                   .filter((d) => d.id !== selectedDay.id)
                   .map((d) => ({ id: d.id, dayIndex: d.dayIndex, date: d.date }))}
+                canEdit={canEdit}
               />
             </div>
           </section>
@@ -267,9 +272,13 @@ export default function TripDayBoard({
 
         <BudgetSummary days={daysWithWeather} />
 
-        <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} />
+        <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} canEdit={canEdit} />
 
-        <CollaboratorsPanel tripId={tripId} collaborators={collaborators} />
+        <CollaboratorsPanel
+          tripId={tripId}
+          collaborators={collaborators}
+          canManage={isOwner}
+        />
       </aside>
       </div>
       )}

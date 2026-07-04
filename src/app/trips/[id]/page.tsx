@@ -48,7 +48,14 @@ export default async function TripDetailPage({
   ]);
 
   if (!trip) notFound();
-  if (trip.ownerId !== user.id) redirect("/");
+
+  const role: "OWNER" | "EDITOR" | "VIEWER" | null =
+    trip.ownerId === user.id
+      ? "OWNER"
+      : (trip.collaborators.find((c) => c.userId === user.id)?.role ?? null);
+  if (!role) redirect("/");
+  const isOwner = role === "OWNER";
+  const canEdit = role !== "VIEWER";
 
   const collaborators = [
     { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },
@@ -95,6 +102,7 @@ export default async function TripDetailPage({
           coverImage={coverImage}
           currentCoverImage={trip.coverImage}
           availablePhotos={availablePhotos}
+          canEdit={canEdit}
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
@@ -133,18 +141,20 @@ export default async function TripDetailPage({
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Link
-            href={`/explore?tripId=${trip.id}`}
-            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-          >
-            <Plus className="h-4 w-4" />
-            加入景點/餐廳
-          </Link>
+          {canEdit && (
+            <Link
+              href={`/explore?tripId=${trip.id}`}
+              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+            >
+              <Plus className="h-4 w-4" />
+              加入景點/餐廳
+            </Link>
+          )}
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-ink-700">
             {trip.status}
           </span>
         </div>
-        <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />
+        {isOwner && <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />}
       </div>
 
       <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
@@ -154,6 +164,8 @@ export default async function TripDetailPage({
             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
             collaborators={collaborators}
             emergencyInfo={trip.emergencyInfo}
+            canEdit={canEdit}
+            isOwner={isOwner}
             days={trip.days.map((day) => ({
               id: day.id,
               dayIndex: day.dayIndex,

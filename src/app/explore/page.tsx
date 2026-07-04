@@ -11,7 +11,16 @@ export default async function ExplorePage({
   const user = await requireUser();
 
   const trips = await prisma.trip.findMany({
-    where: { ownerId: user.id },
+    where: {
+      OR: [
+        { ownerId: user.id },
+        {
+          collaborators: {
+            some: { userId: user.id, role: "EDITOR" },
+          },
+        },
+      ],
+    },
     orderBy: { startDate: "asc" },
     include: { days: { orderBy: { dayIndex: "asc" } } },
   });

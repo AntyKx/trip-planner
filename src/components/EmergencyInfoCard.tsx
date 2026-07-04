@@ -8,9 +8,11 @@ import { updateEmergencyInfo } from "@/app/trips/actions";
 export default function EmergencyInfoCard({
   tripId,
   emergencyInfo,
+  canEdit,
 }: {
   tripId: string;
   emergencyInfo: string | null;
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -32,7 +34,7 @@ export default function EmergencyInfoCard({
           <ShieldAlert className="h-4 w-4" />
           緊急資訊
         </h3>
-        {!isEditing && (
+        {canEdit && !isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
@@ -44,7 +46,7 @@ export default function EmergencyInfoCard({
         )}
       </div>
 
-      {isEditing ? (
+      {canEdit && isEditing ? (
         <div className="mt-3 space-y-2">
           <textarea
             value={text}

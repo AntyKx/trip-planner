@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser, requireTripOwner } from "@/lib/auth";
+import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 
 // Weather is fetched from the client after the trip page has already
@@ -31,7 +31,7 @@ export async function reorderItems(
   dayId: string,
   orderedItemIds: string[]
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   await prisma.$transaction(
     orderedItemIds.map((id, index) =>
       prisma.item.update({ where: { id }, data: { sortOrder: index + 1 } })
@@ -58,7 +58,7 @@ export async function saveRoutes(
   country: string,
   routes: RouteInput[]
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   await prisma.$transaction([
     prisma.route.deleteMany({ where: { dayId } }),
     ...routes.map((r) =>
@@ -99,7 +99,7 @@ export async function addPlaceToDay(
   itemType: "PLACE" | "RESTAURANT" | "HOTEL" | "CUSTOM",
   place: NewPlaceInput
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -160,7 +160,7 @@ export async function setDayAnchor(
   // Hotel A day6-7" be set without overwriting the days in between.
   applyToDayIds: string[]
 ): Promise<Record<string, AnchorItemResult>> {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -223,7 +223,7 @@ export async function setDayAnchor(
 }
 
 export async function clearDayAnchor(tripId: string, dayId: string) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   const day = await prisma.tripDay.findUnique({
     where: { id: dayId },
     select: { anchorItemId: true },
@@ -271,7 +271,7 @@ export async function removeCollaborator(tripId: string, userId: string) {
 }
 
 export async function deleteItem(tripId: string, itemId: string) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   // If this item is some day's anchor card, unlink it first — TripDay's FK
   // to Item would otherwise block the delete, and this keeps the day's
   // "no anchor set" state consistent when the anchor card is removed via
@@ -313,7 +313,7 @@ export async function updateItem(
     costCategory: CostCategoryValue | null;
   }
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   await prisma.item.update({
     where: { id: itemId },
     data: {
@@ -344,7 +344,7 @@ export async function addCustomItem(
     costCategory: CostCategoryValue | null;
   }
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   const lastItem = await prisma.item.findFirst({
     where: { dayId },
     orderBy: { sortOrder: "desc" },
@@ -370,7 +370,7 @@ export async function addCustomItem(
 }
 
 export async function updateEmergencyInfo(tripId: string, text: string) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   await prisma.trip.update({
     where: { id: tripId },
     data: { emergencyInfo: text.trim() || null },
@@ -382,7 +382,7 @@ export async function updateTripCoverImage(
   tripId: string,
   coverImage: string | null
 ) {
-  await requireTripOwner(tripId);
+  await requireTripEditor(tripId);
   await prisma.trip.update({
     where: { id: tripId },
     data: { coverImage: coverImage?.trim() || null },

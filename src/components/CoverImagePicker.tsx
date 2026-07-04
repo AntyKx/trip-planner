@@ -18,12 +18,14 @@ export default function CoverImagePicker({
   coverImage,
   currentCoverImage,
   availablePhotos,
+  canEdit,
 }: {
   tripId: string;
   tripTitle: string;
   coverImage?: string | null;
   currentCoverImage: string | null;
   availablePhotos: string[];
+  canEdit: boolean;
 }) {
   const router = useRouter();
   const [showEditButton, setShowEditButton] = useState(false);
@@ -82,6 +84,21 @@ export default function CoverImagePicker({
     } finally {
       setIsUploading(false);
     }
+  }
+
+  if (!canEdit) {
+    return (
+      <div className="absolute inset-0">
+        {coverImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt={tripTitle}
+            className="h-full w-full object-cover"
+          />
+        )}
+      </div>
+    );
   }
 
   return (
