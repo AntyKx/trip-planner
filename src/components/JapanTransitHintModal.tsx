@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { ExternalLink, MapPin, X } from "lucide-react";
 import type { JapanTransitStationHint } from "@/app/trips/actions";
+import ModalOverlay from "./ModalOverlay";
 
 const WALK_KMH = 4.5;
 
@@ -67,32 +67,21 @@ export default function JapanTransitHintModal({
   externalUrl: string | null;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={onClose}
+    <ModalOverlay
+      onClose={onClose}
+      titleId="japan-transit-hint-modal-title"
+      panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden"
     >
-      <div
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
-          <h2 className="min-w-0 truncate text-base font-bold text-ink-900">
+          <h2 id="japan-transit-hint-modal-title" className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromPlaceName} → {toPlaceName}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="關閉"
-            className="shrink-0 p-1 text-slate-400 hover:text-slate-700"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -139,7 +128,6 @@ export default function JapanTransitHintModal({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }

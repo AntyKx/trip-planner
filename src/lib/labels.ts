@@ -4,10 +4,20 @@ import {
   UtensilsCrossed,
   Bed,
   TrainFront,
+  TrainFrontTunnel,
   StickyNote,
   Coffee,
   ShoppingBag,
   Sparkles,
+  Footprints,
+  Car,
+  Bike,
+  Bus,
+  CableCar,
+  Ship,
+  CarTaxiFront,
+  TramFront,
+  Route,
 } from "lucide-react";
 
 export const TYPE_LABEL: Record<string, string> = {
@@ -72,11 +82,11 @@ export const MODE_LABEL: Record<string, string> = {
   BIKE: "騎車",
 };
 
-export const MODE_ICON: Record<string, string> = {
-  WALK: "🚶",
-  TRANSIT: "🚆",
-  DRIVE: "🚗",
-  BIKE: "🚲",
+export const MODE_ICON: Record<string, LucideIcon> = {
+  WALK: Footprints,
+  TRANSIT: TrainFront,
+  DRIVE: Car,
+  BIKE: Bike,
 };
 
 export const COUNTRY_FLAG: Record<string, string> = {
@@ -105,24 +115,24 @@ export const VEHICLE_LABEL: Record<string, string> = {
   OTHER: "大眾運輸",
 };
 
-export const VEHICLE_ICON: Record<string, string> = {
-  BUS: "🚌",
-  CABLE_CAR: "🚠",
-  COMMUTER_TRAIN: "🚆",
-  FERRY: "⛴️",
-  FUNICULAR: "🚞",
-  GONDOLA_LIFT: "🚡",
-  HEAVY_RAIL: "🚆",
-  HIGH_SPEED_TRAIN: "🚄",
-  INTERCITY_BUS: "🚌",
-  METRO_RAIL: "🚇",
-  MONORAIL: "🚝",
-  RAIL: "🚆",
-  SHARE_TAXI: "🚕",
-  SUBWAY: "🚇",
-  TRAM: "🚋",
-  TROLLEYBUS: "🚎",
-  OTHER: "🚏",
+export const VEHICLE_ICON: Record<string, LucideIcon> = {
+  BUS: Bus,
+  CABLE_CAR: CableCar,
+  COMMUTER_TRAIN: TrainFront,
+  FERRY: Ship,
+  FUNICULAR: CableCar,
+  GONDOLA_LIFT: CableCar,
+  HEAVY_RAIL: TrainFront,
+  HIGH_SPEED_TRAIN: TrainFront,
+  INTERCITY_BUS: Bus,
+  METRO_RAIL: TrainFrontTunnel,
+  MONORAIL: TrainFront,
+  RAIL: TrainFront,
+  SHARE_TAXI: CarTaxiFront,
+  SUBWAY: TrainFrontTunnel,
+  TRAM: TramFront,
+  TROLLEYBUS: Bus,
+  OTHER: Route,
 };
 
 export function formatTime(date: Date | string | null) {

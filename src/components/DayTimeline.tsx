@@ -28,6 +28,7 @@ import {
   Plus,
   Route as RouteIcon,
   Search,
+  Ticket,
   Waypoints,
   X,
 } from "lucide-react";
@@ -86,10 +87,10 @@ export type TimelineRoute = {
 };
 
 const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
-  { value: "WALK", label: "🚶 步行" },
-  { value: "TRANSIT", label: "🚆 大眾運輸" },
-  { value: "DRIVE", label: "🚗 開車" },
-  { value: "BIKE", label: "🚲 騎車" },
+  { value: "WALK", label: "步行" },
+  { value: "TRANSIT", label: "大眾運輸" },
+  { value: "DRIVE", label: "開車" },
+  { value: "BIKE", label: "騎車" },
 ];
 
 function SortableItemCard({
@@ -122,8 +123,30 @@ function SortableItemCard({
   const transitSupported = isGoogleTransitSupported(item.place?.country);
   const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const TypeIcon = TYPE_ICON[item.type] ?? TYPE_ICON.CUSTOM;
   const typeColor = TYPE_COLOR[item.type] ?? TYPE_COLOR.CUSTOM;
+  const ModeIcon = route ? MODE_ICON[route.mode] : null;
+
+  useEffect(() => {
+    if (!showMenu) return;
+    function handlePointerDown(e: MouseEvent | TouchEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowMenu(false);
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showMenu]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -175,12 +198,12 @@ function SortableItemCard({
                 </span>
               )}
             </div>
-            <div className="relative flex shrink-0 items-center gap-1">
+            <div ref={menuRef} className="relative flex shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={onEdit}
                 aria-label="編輯項目"
-                className="p-2 text-ink-500 hover:text-brand-600"
+                className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -188,12 +211,17 @@ function SortableItemCard({
                 type="button"
                 onClick={() => setShowMenu((v) => !v)}
                 aria-label="更多操作"
-                className="p-2 text-ink-500 hover:text-brand-600"
+                aria-haspopup="menu"
+                aria-expanded={showMenu}
+                className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
               {showMenu && (
-                <div className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg"
+                >
                   {item.place && (
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
@@ -248,8 +276,9 @@ function SortableItemCard({
             </h3>
           )}
           {item.confirmationNumber && (
-            <p className="mt-0.5 truncate text-xs text-ink-500">
-              🔖 {item.confirmationNumber}
+            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-ink-500">
+              <Ticket className="h-3 w-3 shrink-0" />
+              {item.confirmationNumber}
             </p>
           )}
         </div>
@@ -258,6 +287,7 @@ function SortableItemCard({
       {hasNextStop && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
           <select
+            aria-label="交通方式"
             value={route?.mode ?? "WALK"}
             onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
             disabled={isRecomputing}
@@ -287,7 +317,7 @@ function SortableItemCard({
             <span className="text-xs text-ink-500">計算中…</span>
           ) : route && route.durationMin != null ? (
             <span className="flex items-center gap-1">
-              <span>{MODE_ICON[route.mode]}</span>
+              {ModeIcon && <ModeIcon className="h-3.5 w-3.5" />}
               <span>{route.durationMin} 分鐘</span>
               {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
             </span>

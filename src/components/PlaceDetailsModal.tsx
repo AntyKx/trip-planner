@@ -11,6 +11,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { getPlaceDetails, type PlaceDetails } from "@/lib/places";
+import ModalOverlay from "./ModalOverlay";
 
 type Fallback = {
   name: string;
@@ -74,15 +75,6 @@ function PlaceDetailsModal({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(provider === "google");
 
-  // Lock background scroll while the modal is open.
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   useEffect(() => {
     if (provider !== "google") return;
     let cancelled = false;
@@ -104,25 +96,24 @@ function PlaceDetailsModal({
 
   const photoUrl = details?.photoUrl ?? fallback.photoUrl ?? undefined;
 
+  const displayName = details?.name || fallback.name;
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={onClose}
+    <ModalOverlay
+      onClose={onClose}
+      titleId="place-details-modal-title"
+      panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden"
     >
-      <div
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
       <div className="overflow-y-auto p-5">
         <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-ink-900">
-            {details?.name || fallback.name}
+          <h2 id="place-details-modal-title" className="text-lg font-bold text-ink-900">
+            {displayName}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="關閉"
-            className="shrink-0 p-1 text-slate-400 hover:text-slate-700"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -132,7 +123,7 @@ function PlaceDetailsModal({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photoUrl}
-            alt=""
+            alt={displayName}
             className="mt-3 h-40 w-full rounded-xl object-cover"
           />
         )}
@@ -261,7 +252,6 @@ function PlaceDetailsModal({
       {footer && (
         <div className="shrink-0 border-t border-slate-200 p-3">{footer}</div>
       )}
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }

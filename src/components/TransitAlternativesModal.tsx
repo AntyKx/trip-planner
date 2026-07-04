@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { X } from "lucide-react";
+import { Footprints, X } from "lucide-react";
 import type { TransitAlternative } from "@/lib/routeMode";
 import { VEHICLE_ICON, VEHICLE_LABEL } from "@/lib/labels";
+import ModalOverlay from "./ModalOverlay";
 
 export default function TransitAlternativesModal({
   fromName,
@@ -22,32 +22,21 @@ export default function TransitAlternativesModal({
   onChoose: (alt: TransitAlternative) => void;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, []);
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4"
-      onClick={onClose}
+    <ModalOverlay
+      onClose={onClose}
+      titleId="transit-alternatives-modal-title"
+      panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden"
     >
-      <div
-        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
-          <h2 className="min-w-0 truncate text-base font-bold text-ink-900">
+          <h2 id="transit-alternatives-modal-title" className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromName} → {toName}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="關閉"
-            className="shrink-0 p-1 text-slate-400 hover:text-slate-700"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -80,30 +69,36 @@ export default function TransitAlternativesModal({
                   </span>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-1 text-sm text-slate-700">
-                  {alt.steps.map((step, j) => (
-                    <span key={j} className="flex items-center gap-1">
-                      {j > 0 && <span className="text-slate-300">→</span>}
-                      {step.mode === "WALK" ? (
-                        <span className="text-slate-500">
-                          🚶 {step.durationMin} 分
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-slate-100 px-2 py-0.5">
-                          {VEHICLE_ICON[step.vehicleType ?? ""] ?? "🚏"}{" "}
-                          {step.lineName ||
-                            VEHICLE_LABEL[step.vehicleType ?? ""] ||
-                            "大眾運輸"}
-                          {step.stops != null && ` · ${step.stops} 站`}
-                        </span>
-                      )}
-                    </span>
-                  ))}
+                  {alt.steps.map((step, j) => {
+                    const StepIcon =
+                      step.mode === "WALK"
+                        ? Footprints
+                        : VEHICLE_ICON[step.vehicleType ?? ""] ?? Footprints;
+                    return (
+                      <span key={j} className="flex items-center gap-1">
+                        {j > 0 && <span className="text-slate-300">→</span>}
+                        {step.mode === "WALK" ? (
+                          <span className="flex items-center gap-1 text-slate-500">
+                            <StepIcon className="h-3.5 w-3.5" />
+                            {step.durationMin} 分
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
+                            <StepIcon className="h-3.5 w-3.5" />
+                            {step.lineName ||
+                              VEHICLE_LABEL[step.vehicleType ?? ""] ||
+                              "大眾運輸"}
+                            {step.stops != null && ` · ${step.stops} 站`}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
                 </div>
               </button>
             ))}
           </div>
         </div>
-      </div>
-    </div>
+    </ModalOverlay>
   );
 }
