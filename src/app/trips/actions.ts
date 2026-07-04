@@ -136,7 +136,10 @@ export async function setDayAnchor(
   tripId: string,
   dayId: string,
   place: NewPlaceInput,
-  applyToFollowingDays: boolean
+  // Other day ids (not including dayId itself) to apply the same anchor
+  // to — lets a multi-stop trip like "Hotel A day1-3, Hotel B day4-5,
+  // Hotel A day6-7" be set without overwriting the days in between.
+  applyToDayIds: string[]
 ) {
   await requireTripOwner(tripId);
   const dbPlace = await prisma.place.upsert({
@@ -150,23 +153,10 @@ export async function setDayAnchor(
     create: place,
   });
 
-  if (applyToFollowingDays) {
-    const day = await prisma.tripDay.findUnique({
-      where: { id: dayId },
-      select: { dayIndex: true },
-    });
-    if (day) {
-      await prisma.tripDay.updateMany({
-        where: { tripId, dayIndex: { gte: day.dayIndex } },
-        data: { anchorPlaceId: dbPlace.id },
-      });
-    }
-  } else {
-    await prisma.tripDay.update({
-      where: { id: dayId },
-      data: { anchorPlaceId: dbPlace.id },
-    });
-  }
+  await prisma.tripDay.updateMany({
+    where: { tripId, id: { in: [dayId, ...applyToDayIds] } },
+    data: { anchorPlaceId: dbPlace.id },
+  });
 
   revalidatePath(`/trips/${tripId}`);
   return {

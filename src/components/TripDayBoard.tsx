@@ -212,9 +212,9 @@ export default function TripDayBoard({
                     ? "TW"
                     : "JP"
                 }
-                hasFollowingDays={
-                  daysWithWeather[daysWithWeather.length - 1]?.id !== selectedDay.id
-                }
+                otherDays={daysWithWeather
+                  .filter((d) => d.id !== selectedDay.id)
+                  .map((d) => ({ id: d.id, dayIndex: d.dayIndex, date: d.date }))}
               />
             </div>
           </section>

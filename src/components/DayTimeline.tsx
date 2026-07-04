@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Compass,
   ExternalLink,
+  MapPin,
   MoreHorizontal,
   Navigation,
   Pencil,
@@ -47,13 +48,14 @@ import {
   fetchTransitAlternatives,
   isGoogleTransitSupported,
   optimizeStopOrder,
+  type ComputedLeg,
   type TransitAlternative,
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
-import DayAnchorControl, { type DayAnchor } from "./DayAnchorControl";
+import DayAnchorControl, { type DayAnchor, type DaySummary } from "./DayAnchorControl";
 
 export type TimelineItem = {
   id: string;
@@ -362,7 +364,7 @@ export default function DayTimeline({
   routes: initialRoutes,
   anchor: initialAnchor,
   defaultCountry,
-  hasFollowingDays,
+  otherDays,
 }: {
   tripId: string;
   dayId: string;
@@ -371,11 +373,16 @@ export default function DayTimeline({
   routes: TimelineRoute[];
   anchor: DayAnchor | null;
   defaultCountry: "TW" | "JP";
-  hasFollowingDays: boolean;
+  otherDays: DaySummary[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
   const [anchor, setAnchor] = useState(initialAnchor);
+  // Suggested leg from the day's anchor to its first stop — display-only,
+  // never persisted as a Route (the anchor isn't a timeline item), so it's
+  // just recomputed whenever the anchor or first stop changes.
+  const [anchorLeg, setAnchorLeg] = useState<ComputedLeg | null>(null);
+  const [isComputingAnchorLeg, setIsComputingAnchorLeg] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
@@ -491,6 +498,34 @@ export default function DayTimeline({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routesLibrary, items, routes]);
+
+  const firstPlaceItem = placeItems[0];
+
+  useEffect(() => {
+    // Rendering already guards on `anchor && firstPlaceItem`, so a stale
+    // anchorLeg left over from before the anchor was cleared just never
+    // gets displayed — no need to reset it synchronously here.
+    if (!routesLibrary || !anchor || !firstPlaceItem) return;
+
+    let cancelled = false;
+    (async () => {
+      setIsComputingAnchorLeg(true);
+      const directionsService = new routesLibrary.DirectionsService();
+      const leg = await computeBestLeg(
+        directionsService,
+        { lat: anchor.lat, lng: anchor.lng },
+        { lat: firstPlaceItem.place!.lat, lng: firstPlaceItem.place!.lng },
+        firstPlaceItem.place!.country.toLowerCase()
+      );
+      if (cancelled) return;
+      setAnchorLeg(leg);
+      setIsComputingAnchorLeg(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routesLibrary, anchor, firstPlaceItem?.id]);
 
   // Saves whatever the current in-memory route list is, replacing any
   // legs that share the same from/to pair as an entry already in newRoutes.
@@ -775,7 +810,7 @@ export default function DayTimeline({
           dayId={dayId}
           anchor={anchor}
           defaultCountry={defaultCountry}
-          hasFollowingDays={hasFollowingDays}
+          otherDays={otherDays}
           onAnchorChange={setAnchor}
         />
       </div>
@@ -822,6 +857,32 @@ export default function DayTimeline({
           </div>
         </div>
       ) : (
+      <>
+      {anchor && firstPlaceItem && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-full border border-dashed border-brand-200 bg-brand-50/60 px-3 py-1.5 text-xs text-ink-700">
+          <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600" />
+          <span className="font-medium">{anchor.name}</span>
+          <span className="text-ink-400">→</span>
+          <span>{firstPlaceItem.place!.name}</span>
+          {isComputingAnchorLeg ? (
+            <span className="text-ink-500">計算建議路線中…</span>
+          ) : anchorLeg ? (
+            (() => {
+              const AnchorModeIcon = MODE_ICON[anchorLeg.mode];
+              return (
+                <span className="ml-auto flex items-center gap-1 text-ink-500">
+                  {AnchorModeIcon && <AnchorModeIcon className="h-3.5 w-3.5" />}
+                  <span>
+                    {anchorLeg.durationMin} 分鐘 · {anchorLeg.distanceKm} km
+                  </span>
+                </span>
+              );
+            })()
+          ) : (
+            <span className="text-ink-500">無法計算建議路線</span>
+          )}
+        </div>
+      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -872,6 +933,7 @@ export default function DayTimeline({
           </div>
         </SortableContext>
       </DndContext>
+      </>
       )}
 
       {viewingLeg && (

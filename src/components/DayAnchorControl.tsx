@@ -17,19 +17,21 @@ export type DayAnchor = {
 // when neither is a real anchor (e.g. all attractions, no "start from
 // hotel" point) — otherwise a geographic outlier gets sandwiched between
 // two nearby fixed endpoints no matter how the interior is reordered.
+export type DaySummary = { id: string; dayIndex: number; date: string };
+
 export default function DayAnchorControl({
   tripId,
   dayId,
   anchor,
   defaultCountry,
-  hasFollowingDays,
+  otherDays,
   onAnchorChange,
 }: {
   tripId: string;
   dayId: string;
   anchor: DayAnchor | null;
   defaultCountry: "TW" | "JP";
-  hasFollowingDays: boolean;
+  otherDays: DaySummary[];
   onAnchorChange: (anchor: DayAnchor | null) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -39,7 +41,16 @@ export default function DayAnchorControl({
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [applyToFollowingDays, setApplyToFollowingDays] = useState(false);
+  const [applyToDayIds, setApplyToDayIds] = useState<Set<string>>(new Set());
+
+  function toggleApplyDay(id: string) {
+    setApplyToDayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -77,12 +88,13 @@ export default function DayAnchorControl({
           provider: "google",
           externalId: place.externalId,
         },
-        applyToFollowingDays
+        Array.from(applyToDayIds)
       );
       onAnchorChange(saved);
       setIsOpen(false);
       setResults([]);
       setQuery("");
+      setApplyToDayIds(new Set());
     } catch {
       setError("設定起點失敗，請再試一次");
     } finally {
@@ -177,15 +189,30 @@ export default function DayAnchorControl({
         </button>
       </form>
 
-      {hasFollowingDays && (
-        <label className="mt-2 flex items-center gap-1.5 text-ink-600">
-          <input
-            type="checkbox"
-            checked={applyToFollowingDays}
-            onChange={(e) => setApplyToFollowingDays(e.target.checked)}
-          />
-          套用到接下來的天數（例如連住同一間飯店）
-        </label>
+      {otherDays.length > 0 && (
+        <div className="mt-2">
+          <p className="text-ink-600">同步套用到其他天數（例如連住同一間飯店）：</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {otherDays.map((day) => (
+              <label
+                key={day.id}
+                className={`flex items-center gap-1 rounded-full border px-2 py-1 ${
+                  applyToDayIds.has(day.id)
+                    ? "border-brand-600 bg-brand-50 text-brand-700"
+                    : "border-slate-200 bg-white text-ink-600"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  checked={applyToDayIds.has(day.id)}
+                  onChange={() => toggleApplyDay(day.id)}
+                />
+                Day {day.dayIndex}
+              </label>
+            ))}
+          </div>
+        </div>
       )}
 
       {error && <p className="mt-2 text-red-600">{error}</p>}
