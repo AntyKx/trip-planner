@@ -3,36 +3,35 @@
 import { useState, type FormEvent } from "react";
 import { MapPin, Search, X } from "lucide-react";
 import { searchPlaces, type PlaceResult } from "@/lib/places";
-import { setDayAnchor, clearDayAnchor } from "@/app/trips/actions";
+import {
+  setDayAnchor,
+  clearDayAnchor,
+  type AnchorItemResult,
+} from "@/app/trips/actions";
 
-export type DayAnchor = {
-  name: string;
-  lat: number;
-  lng: number;
-};
-
-// "本日起點" — a hint for optimizeStopOrder (see src/lib/routeMode.ts),
-// not a timeline item. Setting it lets the auto-arrange feature free up
-// the first/last stop instead of always keeping them fixed, which matters
-// when neither is a real anchor (e.g. all attractions, no "start from
-// hotel" point) — otherwise a geographic outlier gets sandwiched between
-// two nearby fixed endpoints no matter how the interior is reordered.
+// "本日起點" is a real timeline card (type HOTEL) so it gets a photo,
+// editable time/cost, and a real computed leg to the next stop via the
+// normal auto-fill effect — this control just creates/updates/removes
+// that card and keeps optimizeStopOrder's fixed-first-stop pointer
+// (TripDay.anchorItemId) in sync. See src/app/trips/actions.ts.
 export type DaySummary = { id: string; dayIndex: number; date: string };
 
 export default function DayAnchorControl({
   tripId,
   dayId,
-  anchor,
+  anchorName,
   defaultCountry,
   otherDays,
-  onAnchorChange,
+  onAnchorSet,
+  onAnchorCleared,
 }: {
   tripId: string;
   dayId: string;
-  anchor: DayAnchor | null;
+  anchorName: string | null;
   defaultCountry: "TW" | "JP";
   otherDays: DaySummary[];
-  onAnchorChange: (anchor: DayAnchor | null) => void;
+  onAnchorSet: (item: AnchorItemResult) => void;
+  onAnchorCleared: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -72,7 +71,7 @@ export default function DayAnchorControl({
     setIsSaving(true);
     setError(null);
     try {
-      const saved = await setDayAnchor(
+      const results = await setDayAnchor(
         tripId,
         dayId,
         {
@@ -90,7 +89,8 @@ export default function DayAnchorControl({
         },
         Array.from(applyToDayIds)
       );
-      onAnchorChange(saved);
+      const mine = results[dayId];
+      if (mine) onAnchorSet(mine);
       setIsOpen(false);
       setResults([]);
       setQuery("");
@@ -106,7 +106,7 @@ export default function DayAnchorControl({
     setIsSaving(true);
     try {
       await clearDayAnchor(tripId, dayId);
-      onAnchorChange(null);
+      onAnchorCleared();
     } finally {
       setIsSaving(false);
     }
@@ -116,10 +116,10 @@ export default function DayAnchorControl({
     return (
       <div className="flex items-center gap-1.5 text-xs text-ink-500">
         <MapPin className="h-3.5 w-3.5 shrink-0" />
-        {anchor ? (
+        {anchorName ? (
           <>
             <span>
-              本日起點：<span className="font-medium text-ink-700">{anchor.name}</span>
+              本日起點：<span className="font-medium text-ink-700">{anchorName}</span>
             </span>
             <button
               type="button"

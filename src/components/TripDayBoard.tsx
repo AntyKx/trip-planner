@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Map as MapIcon, MapPin, Luggage, ListChecks } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
-import type { DayAnchor } from "./DayAnchorControl";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
@@ -23,7 +22,7 @@ export type BoardDay = {
   date: string;
   note?: string | null;
   weather: DailyWeather | null;
-  anchor: DayAnchor | null;
+  anchorItemId: string | null;
   timelineItems: TimelineItem[];
   timelineRoutes: TimelineRoute[];
   mapItems: MapItem[];
@@ -204,7 +203,7 @@ export default function TripDayBoard({
                 dayDate={selectedDay.date}
                 items={selectedDay.timelineItems}
                 routes={selectedDay.timelineRoutes}
-                anchor={selectedDay.anchor}
+                anchorItemId={selectedDay.anchorItemId}
                 defaultCountry={
                   selectedDay.timelineItems
                     .find((i) => i.place)

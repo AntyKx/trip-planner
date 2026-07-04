@@ -41,6 +41,7 @@ import {
   getJapanTransitHint,
   type JapanTransitHint,
   type TravelModeValue,
+  type AnchorItemResult,
 } from "@/app/trips/actions";
 import {
   GOOGLE_TRAVEL_MODE,
@@ -48,14 +49,13 @@ import {
   fetchTransitAlternatives,
   isGoogleTransitSupported,
   optimizeStopOrder,
-  type ComputedLeg,
   type TransitAlternative,
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
-import DayAnchorControl, { type DayAnchor, type DaySummary } from "./DayAnchorControl";
+import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
 
 export type TimelineItem = {
   id: string;
@@ -100,6 +100,7 @@ function SortableItemCard({
   item,
   route,
   hasNextStop,
+  isAnchor,
   isRecomputing,
   isAutoFilling,
   isLoadingJapanHint,
@@ -112,6 +113,7 @@ function SortableItemCard({
   item: TimelineItem;
   route?: TimelineRoute;
   hasNextStop: boolean;
+  isAnchor: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
   isLoadingJapanHint: boolean;
@@ -195,6 +197,12 @@ function SortableItemCard({
                 <TypeIcon className="h-3 w-3" />
                 {TYPE_LABEL[item.type]}
               </span>
+              {isAnchor && (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                  <MapPin className="h-3 w-3" />
+                  本日起點
+                </span>
+              )}
               {item.cost != null && (
                 <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                   {item.currency} {item.cost.toLocaleString()}
@@ -362,7 +370,7 @@ export default function DayTimeline({
   dayDate,
   items: initialItems,
   routes: initialRoutes,
-  anchor: initialAnchor,
+  anchorItemId: initialAnchorItemId,
   defaultCountry,
   otherDays,
 }: {
@@ -371,18 +379,18 @@ export default function DayTimeline({
   dayDate: string;
   items: TimelineItem[];
   routes: TimelineRoute[];
-  anchor: DayAnchor | null;
+  anchorItemId: string | null;
   defaultCountry: "TW" | "JP";
   otherDays: DaySummary[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
-  const [anchor, setAnchor] = useState(initialAnchor);
-  // Suggested leg from the day's anchor to its first stop — display-only,
-  // never persisted as a Route (the anchor isn't a timeline item), so it's
-  // just recomputed whenever the anchor or first stop changes.
-  const [anchorLeg, setAnchorLeg] = useState<ComputedLeg | null>(null);
-  const [isComputingAnchorLeg, setIsComputingAnchorLeg] = useState(false);
+  // The item (if any) that represents this day's "start from" point (e.g.
+  // the hotel) — a real card like any other, just always kept first by
+  // handleOrganizeRoute instead of being reordered away. See
+  // src/app/trips/actions.ts (setDayAnchor) for why it's tracked by id
+  // rather than by position.
+  const [anchorItemId, setAnchorItemId] = useState(initialAnchorItemId);
   const [isPending, startTransition] = useTransition();
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
@@ -422,12 +430,14 @@ export default function DayTimeline({
   const routesLibrary = useMapsLibrary("routes");
 
   const placeItems = items.filter((i) => i.place);
-  // Without an anchor, both endpoints stay fixed, so reordering only means
-  // something with >=3 place-items (1+ free in the interior). With an
-  // anchor, every place-item is free, so even 2 can be worth reordering.
-  const canOptimize =
-    placeItems.length === items.length &&
-    placeItems.length >= (anchor ? 2 : 3);
+  const anchorItem = anchorItemId
+    ? placeItems.find((i) => i.id === anchorItemId)
+    : undefined;
+  // Reordering only means something with >=3 place-items: without an
+  // anchor, first/last stay fixed (1+ free in the interior); with an
+  // anchor, the anchor itself stays fixed and every other place-item is
+  // free (so still need 2+ others for reordering to matter).
+  const canOptimize = placeItems.length === items.length && placeItems.length >= 3;
 
   // Maps an item to the id of the next place-item after it, so the route
   // badge under a card always reflects the *current* adjacency instead of a
@@ -498,34 +508,6 @@ export default function DayTimeline({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routesLibrary, items, routes]);
-
-  const firstPlaceItem = placeItems[0];
-
-  useEffect(() => {
-    // Rendering already guards on `anchor && firstPlaceItem`, so a stale
-    // anchorLeg left over from before the anchor was cleared just never
-    // gets displayed — no need to reset it synchronously here.
-    if (!routesLibrary || !anchor || !firstPlaceItem) return;
-
-    let cancelled = false;
-    (async () => {
-      setIsComputingAnchorLeg(true);
-      const directionsService = new routesLibrary.DirectionsService();
-      const leg = await computeBestLeg(
-        directionsService,
-        { lat: anchor.lat, lng: anchor.lng },
-        { lat: firstPlaceItem.place!.lat, lng: firstPlaceItem.place!.lng },
-        firstPlaceItem.place!.country.toLowerCase()
-      );
-      if (cancelled) return;
-      setAnchorLeg(leg);
-      setIsComputingAnchorLeg(false);
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routesLibrary, anchor, firstPlaceItem?.id]);
 
   // Saves whatever the current in-memory route list is, replacing any
   // legs that share the same from/to pair as an entry already in newRoutes.
@@ -613,18 +595,24 @@ export default function DayTimeline({
   // sandwiched between two endpoints that were never meant to be anchors.
   function handleOrganizeRoute() {
     if (!canOptimize) return;
-    const points = placeItems.map((item) => ({
+    const rest = anchorItem
+      ? placeItems.filter((item) => item.id !== anchorItem.id)
+      : placeItems;
+    const points = rest.map((item) => ({
       id: item.id,
       lat: item.place!.lat,
       lng: item.place!.lng,
     }));
     const ordered = optimizeStopOrder(
       points,
-      anchor ? { lat: anchor.lat, lng: anchor.lng } : undefined
+      anchorItem
+        ? { lat: anchorItem.place!.lat, lng: anchorItem.place!.lng }
+        : undefined
     );
-    const newItems = ordered.map(
-      (p) => placeItems.find((item) => item.id === p.id)!
+    const orderedRest = ordered.map(
+      (p) => rest.find((item) => item.id === p.id)!
     );
+    const newItems = anchorItem ? [anchorItem, ...orderedRest] : orderedRest;
     setItems(newItems);
     startTransition(() => {
       reorderItems(
@@ -761,6 +749,44 @@ export default function DayTimeline({
     });
   }
 
+  // Splices the anchor card into local state immediately instead of
+  // waiting for the server action's revalidatePath to flow back down —
+  // this DayTimeline instance's own useState(initialItems) won't pick up
+  // a prop change on its own (only a remount via the `key={day.id}` in
+  // TripDayBoard would), so the currently-open day needs this explicit
+  // update. Other days pick up the change naturally next time they mount.
+  function handleAnchorSet(result: AnchorItemResult) {
+    setItems((prev) => {
+      const exists = prev.some((i) => i.id === result.id);
+      if (exists) {
+        return prev.map((i) =>
+          i.id === result.id ? { ...i, type: result.type, place: result.place } : i
+        );
+      }
+      return [
+        {
+          id: result.id,
+          type: result.type,
+          startTime: null,
+          endTime: null,
+          note: null,
+          confirmationNumber: null,
+          cost: null,
+          currency: null,
+          costCategory: null,
+          place: result.place,
+        },
+        ...prev,
+      ];
+    });
+    setAnchorItemId(result.id);
+  }
+
+  function handleAnchorCleared() {
+    setItems((prev) => prev.filter((i) => i.id !== anchorItemId));
+    setAnchorItemId(null);
+  }
+
   const editingAsEditable: EditableItem | null =
     editingItem && editingItem !== "new"
       ? {
@@ -793,9 +819,7 @@ export default function DayTimeline({
           onClick={handleOrganizeRoute}
           disabled={!canOptimize}
           title={
-            !canOptimize
-              ? `需要至少 ${anchor ? 2 : 3} 個都有地點資料的項目才能排序`
-              : undefined
+            !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
           }
           className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -808,10 +832,11 @@ export default function DayTimeline({
         <DayAnchorControl
           tripId={tripId}
           dayId={dayId}
-          anchor={anchor}
+          anchorName={anchorItem?.place?.name ?? null}
           defaultCountry={defaultCountry}
           otherDays={otherDays}
-          onAnchorChange={setAnchor}
+          onAnchorSet={handleAnchorSet}
+          onAnchorCleared={handleAnchorCleared}
         />
       </div>
 
@@ -857,32 +882,6 @@ export default function DayTimeline({
           </div>
         </div>
       ) : (
-      <>
-      {anchor && firstPlaceItem && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 rounded-full border border-dashed border-brand-200 bg-brand-50/60 px-3 py-1.5 text-xs text-ink-700">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-brand-600" />
-          <span className="font-medium">{anchor.name}</span>
-          <span className="text-ink-400">→</span>
-          <span>{firstPlaceItem.place!.name}</span>
-          {isComputingAnchorLeg ? (
-            <span className="text-ink-500">計算建議路線中…</span>
-          ) : anchorLeg ? (
-            (() => {
-              const AnchorModeIcon = MODE_ICON[anchorLeg.mode];
-              return (
-                <span className="ml-auto flex items-center gap-1 text-ink-500">
-                  {AnchorModeIcon && <AnchorModeIcon className="h-3.5 w-3.5" />}
-                  <span>
-                    {anchorLeg.durationMin} 分鐘 · {anchorLeg.distanceKm} km
-                  </span>
-                </span>
-              );
-            })()
-          ) : (
-            <span className="text-ink-500">無法計算建議路線</span>
-          )}
-        </div>
-      )}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -906,6 +905,7 @@ export default function DayTimeline({
                   item={item}
                   route={route}
                   hasNextStop={nextId != null}
+                  isAnchor={item.id === anchorItemId}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
                   isLoadingJapanHint={
@@ -933,7 +933,6 @@ export default function DayTimeline({
           </div>
         </SortableContext>
       </DndContext>
-      </>
       )}
 
       {viewingLeg && (

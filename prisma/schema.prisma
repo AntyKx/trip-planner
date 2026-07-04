@@ -89,12 +89,13 @@ model TripDay {
   items    Item[]
   routes   Route[]
 
-  // "Start from" point for route optimization on this day (e.g. the hotel
-  // the day begins at) — not a timeline item, just a hint for
-  // optimizeStopOrder so a geographic outlier can land at the edge of the
-  // route instead of being sandwiched between two fixed endpoints.
-  anchorPlace   Place?  @relation("TripDayAnchor", fields: [anchorPlaceId], references: [id])
-  anchorPlaceId String?
+  // The item that represents this day's "start from" point (e.g. the
+  // hotel) — a real timeline card (so it gets a photo, editable time/cost,
+  // and a real computed leg to the next stop via the normal auto-fill
+  // effect), but tracked here so optimizeStopOrder knows to keep it first
+  // instead of reordering it away, and so the anchor UI can find/update it.
+  anchorItem   Item?   @relation("TripDayAnchorItem", fields: [anchorItemId], references: [id])
+  anchorItemId String? @unique
 }
 
 model Item {
@@ -115,6 +116,8 @@ model Item {
 
   routesFrom Route[] @relation("RouteFrom")
   routesTo   Route[] @relation("RouteTo")
+
+  anchorForDay TripDay? @relation("TripDayAnchorItem")
 }
 
 model Place {
@@ -132,8 +135,6 @@ model Place {
   provider   String // "google" | "hotpepper" | "tdx" | ...
   externalId String
   items      Item[]
-
-  anchorForDays TripDay[] @relation("TripDayAnchor")
 
   @@unique([provider, externalId])
 }

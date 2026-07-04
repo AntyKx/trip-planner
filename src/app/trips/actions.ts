@@ -128,10 +128,29 @@ export async function addPlaceToDay(
   revalidatePath(`/trips/${tripId}`);
 }
 
-// "本日起點" for route optimization (e.g. the hotel the day starts from) —
-// not a timeline item, just a hint so optimizeStopOrder can free up the
-// first/last card instead of always keeping them fixed. See
-// src/lib/routeMode.ts for why that matters.
+export type AnchorItemResult = {
+  id: string;
+  type: "HOTEL";
+  place: {
+    name: string;
+    address: string | null;
+    rating: number | null;
+    country: string;
+    provider: string;
+    externalId: string;
+    photoUrl: string | null;
+    lat: number;
+    lng: number;
+  };
+};
+
+// "本日起點" (e.g. the hotel the day starts from) — a real timeline card
+// (so it gets a photo, editable time/cost, and a real computed leg to the
+// next stop via the normal auto-fill effect), always kept at sortOrder 0.
+// TripDay.anchorItemId tracks which item this is, so optimizeStopOrder
+// knows to keep it first instead of reordering it away (see
+// src/lib/routeMode.ts), and so this can be updated in place (rather than
+// creating a duplicate card) when the anchor is changed.
 export async function setDayAnchor(
   tripId: string,
   dayId: string,
@@ -140,7 +159,7 @@ export async function setDayAnchor(
   // to — lets a multi-stop trip like "Hotel A day1-3, Hotel B day4-5,
   // Hotel A day6-7" be set without overwriting the days in between.
   applyToDayIds: string[]
-) {
+): Promise<Record<string, AnchorItemResult>> {
   await requireTripOwner(tripId);
   const dbPlace = await prisma.place.upsert({
     where: {
@@ -153,25 +172,69 @@ export async function setDayAnchor(
     create: place,
   });
 
-  await prisma.tripDay.updateMany({
-    where: { tripId, id: { in: [dayId, ...applyToDayIds] } },
-    data: { anchorPlaceId: dbPlace.id },
+  const targetDayIds = [dayId, ...applyToDayIds];
+  const targetDays = await prisma.tripDay.findMany({
+    where: { tripId, id: { in: targetDayIds } },
+    select: { id: true, anchorItemId: true },
+  });
+
+  const results: Record<string, AnchorItemResult> = {};
+
+  await prisma.$transaction(async (tx) => {
+    for (const day of targetDays) {
+      const itemId = day.anchorItemId
+        ? (
+            await tx.item.update({
+              where: { id: day.anchorItemId },
+              data: { placeId: dbPlace.id },
+            })
+          ).id
+        : await (async () => {
+            const created = await tx.item.create({
+              data: { dayId: day.id, type: "HOTEL", placeId: dbPlace.id, sortOrder: 0 },
+            });
+            await tx.tripDay.update({
+              where: { id: day.id },
+              data: { anchorItemId: created.id },
+            });
+            return created.id;
+          })();
+
+      results[day.id] = {
+        id: itemId,
+        type: "HOTEL",
+        place: {
+          name: dbPlace.name,
+          address: dbPlace.address,
+          rating: dbPlace.rating,
+          country: dbPlace.country,
+          provider: dbPlace.provider,
+          externalId: dbPlace.externalId,
+          photoUrl: dbPlace.photoUrl,
+          lat: dbPlace.lat,
+          lng: dbPlace.lng,
+        },
+      };
+    }
   });
 
   revalidatePath(`/trips/${tripId}`);
-  return {
-    name: dbPlace.name,
-    lat: dbPlace.lat,
-    lng: dbPlace.lng,
-  };
+  return results;
 }
 
 export async function clearDayAnchor(tripId: string, dayId: string) {
   await requireTripOwner(tripId);
-  await prisma.tripDay.update({
+  const day = await prisma.tripDay.findUnique({
     where: { id: dayId },
-    data: { anchorPlaceId: null },
+    select: { anchorItemId: true },
   });
+  if (day?.anchorItemId) {
+    await prisma.tripDay.update({
+      where: { id: dayId },
+      data: { anchorItemId: null },
+    });
+    await prisma.item.delete({ where: { id: day.anchorItemId } });
+  }
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -209,6 +272,14 @@ export async function removeCollaborator(tripId: string, userId: string) {
 
 export async function deleteItem(tripId: string, itemId: string) {
   await requireTripOwner(tripId);
+  // If this item is some day's anchor card, unlink it first — TripDay's FK
+  // to Item would otherwise block the delete, and this keeps the day's
+  // "no anchor set" state consistent when the anchor card is removed via
+  // its own delete button rather than "清除" in the anchor control.
+  await prisma.tripDay.updateMany({
+    where: { anchorItemId: itemId },
+    data: { anchorItemId: null },
+  });
   await prisma.item.delete({ where: { id: itemId } });
   revalidatePath(`/trips/${tripId}`);
 }
