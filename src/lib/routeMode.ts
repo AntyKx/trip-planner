@@ -107,16 +107,21 @@ export async function computeBestLeg(
     return walk ?? estimateWalk(straightLineKm);
   }
 
-  const walk = await fetchLeg(directionsService, origin, destination, "WALK", region);
-  if (walk && walk.durationMin <= WALK_GOOD_ENOUGH_MIN) return walk;
-
+  // Fetch every candidate mode up front instead of walk-then-wait-then-
+  // transit/drive: we used to await walk alone before even starting the
+  // transit/drive calls, so a non-obvious leg paid for two round trips back
+  // to back. Querying all three at once costs a couple of extra Directions
+  // calls when walking turns out to be good enough, but that's a fair trade
+  // for cutting each leg's latency roughly in half.
   const transitSupported = isGoogleTransitSupported(region);
-  const [transit, drive] = await Promise.all([
+  const [walk, transit, drive] = await Promise.all([
+    fetchLeg(directionsService, origin, destination, "WALK", region),
     transitSupported
       ? fetchLeg(directionsService, origin, destination, "TRANSIT", region)
       : Promise.resolve(null),
     fetchLeg(directionsService, origin, destination, "DRIVE", region),
   ]);
+  if (walk && walk.durationMin <= WALK_GOOD_ENOUGH_MIN) return walk;
 
   const candidates = [transit, drive].filter(
     (c): c is ComputedLeg => c != null
