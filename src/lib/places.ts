@@ -135,7 +135,7 @@ export async function searchPlaces(
       textQuery: query,
       languageCode: "zh-TW",
       regionCode: country,
-      locationRestriction: COUNTRY_BOUNDS[country],
+      locationRestriction: { rectangle: COUNTRY_BOUNDS[country] },
       // Explicit rather than relying on whatever Google's default happens
       // to be — 20 is the documented max per request for Text Search (New).
       pageSize: 20,
