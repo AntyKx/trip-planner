@@ -97,6 +97,21 @@ const PRICE_LEVEL_MAP: Record<string, number> = {
   PRICE_LEVEL_VERY_EXPENSIVE: 4,
 };
 
+// `regionCode` in a Text Search request only *biases* ranking/formatting —
+// per Google's docs it's "a signal, not a restriction," which is why
+// switching JP/TW visibly changed nothing. A rectangle passed as
+// `locationRestriction` is an actual hard filter, so this is what makes
+// the country picker do anything at all. Generous boxes (a little wider
+// than each country's real bounds) so border/island places aren't
+// accidentally excluded.
+const COUNTRY_BOUNDS: Record<
+  "TW" | "JP",
+  { low: { latitude: number; longitude: number }; high: { latitude: number; longitude: number } }
+> = {
+  TW: { low: { latitude: 21.5, longitude: 119.3 }, high: { latitude: 25.5, longitude: 122.3 } },
+  JP: { low: { latitude: 24.0, longitude: 122.0 }, high: { latitude: 46.0, longitude: 146.5 } },
+};
+
 // Called directly from the browser so the request carries the page's
 // Referer header — required because the API key is HTTP-referrer restricted.
 export async function searchPlaces(
@@ -120,6 +135,10 @@ export async function searchPlaces(
       textQuery: query,
       languageCode: "zh-TW",
       regionCode: country,
+      locationRestriction: COUNTRY_BOUNDS[country],
+      // Explicit rather than relying on whatever Google's default happens
+      // to be — 20 is the documented max per request for Text Search (New).
+      pageSize: 20,
     }),
   });
 
