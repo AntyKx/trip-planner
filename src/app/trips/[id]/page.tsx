@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
@@ -141,15 +140,6 @@ export default async function TripDetailPage({
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          {canEdit && (
-            <Link
-              href={`/explore?tripId=${trip.id}${heroDay ? `&dayId=${heroDay.id}` : ""}`}
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              <Plus className="h-4 w-4" />
-              加入景點/餐廳
-            </Link>
-          )}
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-ink-700">
             {trip.status}
           </span>

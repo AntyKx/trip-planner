@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Map as MapIcon, MapPin, Luggage, ListChecks } from "lucide-react";
+import Link from "next/link";
+import { Map as MapIcon, MapPin, Luggage, ListChecks, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
@@ -90,31 +91,47 @@ export default function TripDayBoard({
 
   return (
     <div>
-      <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
-        <button
-          type="button"
-          onClick={() => setMode("edit")}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
-            mode === "edit"
-              ? "bg-brand-600 text-white"
-              : "text-ink-700 hover:bg-slate-50"
-          }`}
-        >
-          <ListChecks className="h-4 w-4" />
-          編輯模式
-        </button>
-        <button
-          type="button"
-          onClick={switchToTravelMode}
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
-            mode === "travel"
-              ? "bg-brand-600 text-white"
-              : "text-ink-700 hover:bg-slate-50"
-          }`}
-        >
-          <Luggage className="h-4 w-4" />
-          旅行模式
-        </button>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
+          <button
+            type="button"
+            onClick={() => setMode("edit")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+              mode === "edit"
+                ? "bg-brand-600 text-white"
+                : "text-ink-700 hover:bg-slate-50"
+            }`}
+          >
+            <ListChecks className="h-4 w-4" />
+            編輯模式
+          </button>
+          <button
+            type="button"
+            onClick={switchToTravelMode}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+              mode === "travel"
+                ? "bg-brand-600 text-white"
+                : "text-ink-700 hover:bg-slate-50"
+            }`}
+          >
+            <Luggage className="h-4 w-4" />
+            旅行模式
+          </button>
+        </div>
+
+        {/* Uses selectedDayId (client state) so this always points at
+            whichever day is actually being viewed — a server-rendered
+            version of this link can't know that, since day selection
+            lives here, not in the page. */}
+        {canEdit && selectedDay && (
+          <Link
+            href={`/explore?tripId=${tripId}&dayId=${selectedDay.id}`}
+            className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          >
+            <Plus className="h-4 w-4" />
+            加入景點/餐廳
+          </Link>
+        )}
       </div>
 
       {mode === "travel" ? (
