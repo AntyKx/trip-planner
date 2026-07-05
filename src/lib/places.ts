@@ -11,6 +11,11 @@ export type PlaceResult = {
   category: string;
   photoUrl?: string;
   suggestedType: "PLACE" | "RESTAURANT";
+  // Carried on the result itself (rather than relying on whatever the
+  // search form's country selector happens to be set to) so favoriting or
+  // adding a place works correctly even from "我的收藏", where the current
+  // selector value has nothing to do with where that favorite came from.
+  country: "TW" | "JP";
 };
 
 export type SearchPlacesResult =
@@ -135,6 +140,7 @@ export async function searchPlaces(
     priceLevel: p.priceLevel ? PRICE_LEVEL_MAP[p.priceLevel] : undefined,
     category: p.primaryTypeDisplayName?.text ?? "",
     suggestedType: suggestTypeFromPrimaryType(p.primaryType),
+    country,
     photoUrl: p.photos?.[0]
       ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`
       : undefined,

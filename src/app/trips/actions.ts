@@ -96,6 +96,9 @@ export type NewPlaceInput = {
   // Google again. Only present when the caller already fetched it (e.g.
   // ExploreClient checking the day-of-week before adding).
   openHours?: string;
+  // "PLACE" | "RESTAURANT" — persisted so re-adding from "我的收藏" keeps
+  // the same classification search originally made.
+  suggestedType?: string;
 };
 
 export async function addPlaceToDay(
@@ -115,6 +118,7 @@ export async function addPlaceToDay(
     update: {
       photoUrl: place.photoUrl,
       ...(place.openHours ? { openHours: place.openHours } : {}),
+      ...(place.suggestedType ? { suggestedType: place.suggestedType } : {}),
     },
     create: place,
   });
@@ -179,6 +183,7 @@ export async function setDayAnchor(
     update: {
       photoUrl: place.photoUrl,
       ...(place.openHours ? { openHours: place.openHours } : {}),
+      ...(place.suggestedType ? { suggestedType: place.suggestedType } : {}),
     },
     create: place,
   });

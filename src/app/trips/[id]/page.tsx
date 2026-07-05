@@ -143,7 +143,7 @@ export default async function TripDetailPage({
         <div className="flex items-center gap-3">
           {canEdit && (
             <Link
-              href={`/explore?tripId=${trip.id}`}
+              href={`/explore?tripId=${trip.id}${heroDay ? `&dayId=${heroDay.id}` : ""}`}
               className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
             >
               <Plus className="h-4 w-4" />

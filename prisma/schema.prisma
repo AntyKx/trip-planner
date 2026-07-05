@@ -50,7 +50,21 @@ model User {
   googleUid     String?        @unique
   trips         Trip[]
   collaborating Collaborator[]
+  favorites     Favorite[]
   createdAt     DateTime       @default(now())
+}
+
+// A personal bucket-list, independent of any specific trip — "我的收藏".
+// Not shared with trip collaborators; scoped to whichever user saved it.
+model Favorite {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  place     Place    @relation(fields: [placeId], references: [id])
+  placeId   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, placeId])
 }
 
 model Trip {
@@ -121,20 +135,26 @@ model Item {
 }
 
 model Place {
-  id         String  @id @default(cuid())
-  name       String
-  category   String
-  country    String // "TW" | "JP" | ...
-  address    String?
-  lat        Float
-  lng        Float
-  rating     Float?
-  priceLevel Int?
-  openHours  String? // JSON: OpeningPeriod[] from src/lib/businessHours.ts
-  photoUrl   String?
-  provider   String // "google" | "hotpepper" | "tdx" | ...
-  externalId String
-  items      Item[]
+  id            String     @id @default(cuid())
+  name          String
+  category      String
+  country       String // "TW" | "JP" | ...
+  address       String?
+  lat           Float
+  lng           Float
+  rating        Float?
+  priceLevel    Int?
+  openHours     String? // JSON: OpeningPeriod[] from src/lib/businessHours.ts
+  photoUrl      String?
+  provider      String // "google" | "hotpepper" | "tdx" | ...
+  externalId    String
+  // "PLACE" | "RESTAURANT" — Google's raw category (primaryType) that fed
+  // this classification isn't stored anywhere else, so without persisting
+  // it here, re-adding a place from "我的收藏" would lose the distinction
+  // search already made and always default to PLACE.
+  suggestedType String?
+  items         Item[]
+  favoritedBy   Favorite[]
 
   @@unique([provider, externalId])
 }

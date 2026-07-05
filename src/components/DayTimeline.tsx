@@ -827,6 +827,13 @@ export default function DayTimeline({
       {canEdit && (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
+            <Link
+              href={`/explore?tripId=${tripId}&dayId=${dayId}`}
+              className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50"
+            >
+              <Search className="h-3.5 w-3.5" />
+              搜尋景點
+            </Link>
             <button
               type="button"
               onClick={() => setEditingItem("new")}

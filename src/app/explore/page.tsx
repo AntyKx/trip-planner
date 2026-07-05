@@ -1,29 +1,31 @@
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import ExploreClient from "./ExploreClient";
+import { getFavorites } from "./actions";
 
 export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tripId?: string }>;
+  searchParams: Promise<{ tripId?: string; dayId?: string }>;
 }) {
-  const { tripId } = await searchParams;
+  const { tripId, dayId } = await searchParams;
   const user = await requireUser();
 
-  const trips = await prisma.trip.findMany({
-    where: {
-      OR: [
-        { ownerId: user.id },
-        {
-          collaborators: {
-            some: { userId: user.id, role: "EDITOR" },
-          },
-        },
-      ],
-    },
-    orderBy: { startDate: "asc" },
-    include: { days: { orderBy: { dayIndex: "asc" } } },
-  });
+  // Both independent of each other once we have the user, so run them
+  // concurrently.
+  const [trips, favorites] = await Promise.all([
+    prisma.trip.findMany({
+      where: {
+        OR: [
+          { ownerId: user.id },
+          { collaborators: { some: { userId: user.id, role: "EDITOR" } } },
+        ],
+      },
+      orderBy: { startDate: "asc" },
+      include: { days: { orderBy: { dayIndex: "asc" } } },
+    }),
+    getFavorites(),
+  ]);
 
   return (
     <ExploreClient
@@ -37,6 +39,8 @@ export default async function ExplorePage({
         })),
       }))}
       initialTripId={tripId}
+      initialDayId={dayId}
+      initialFavorites={favorites}
     />
   );
 }
