@@ -39,6 +39,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#2b6094",
+  // Without an explicit width/initialScale, mobile browsers fall back to
+  // treating this as a desktop-width page and scale the whole thing down
+  // to fit — the "everything looks zoomed out" complaint. Deliberately
+  // NOT setting maximumScale/userScalable: disabling pinch-zoom would
+  // "fix" the input-focus auto-zoom too, but it's an accessibility
+  // regression (WCAG 1.4.4) — that's fixed properly instead by keeping
+  // every form field's font-size at 16px+ (see globals.css), which stops
+  // iOS from needing to zoom in the first place.
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

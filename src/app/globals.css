@@ -4,6 +4,30 @@
   color-scheme: light;
 }
 
+/* iOS Safari auto-zooms the page when a focused form field's computed
+   font-size is under 16px — most inputs/selects/textareas in this app use
+   Tailwind's text-sm/text-xs (14px/12px) for visual density, which is
+   exactly what triggers it. Overriding just the font-size here (not the
+   surrounding padding/layout) fixes the zoom without having to touch every
+   form across the app, and without disabling pinch-zoom globally (that
+   would "fix" this too but breaks accessibility — see layout.tsx). */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Removes the ~300ms double-tap-to-zoom delay/gesture on interactive
+   controls specifically (buttons, links, checkboxes/radios), without
+   disabling pinch-zoom on the page's actual content. */
+button,
+a,
+[role="button"],
+input[type="checkbox"],
+input[type="radio"] {
+  touch-action: manipulation;
+}
+
 @theme {
   /* 旅行藍主色 */
   --color-brand-50: #eef4fb;
