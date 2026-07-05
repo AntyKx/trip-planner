@@ -62,7 +62,14 @@ export async function getPlaceInsight(
     });
 
     return { ok: true, summary };
-  } catch {
+  } catch (err) {
+    // TEMPORARY — diagnosing the first AI Gateway call in production,
+    // remove once confirmed working.
+    console.error(
+      "[ai-insight-error]",
+      err instanceof Error ? err.message : err,
+      err instanceof Error && "cause" in err ? err.cause : undefined
+    );
     return { ok: false, error: "AI 摘要失敗，請稍後再試" };
   }
 }
