@@ -6,6 +6,23 @@ import { redirect } from "next/navigation";
 import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 
+// requireTripEditor/requireTripOwner only check that the caller has a role
+// on `tripId` — they say nothing about whether the `dayId`/`itemId` the
+// caller also supplied actually belongs to that trip. Without this check,
+// a user with edit access to *any* trip of their own (trivially true —
+// everyone owns at least their own trips) could pass someone else's day/
+// item id alongside their own tripId and mutate that other trip's data,
+// having only ever seen those ids by viewing it (even as VIEWER). Every
+// action below that takes both a tripId and a day/item id needs one of
+// these, or the equivalent scoped updateMany/deleteMany `where`.
+async function requireDayInTrip(tripId: string, dayId: string) {
+  const day = await prisma.tripDay.findFirst({
+    where: { id: dayId, tripId },
+    select: { id: true },
+  });
+  if (!day) redirect("/");
+}
+
 // Weather is fetched from the client after the trip page has already
 // rendered, not during SSR — open-meteo has no SLA, and blocking the whole
 // page on N external calls (one per day) meant a single slow/unreachable
@@ -32,9 +49,16 @@ export async function reorderItems(
   orderedItemIds: string[]
 ) {
   await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, dayId);
   await prisma.$transaction(
     orderedItemIds.map((id, index) =>
-      prisma.item.update({ where: { id }, data: { sortOrder: index + 1 } })
+      // updateMany (not update) so this scopes to dayId too — an id that
+      // isn't actually one of this day's items just updates zero rows
+      // instead of silently reaching into another trip's data.
+      prisma.item.updateMany({
+        where: { id, dayId },
+        data: { sortOrder: index + 1 },
+      })
     )
   );
 }
@@ -59,9 +83,23 @@ export async function saveRoutes(
   routes: RouteInput[]
 ) {
   await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, dayId);
+
+  // Only keep legs whose endpoints are actually items on this day — a
+  // fromItemId/toItemId pointing at another trip's item shouldn't be
+  // storable just because dayId itself checked out.
+  const dayItemIds = new Set(
+    (await prisma.item.findMany({ where: { dayId }, select: { id: true } })).map(
+      (i) => i.id
+    )
+  );
+  const validRoutes = routes.filter(
+    (r) => dayItemIds.has(r.fromItemId) && dayItemIds.has(r.toItemId)
+  );
+
   await prisma.$transaction([
     prisma.route.deleteMany({ where: { dayId } }),
-    ...routes.map((r) =>
+    ...validRoutes.map((r) =>
       prisma.route.create({
         data: {
           dayId,
@@ -108,6 +146,7 @@ export async function addPlaceToDay(
   place: NewPlaceInput
 ) {
   await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, dayId);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -240,11 +279,12 @@ export async function setDayAnchor(
 
 export async function clearDayAnchor(tripId: string, dayId: string) {
   await requireTripEditor(tripId);
-  const day = await prisma.tripDay.findUnique({
-    where: { id: dayId },
+  const day = await prisma.tripDay.findFirst({
+    where: { id: dayId, tripId },
     select: { anchorItemId: true },
   });
-  if (day?.anchorItemId) {
+  if (!day) redirect("/");
+  if (day.anchorItemId) {
     await prisma.tripDay.update({
       where: { id: dayId },
       data: { anchorItemId: null },
@@ -293,10 +333,12 @@ export async function deleteItem(tripId: string, itemId: string) {
   // "no anchor set" state consistent when the anchor card is removed via
   // its own delete button rather than "清除" in the anchor control.
   await prisma.tripDay.updateMany({
-    where: { anchorItemId: itemId },
+    where: { anchorItemId: itemId, tripId },
     data: { anchorItemId: null },
   });
-  await prisma.item.delete({ where: { id: itemId } });
+  // deleteMany (not delete) so this scopes to tripId via the day relation —
+  // an itemId belonging to another trip just deletes zero rows.
+  await prisma.item.deleteMany({ where: { id: itemId, day: { tripId } } });
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -330,8 +372,10 @@ export async function updateItem(
   }
 ) {
   await requireTripEditor(tripId);
-  await prisma.item.update({
-    where: { id: itemId },
+  // updateMany (not update) so this scopes to tripId via the day relation —
+  // an itemId belonging to another trip just updates zero rows.
+  await prisma.item.updateMany({
+    where: { id: itemId, day: { tripId } },
     data: {
       type: data.type,
       startTime: data.startTime ? new Date(data.startTime) : null,
@@ -361,6 +405,7 @@ export async function addCustomItem(
   }
 ) {
   await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, dayId);
   const lastItem = await prisma.item.findFirst({
     where: { dayId },
     orderBy: { sortOrder: "desc" },

@@ -81,6 +81,19 @@ model PlaceInsight {
   @@unique([provider, externalId])
 }
 
+// Rate-limits AI calls per user (see getPlaceInsight) — anyone with an
+// account can otherwise call the AI summary action directly with
+// arbitrary "review" text and no trip context, effectively getting free
+// LLM generation billed to this project's AI Gateway account. One row per
+// actual generation attempt (not per cache hit).
+model AiUsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model Trip {
   id            String         @id @default(cuid())
   owner         User           @relation(fields: [ownerId], references: [id])
