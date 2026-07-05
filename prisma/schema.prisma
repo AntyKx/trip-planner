@@ -67,6 +67,20 @@ model Favorite {
   @@unique([userId, placeId])
 }
 
+// AI-generated review digest for a place, keyed independently of Place
+// (not every previewed place gets added/favorited, so this shouldn't
+// force a full Place row into existence just to cache a summary).
+// Generated once per place and reused — no per-view cost after the first.
+model PlaceInsight {
+  id         String   @id @default(cuid())
+  provider   String
+  externalId String
+  summary    String
+  createdAt  DateTime @default(now())
+
+  @@unique([provider, externalId])
+}
+
 model Trip {
   id            String         @id @default(cuid())
   owner         User           @relation(fields: [ownerId], references: [id])
