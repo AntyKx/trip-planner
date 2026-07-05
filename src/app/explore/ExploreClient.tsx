@@ -176,20 +176,25 @@ export default function ExploreClient({
         key={place.externalId}
         className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
       >
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex min-w-0 items-center gap-3">
-            {place.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={place.photoUrl}
-                alt={place.name}
-                className="h-12 w-12 shrink-0 rounded-lg object-cover"
-              />
-            ) : (
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100">
-                <MapPin className="h-5 w-5 text-slate-400" />
-              </div>
-            )}
+        <div className="flex gap-3">
+          {place.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={place.photoUrl}
+              alt={place.name}
+              className="h-13 w-13 shrink-0 rounded-lg object-cover"
+            />
+          ) : (
+            <div className="flex h-13 w-13 shrink-0 items-center justify-center rounded-lg bg-slate-100">
+              <MapPin className="h-5 w-5 text-slate-400" />
+            </div>
+          )}
+          {/* Name gets its own full-width row — with rating/actions sharing
+              a row with the name, long branch names (e.g. chain
+              restaurants with multiple locations) were the first thing to
+              get truncated away, even though the location name is usually
+              the only thing distinguishing one from another. */}
+          <div className="min-w-0 flex-1">
             <PlaceDetailsTrigger
               provider="google"
               externalId={place.externalId}
@@ -205,35 +210,50 @@ export default function ExploreClient({
                 </div>
               }
             >
-              <div className="flex items-center gap-2">
-                <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
-                  {place.name}
-                </h3>
-                {place.rating != null && (
-                  <span className="flex shrink-0 items-center gap-1 text-sm text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-amber-500" />
-                    {place.rating}
-                  </span>
-                )}
-              </div>
+              <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
+                {place.name}
+              </h3>
             </PlaceDetailsTrigger>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => handleToggleFavorite(place)}
-              disabled={isTogglingFavorite}
-              aria-label={isFavorited ? "取消收藏" : "加入收藏"}
-              aria-pressed={isFavorited}
-              className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-red-500 disabled:opacity-50"
-            >
-              <Heart
-                className={`h-5 w-5 ${
-                  isFavorited ? "fill-red-500 text-red-500" : ""
-                }`}
-              />
-            </button>
-            <div className="flex flex-col gap-1">{renderAddActions(place)}</div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {place.rating != null && (
+                <span className="flex shrink-0 items-center gap-1 text-sm text-amber-500">
+                  <Star className="h-3.5 w-3.5 fill-amber-500" />
+                  {place.rating}
+                </span>
+              )}
+              <span className="shrink-0 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
+                {TYPE_LABEL[place.suggestedType]}
+              </span>
+              <button
+                type="button"
+                onClick={() => handleToggleFavorite(place)}
+                disabled={isTogglingFavorite}
+                aria-label={isFavorited ? "取消收藏" : "加入收藏"}
+                aria-pressed={isFavorited}
+                className="ml-auto flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-500 hover:text-red-500 disabled:opacity-50"
+              >
+                <Heart
+                  className={`h-5 w-5 ${
+                    isFavorited ? "fill-red-500 text-red-500" : ""
+                  }`}
+                />
+              </button>
+              {addedIds.has(place.externalId) ? (
+                <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-600">
+                  <Check className="h-3.5 w-3.5" />
+                  已加入
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!selectedDayId || isAdding}
+                  onClick={() => handleAdd(place)}
+                  className="shrink-0 rounded-md border border-slate-200 px-3 py-1 text-xs hover:bg-slate-50 disabled:opacity-50"
+                >
+                  加入行程
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {closedWarnings[place.externalId] && (
