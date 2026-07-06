@@ -228,9 +228,7 @@ export default function TripDayBoard({
                 defaultCountry={
                   selectedDay.timelineItems
                     .find((i) => i.place)
-                    ?.place?.country.toUpperCase() === "TW"
-                    ? "TW"
-                    : "JP"
+                    ?.place?.country.toUpperCase() || "JP"
                 }
                 otherDays={daysWithWeather
                   .filter((d) => d.id !== selectedDay.id)

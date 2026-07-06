@@ -28,14 +28,25 @@ export default function DayAnchorControl({
   tripId: string;
   dayId: string;
   anchorName: string | null;
-  defaultCountry: "TW" | "JP";
+  defaultCountry: string;
   otherDays: DaySummary[];
   onAnchorSet: (item: AnchorItemResult) => void;
   onAnchorCleared: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [country, setCountry] = useState<"TW" | "JP">(defaultCountry);
+  // Same JP/TW-preset-or-free-text pattern as the explore search (see
+  // src/lib/places.ts) — JP/TW get Google's precise rectangle restriction,
+  // anything else is appended as free text and left to Google's own text
+  // understanding. Seeded from whichever country this day's other items
+  // are already in, so re-opening this for an existing US/etc. day doesn't
+  // reset back to Japan.
+  const isPresetCountry = defaultCountry === "TW" || defaultCountry === "JP";
+  const [region, setRegion] = useState<"JP" | "TW" | "OTHER">(
+    isPresetCountry ? (defaultCountry as "JP" | "TW") : "OTHER"
+  );
+  const [customRegion, setCustomRegion] = useState(isPresetCountry ? "" : defaultCountry);
+  const effectiveRegion = region === "OTHER" ? customRegion : region;
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -56,7 +67,7 @@ export default function DayAnchorControl({
     if (!query.trim()) return;
     setError(null);
     setIsSearching(true);
-    searchPlaces(query, country).then((res) => {
+    searchPlaces(query, effectiveRegion).then((res) => {
       setIsSearching(false);
       if (res.ok) {
         setResults(res.results);
@@ -82,7 +93,12 @@ export default function DayAnchorControl({
         {
           name: place.name,
           category: place.category || "hotel",
-          country,
+          // From Google's own address data for this result (see
+          // countryFromAddressComponents in src/lib/places.ts), not the
+          // region selector above — the selector's value is just a search
+          // hint and may not match where the picked place actually is
+          // (e.g. searching "OTHER" broadly, or a border-area result).
+          country: place.country,
           address: place.address,
           lat: place.lat,
           lng: place.lng,
@@ -169,15 +185,25 @@ export default function DayAnchorControl({
         </button>
       </div>
 
-      <form onSubmit={handleSearch} className="mt-2 flex gap-1.5">
+      <form onSubmit={handleSearch} className="mt-2 flex flex-wrap gap-1.5">
         <select
-          value={country}
-          onChange={(e) => setCountry(e.target.value as "TW" | "JP")}
+          value={region}
+          onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}
           className="rounded-md border border-slate-200 bg-white px-1.5 py-1.5 text-xs"
         >
           <option value="JP">日本</option>
           <option value="TW">台灣</option>
+          <option value="OTHER">其他地區...</option>
         </select>
+        {region === "OTHER" && (
+          <input
+            type="text"
+            value={customRegion}
+            onChange={(e) => setCustomRegion(e.target.value)}
+            placeholder="國家/城市"
+            className="w-20 min-w-0 rounded-md border border-slate-200 px-2 py-1.5 text-xs"
+          />
+        )}
         <input
           type="text"
           value={query}

@@ -396,7 +396,7 @@ export default function DayTimeline({
   items: TimelineItem[];
   routes: TimelineRoute[];
   anchorItemId: string | null;
-  defaultCountry: "TW" | "JP";
+  defaultCountry: string;
   otherDays: DaySummary[];
   canEdit: boolean;
 }) {
