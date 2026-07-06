@@ -18,7 +18,14 @@ import {
   CarTaxiFront,
   TramFront,
   Route,
+  FileText,
+  Wallet,
+  Wifi,
+  Luggage,
+  Pill,
+  Ticket,
 } from "lucide-react";
+import type { ChecklistCategoryValue } from "./checklistTemplates";
 
 export const TYPE_LABEL: Record<string, string> = {
   PLACE: "景點",
@@ -93,6 +100,60 @@ export const COUNTRY_FLAG: Record<string, string> = {
   TW: "🇹🇼",
   JP: "🇯🇵",
 };
+
+export const CHECKLIST_CATEGORY_LABEL: Record<ChecklistCategoryValue, string> = {
+  DOCUMENT: "文件 / 證件",
+  TRANSPORT: "交通",
+  ACCOMMODATION: "住宿",
+  MONEY: "金錢 / 支付",
+  INTERNET: "網路 / 通訊",
+  LUGGAGE: "行李",
+  HEALTH: "健康 / 藥品",
+  TICKET: "票券",
+  CUSTOM: "自訂",
+};
+
+export const CHECKLIST_CATEGORY_ICON: Record<ChecklistCategoryValue, LucideIcon> = {
+  DOCUMENT: FileText,
+  TRANSPORT: TrainFront,
+  ACCOMMODATION: Bed,
+  MONEY: Wallet,
+  INTERNET: Wifi,
+  LUGGAGE: Luggage,
+  HEALTH: Pill,
+  TICKET: Ticket,
+  CUSTOM: StickyNote,
+};
+
+export const CHECKLIST_CATEGORY_COLOR: Record<
+  ChecklistCategoryValue,
+  { bg: string; text: string }
+> = {
+  DOCUMENT: { bg: "bg-indigo-50", text: "text-indigo-600" },
+  TRANSPORT: { bg: "bg-sky-50", text: "text-sky-600" },
+  ACCOMMODATION: { bg: "bg-violet-50", text: "text-violet-600" },
+  MONEY: { bg: "bg-amber-50", text: "text-amber-700" },
+  INTERNET: { bg: "bg-cyan-50", text: "text-cyan-600" },
+  LUGGAGE: { bg: "bg-orange-50", text: "text-orange-600" },
+  HEALTH: { bg: "bg-rose-50", text: "text-rose-600" },
+  TICKET: { bg: "bg-brand-50", text: "text-brand-600" },
+  CUSTOM: { bg: "bg-slate-100", text: "text-slate-600" },
+};
+
+// Display order for the category-grouped checklist view — enum
+// declaration order doesn't necessarily match the most useful reading
+// order (e.g. CUSTOM belongs last, as a catch-all).
+export const CHECKLIST_CATEGORY_ORDER: ChecklistCategoryValue[] = [
+  "DOCUMENT",
+  "TRANSPORT",
+  "ACCOMMODATION",
+  "MONEY",
+  "INTERNET",
+  "LUGGAGE",
+  "HEALTH",
+  "TICKET",
+  "CUSTOM",
+];
 
 // google.maps.VehicleType values, for showing transit route alternatives.
 export const VEHICLE_LABEL: Record<string, string> = {

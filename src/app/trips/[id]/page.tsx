@@ -46,6 +46,10 @@ export default async function TripDetailPage({
             routes: true,
           },
         },
+        checklistItems: {
+          orderBy: { sortOrder: "asc" },
+          include: { assignedTo: true },
+        },
       },
     }),
   ]);
@@ -201,6 +205,17 @@ export default async function TripDetailPage({
             shareEnabled={trip.shareEnabled}
             shareToken={trip.shareToken}
             shareRole={trip.shareRole === "OWNER" ? null : trip.shareRole}
+            checklistItems={trip.checklistItems.map((c) => ({
+              id: c.id,
+              title: c.title,
+              category: c.category,
+              note: c.note,
+              isDone: c.isDone,
+              assignedToId: c.assignedToId,
+              assignedToName: c.assignedTo?.name ?? null,
+              dueDate: c.dueDate ? c.dueDate.toISOString() : null,
+              sortOrder: c.sortOrder,
+            }))}
             days={trip.days.map((day) => ({
               id: day.id,
               dayIndex: day.dayIndex,

@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Map as MapIcon, MapPin, Luggage, ListChecks, Plus } from "lucide-react";
+import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
+import ChecklistTab, { type ChecklistItemView } from "./ChecklistTab";
 import { fetchDayWeather } from "@/app/trips/actions";
 import {
   weatherLabel,
@@ -41,6 +42,7 @@ export default function TripDayBoard({
   shareEnabled,
   shareToken,
   shareRole,
+  checklistItems,
 }: {
   tripId: string;
   apiKey?: string;
@@ -52,9 +54,10 @@ export default function TripDayBoard({
   shareEnabled: boolean;
   shareToken: string | null;
   shareRole: "EDITOR" | "VIEWER" | null;
+  checklistItems: ChecklistItemView[];
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
-  const [mode, setMode] = useState<"edit" | "travel">("edit");
+  const [mode, setMode] = useState<"edit" | "travel" | "checklist">("edit");
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant
   // the whole trip page waited on the slowest of N external calls.
@@ -123,6 +126,18 @@ export default function TripDayBoard({
             <Luggage className="h-4 w-4" />
             旅行模式
           </button>
+          <button
+            type="button"
+            onClick={() => setMode("checklist")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+              mode === "checklist"
+                ? "bg-brand-600 text-white"
+                : "text-ink-700 hover:bg-slate-50"
+            }`}
+          >
+            <ClipboardCheck className="h-4 w-4" />
+            檢查清單
+          </button>
         </div>
 
         {/* Uses selectedDayId (client state) so this always points at
@@ -140,7 +155,14 @@ export default function TripDayBoard({
         )}
       </div>
 
-      {mode === "travel" ? (
+      {mode === "checklist" ? (
+        <ChecklistTab
+          tripId={tripId}
+          items={checklistItems}
+          members={collaborators.map((c) => ({ userId: c.userId, name: c.name }))}
+          canEdit={canEdit}
+        />
+      ) : mode === "travel" ? (
         selectedDay ? (
           <TravelModeView day={selectedDay} />
         ) : (

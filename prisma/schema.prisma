@@ -42,16 +42,30 @@ enum CostCategory {
   OTHER
 }
 
+enum ChecklistCategory {
+  DOCUMENT
+  TRANSPORT
+  ACCOMMODATION
+  MONEY
+  INTERNET
+  LUGGAGE
+  HEALTH
+  TICKET
+  CUSTOM
+}
+
 model User {
-  id            String         @id @default(cuid())
-  name          String
-  email         String         @unique
-  avatarUrl     String?
-  googleUid     String?        @unique
-  trips         Trip[]
-  collaborating Collaborator[]
-  favorites     Favorite[]
-  createdAt     DateTime       @default(now())
+  id                String          @id @default(cuid())
+  name              String
+  email             String          @unique
+  avatarUrl         String?
+  googleUid         String?         @unique
+  trips             Trip[]
+  collaborating     Collaborator[]
+  favorites         Favorite[]
+  checklistDone     ChecklistItem[] @relation("ChecklistDoneBy")
+  checklistAssigned ChecklistItem[] @relation("ChecklistAssignedTo")
+  createdAt         DateTime        @default(now())
 }
 
 // A personal bucket-list, independent of any specific trip — "我的收藏".
@@ -120,6 +134,8 @@ model Trip {
   shareEnabled Boolean @default(false)
   shareToken   String? @unique
   shareRole    Role?
+
+  checklistItems ChecklistItem[]
 }
 
 model Collaborator {
@@ -214,4 +230,39 @@ model Route {
   distanceKm  Float?
   fare        Float?
   rawPolyline String?
+}
+
+// "旅遊檢查清單" — per-trip, auto-seeded from src/lib/checklistTemplates.ts
+// (a generic template plus destination templates matched against whatever
+// countries actually appear among the trip's Place items — there's no
+// stored Trip.destination field, since that would just be a second source
+// of truth for something already derivable from the places themselves).
+model ChecklistItem {
+  id           String            @id @default(cuid())
+  trip         Trip              @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tripId       String
+  title        String
+  category     ChecklistCategory @default(CUSTOM)
+  note         String?
+  isDone       Boolean           @default(false)
+  doneAt       DateTime?
+  doneBy       User?             @relation("ChecklistDoneBy", fields: [doneById], references: [id])
+  doneById     String?
+  assignedTo   User?             @relation("ChecklistAssignedTo", fields: [assignedToId], references: [id])
+  assignedToId String?
+  dueDate      DateTime?
+  sortOrder    Int               @default(0)
+  // "DEFAULT" | "DESTINATION_TEMPLATE" | "USER" — where this item came
+  // from. Only template-seeded rows carry a sourceKey; user-added items
+  // always have sourceKey null (Postgres treats every null as distinct, so
+  // the @@unique below only ever dedupes template rows against themselves,
+  // never against each other's custom items).
+  source       String?
+  sourceKey    String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([tripId, sourceKey])
+  @@index([tripId, category])
+  @@index([tripId, isDone])
 }

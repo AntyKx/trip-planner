@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
+import { generateChecklistForTrip } from "./[id]/checklistActions";
 
 // requireTripEditor/requireTripOwner only check that the caller has a role
 // on `tripId` — they say nothing about whether the `dayId`/`itemId` the
@@ -522,6 +523,13 @@ export async function createTrip(formData: FormData) {
       },
     },
   });
+
+  // Only the generic template can seed at this point — there are no
+  // places yet, so no country to match a destination template against
+  // (see src/lib/checklistTemplates.ts). Destination items get added
+  // later by re-calling this once the trip actually has places, via the
+  // checklist tab's "補上目的地清單" button.
+  await generateChecklistForTrip(trip.id);
 
   revalidatePath("/");
   redirect(`/trips/${trip.id}`);
