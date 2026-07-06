@@ -11,11 +11,13 @@ export type PlaceResult = {
   category: string;
   photoUrl?: string;
   suggestedType: "PLACE" | "RESTAURANT";
-  // Carried on the result itself (rather than relying on whatever the
-  // search form's country selector happens to be set to) so favoriting or
-  // adding a place works correctly even from "我的收藏", where the current
-  // selector value has nothing to do with where that favorite came from.
-  country: "TW" | "JP";
+  // Derived from Google's own address data for *this* result (not from
+  // whatever the search form's region selector happens to be set to) —
+  // carried on the result itself so favoriting/adding a place works
+  // correctly even from "我的收藏", where the selector's current value has
+  // nothing to do with where that favorite actually is. A 2-letter ISO
+  // code (e.g. "JP", "FR", "KR"), or "" if Google didn't return one.
+  country: string;
 };
 
 export type SearchPlacesResult =
@@ -32,7 +34,15 @@ type RawPlace = {
   primaryType?: string;
   primaryTypeDisplayName?: { text?: string };
   photos?: { name: string }[];
+  addressComponents?: { shortText?: string; types?: string[] }[];
 };
+
+function countryFromAddressComponents(
+  components: RawPlace["addressComponents"]
+): string {
+  const country = components?.find((c) => c.types?.includes("country"));
+  return country?.shortText ?? "";
+}
 
 // Places API (New) "Table A" food & drink types — see
 // https://developers.google.com/maps/documentation/places/web-service/place-types
@@ -112,15 +122,40 @@ const COUNTRY_BOUNDS: Record<
   JP: { low: { latitude: 24.0, longitude: 122.0 }, high: { latitude: 46.0, longitude: 146.5 } },
 };
 
+// JP/TW keep the precise rectangle restriction (a real hard filter, see
+// COUNTRY_BOUNDS above). Any other region is free text (e.g. "法國",
+// "Paris") — there's no bounding box for it, so it's appended straight into
+// the text query and left to Google's own text understanding, same as
+// typing "拉麵 東京" into normal Google Maps search would work today.
+function isPresetRegion(region: string): region is "TW" | "JP" {
+  return region === "TW" || region === "JP";
+}
+
 // Called directly from the browser so the request carries the page's
 // Referer header — required because the API key is HTTP-referrer restricted.
 export async function searchPlaces(
   query: string,
-  country: "TW" | "JP"
+  region: string
 ): Promise<SearchPlacesResult> {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
     return { ok: false, error: "尚未設定 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY" };
+  }
+
+  const trimmedRegion = region.trim();
+  const upperRegion = trimmedRegion.toUpperCase();
+  const preset = isPresetRegion(upperRegion) ? upperRegion : null;
+
+  const body: Record<string, unknown> = {
+    textQuery: preset || !trimmedRegion ? query : `${query} ${trimmedRegion}`,
+    languageCode: "zh-TW",
+    // Explicit rather than relying on whatever Google's default happens
+    // to be — 20 is the documented max per request for Text Search (New).
+    pageSize: 20,
+  };
+  if (preset) {
+    body.regionCode = preset;
+    body.locationRestriction = { rectangle: COUNTRY_BOUNDS[preset] };
   }
 
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
@@ -129,17 +164,9 @@ export async function searchPlaces(
       "Content-Type": "application/json",
       "X-Goog-Api-Key": apiKey,
       "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.photos",
+        "places.id,places.displayName,places.formattedAddress,places.location,places.rating,places.priceLevel,places.primaryType,places.primaryTypeDisplayName,places.photos,places.addressComponents",
     },
-    body: JSON.stringify({
-      textQuery: query,
-      languageCode: "zh-TW",
-      regionCode: country,
-      locationRestriction: { rectangle: COUNTRY_BOUNDS[country] },
-      // Explicit rather than relying on whatever Google's default happens
-      // to be — 20 is the documented max per request for Text Search (New).
-      pageSize: 20,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -159,7 +186,7 @@ export async function searchPlaces(
     priceLevel: p.priceLevel ? PRICE_LEVEL_MAP[p.priceLevel] : undefined,
     category: p.primaryTypeDisplayName?.text ?? "",
     suggestedType: suggestTypeFromPrimaryType(p.primaryType),
-    country,
+    country: countryFromAddressComponents(p.addressComponents) || preset || "",
     photoUrl: p.photos?.[0]
       ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`
       : undefined,

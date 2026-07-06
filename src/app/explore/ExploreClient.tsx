@@ -30,7 +30,14 @@ export default function ExploreClient({
   const defaultTripId = initialTripId ?? trips[0]?.id ?? "";
   const defaultTrip = trips.find((t) => t.id === defaultTripId);
   const [query, setQuery] = useState("");
-  const [country, setCountry] = useState<"JP" | "TW">("JP");
+  // "JP"/"TW" get Google's precise geographic-rectangle restriction (see
+  // COUNTRY_BOUNDS in src/lib/places.ts); "OTHER" means the user typed a
+  // free-text region (customRegion) that just gets appended to the search
+  // query instead — no hard filter, so it works for any country/city but
+  // relies on Google's own text understanding for accuracy.
+  const [region, setRegion] = useState<"JP" | "TW" | "OTHER">("JP");
+  const [customRegion, setCustomRegion] = useState("");
+  const effectiveRegion = region === "OTHER" ? customRegion : region;
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, startSearch] = useTransition();
@@ -62,7 +69,7 @@ export default function ExploreClient({
     if (!query.trim()) return;
     setSearchError(null);
     startSearch(async () => {
-      const res = await searchPlaces(query, country);
+      const res = await searchPlaces(query, effectiveRegion);
       if (res.ok) {
         setResults(res.results);
       } else {
@@ -360,13 +367,22 @@ export default function ExploreClient({
         <>
           <form onSubmit={handleSearch} className="mt-4 flex flex-col gap-2 sm:flex-row">
             <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value as "JP" | "TW")}
+              value={region}
+              onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}
               className="rounded-lg border border-slate-200 px-3 py-2 text-base"
             >
               <option value="JP">🇯🇵 日本</option>
               <option value="TW">🇹🇼 台灣</option>
+              <option value="OTHER">🌐 其他地區...</option>
             </select>
+            {region === "OTHER" && (
+              <input
+                value={customRegion}
+                onChange={(e) => setCustomRegion(e.target.value)}
+                placeholder="輸入國家或城市，例如：法國、首爾"
+                className="rounded-lg border border-slate-200 px-3 py-2 text-base sm:w-40"
+              />
+            )}
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -382,6 +398,11 @@ export default function ExploreClient({
               {isSearching ? "搜尋中..." : "搜尋"}
             </button>
           </form>
+          {region === "OTHER" && (
+            <p className="mt-2 text-xs text-slate-500">
+              非日本／台灣地區採關鍵字搜尋，範圍與精確度會依 Google 判斷，建議在關鍵字或地區中加上城市名。
+            </p>
+          )}
 
           {searchError && (
             <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
