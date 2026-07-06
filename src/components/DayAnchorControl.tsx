@@ -68,6 +68,11 @@ export default function DayAnchorControl({
   }
 
   async function handlePick(place: PlaceResult) {
+    const confirmMessage = anchorName
+      ? `確定要把本日起點改成「${place.name}」嗎？`
+      : `確定要把「${place.name}」設為本日起點嗎？`;
+    if (!confirm(confirmMessage)) return;
+
     setIsSaving(true);
     setError(null);
     try {
