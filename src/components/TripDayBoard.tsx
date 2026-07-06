@@ -38,6 +38,9 @@ export default function TripDayBoard({
   emergencyInfo,
   canEdit,
   isOwner,
+  shareEnabled,
+  shareToken,
+  shareRole,
 }: {
   tripId: string;
   apiKey?: string;
@@ -46,6 +49,9 @@ export default function TripDayBoard({
   emergencyInfo: string | null;
   canEdit: boolean;
   isOwner: boolean;
+  shareEnabled: boolean;
+  shareToken: string | null;
+  shareRole: "EDITOR" | "VIEWER" | null;
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel">("edit");
@@ -293,6 +299,9 @@ export default function TripDayBoard({
           tripId={tripId}
           collaborators={collaborators}
           canManage={isOwner}
+          shareEnabled={shareEnabled}
+          shareToken={shareToken}
+          shareRole={shareRole}
         />
       </aside>
       </div>

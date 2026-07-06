@@ -107,6 +107,19 @@ model Trip {
   days          TripDay[]
   collaborators Collaborator[]
   createdAt     DateTime       @default(now())
+
+  // Share-link invite: anyone with a valid, currently-enabled token who
+  // visits /trips/[id]?share=[shareToken] while signed in is auto-added as
+  // a real Collaborator with role `shareRole` (see src/app/trips/[id]/page.tsx)
+  // — a lower-friction alternative to the owner typing an exact email into
+  // addCollaborator. Requiring sign-in (rather than truly anonymous access)
+  // keeps every edit attributable to a real account and needs no changes to
+  // the existing per-action role checks. Disabling/re-enabling rotates
+  // shareToken, so a leaked link can be invalidated without affecting
+  // collaborators already added.
+  shareEnabled Boolean @default(false)
+  shareToken   String? @unique
+  shareRole    Role?
 }
 
 model Collaborator {

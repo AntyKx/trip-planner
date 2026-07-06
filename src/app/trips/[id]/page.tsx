@@ -8,20 +8,24 @@ import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 import { formatTime } from "@/lib/labels";
 import { getNextStop } from "@/lib/timeline";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function TripDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ share?: string }>;
 }) {
   const { id } = await params;
+  const { share: shareToken } = await searchParams;
 
-  // requireUser() and the trip query are independent (both keyed off the
-  // request, not each other), so run them concurrently instead of checking
-  // ownership as a separate sequential round trip after the trip loads.
+  // getCurrentUser() (not requireUser()) and the trip query are independent
+  // (both keyed off the request, not each other), so run them concurrently
+  // instead of checking auth as a separate sequential round trip before
+  // the trip loads.
   const [user, trip] = await Promise.all([
-    requireUser(),
+    getCurrentUser(),
     prisma.trip.findUnique({
       where: { id },
       // Prisma's default strategy runs one sequential query per relation
@@ -46,12 +50,50 @@ export default async function TripDetailPage({
     }),
   ]);
 
+  // Not requireUser(): a share link (/trips/[id]?share=...) needs to
+  // survive a login round-trip, so on no session we redirect to /login
+  // with `next` pointing back at this exact URL (including the share
+  // token) instead of requireUser()'s unconditional redirect to "/".
+  if (!user) {
+    const nextPath = `/trips/${id}${shareToken ? `?share=${encodeURIComponent(shareToken)}` : ""}`;
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+  }
+
   if (!trip) notFound();
 
-  const role: "OWNER" | "EDITOR" | "VIEWER" | null =
+  let role: "OWNER" | "EDITOR" | "VIEWER" | null =
     trip.ownerId === user.id
       ? "OWNER"
       : (trip.collaborators.find((c) => c.userId === user.id)?.role ?? null);
+
+  // Auto-join as a real collaborator on a valid, currently-enabled share
+  // link — the only other way onto this trip's collaborator list is the
+  // owner typing an exact email into addCollaborator. Upsert (not create)
+  // so opening the same link twice at once (e.g. two tabs) can't race into
+  // a unique-constraint error. A stale/disabled/rotated token just falls
+  // through to the no-role redirect below, same as never having a token.
+  if (
+    !role &&
+    shareToken &&
+    trip.shareEnabled &&
+    trip.shareToken === shareToken &&
+    trip.shareRole
+  ) {
+    await prisma.collaborator.upsert({
+      where: { tripId_userId: { tripId: trip.id, userId: user.id } },
+      update: {},
+      create: { tripId: trip.id, userId: user.id, role: trip.shareRole },
+    });
+    role = trip.shareRole;
+    trip.collaborators.push({
+      tripId: trip.id,
+      userId: user.id,
+      role: trip.shareRole,
+      createdAt: new Date(),
+      user,
+    });
+  }
+
   if (!role) redirect("/");
   const isOwner = role === "OWNER";
   const canEdit = role !== "VIEWER";
@@ -156,6 +198,9 @@ export default async function TripDetailPage({
             emergencyInfo={trip.emergencyInfo}
             canEdit={canEdit}
             isOwner={isOwner}
+            shareEnabled={trip.shareEnabled}
+            shareToken={trip.shareToken}
+            shareRole={trip.shareRole === "OWNER" ? null : trip.shareRole}
             days={trip.days.map((day) => ({
               id: day.id,
               dayIndex: day.dayIndex,

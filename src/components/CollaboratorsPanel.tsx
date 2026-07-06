@@ -2,8 +2,14 @@
 
 import { useRef, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Users } from "lucide-react";
-import { addCollaborator, removeCollaborator } from "@/app/trips/actions";
+import { Users, Link2, Copy, Check } from "lucide-react";
+import {
+  addCollaborator,
+  removeCollaborator,
+  enableTripShare,
+  disableTripShare,
+  updateTripShareRole,
+} from "@/app/trips/actions";
 
 export type Collaborator = {
   userId: string;
@@ -22,15 +28,58 @@ export default function CollaboratorsPanel({
   tripId,
   collaborators,
   canManage,
+  shareEnabled,
+  shareToken,
+  shareRole,
 }: {
   tripId: string;
   collaborators: Collaborator[];
   canManage: boolean;
+  shareEnabled: boolean;
+  shareToken: string | null;
+  shareRole: "EDITOR" | "VIEWER" | null;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const [isSharePending, startShareTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl =
+    shareEnabled && shareToken && typeof window !== "undefined"
+      ? `${window.location.origin}/trips/${tripId}?share=${shareToken}`
+      : "";
+
+  function handleEnableShare() {
+    setCopied(false);
+    startShareTransition(async () => {
+      await enableTripShare(tripId, "EDITOR");
+      router.refresh();
+    });
+  }
+
+  function handleDisableShare() {
+    setCopied(false);
+    startShareTransition(async () => {
+      await disableTripShare(tripId);
+      router.refresh();
+    });
+  }
+
+  function handleShareRoleChange(role: "EDITOR" | "VIEWER") {
+    startShareTransition(async () => {
+      await updateTripShareRole(tripId, role);
+      router.refresh();
+    });
+  }
+
+  async function handleCopyLink() {
+    if (!shareUrl) return;
+    await navigator.clipboard.writeText(shareUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -131,6 +180,69 @@ export default function CollaboratorsPanel({
           </form>
 
           {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+
+          <div className="mt-4 border-t border-slate-100 pt-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+                <Link2 className="h-3.5 w-3.5" />
+                分享連結
+              </span>
+              <button
+                type="button"
+                disabled={isSharePending}
+                onClick={shareEnabled ? handleDisableShare : handleEnableShare}
+                className={`rounded-md px-2.5 py-1 text-xs disabled:opacity-50 ${
+                  shareEnabled
+                    ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    : "bg-brand-600 text-white hover:bg-brand-700"
+                }`}
+              >
+                {shareEnabled ? "關閉分享" : "開啟分享連結"}
+              </button>
+            </div>
+
+            {shareEnabled && (
+              <div className="mt-2 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-600">連結權限：</span>
+                  <select
+                    value={shareRole ?? "EDITOR"}
+                    disabled={isSharePending}
+                    onChange={(e) =>
+                      handleShareRoleChange(e.target.value as "EDITOR" | "VIEWER")
+                    }
+                    className="rounded-md border border-slate-200 px-2 py-1 text-xs"
+                  >
+                    <option value="EDITOR">可編輯</option>
+                    <option value="VIEWER">僅檢視</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    onFocus={(e) => e.target.select()}
+                    className="min-w-0 flex-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-600"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCopyLink}
+                    className="flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    {copied ? "已複製" : "複製"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  任何人拿到這個連結，登入後就會自動加入為協作者。
+                </p>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

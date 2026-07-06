@@ -9,9 +9,23 @@ const HERO_PHOTO =
 const POLAROID_PHOTO =
   "https://places.googleapis.com/v1/places/ChIJSTLZ6barQjQRMdkCqrP3CNU/photos/AaVGc3m3tgWd6gIilsT8TjxXEa6LFkWmDV8ffhtlW5psRjJS2OF2YIYI-eD9A0spdXCgDFJcvM1G5WBXTW9m4J8exYebDE5laG3dfJpWZVPHY9xh9OJ_NpP1LLCm4mvpzlMI7PwUNJf2AZCKDA3UPW_ZQK9oQnz8hRTAMRFtv6qlB__ug_vp7TtmVJf9YNx8MjFDnkihXknbIyk4OJgwJYkFYbRMwG9QtWnmnKczepR09-yNWpMNwCZ1WMQkb21-yOmVwv9uQCMoRGLWbDH2G2ds4HrLPgHPXxmSglu7ekZicEDOeF6FgyG1eDMUHvkbk7CU8IgtomapcOnZVh2pfJ8cklxUjrN7os7Sxy49ywxJLbS5xT65uk0KQ_NdYb6rJ620Z8NeiLKqo6Ohn2pYQGThw9qtlqKLy204zoJ5Anrb89b4bsZh/media?key=AIzaSyDzc7zCYaVWmPzr6Px3EanfbTk3VQxL4oo&maxWidthPx=480"; // 台北101觀景台
 
-export default async function LoginPage() {
+// Only a same-origin relative path is ever honored — "next" is untrusted
+// client-controlled input (a query param), so this guards against being
+// used as an open redirect to an external site (e.g. "//evil.com").
+function safeNextPath(next: string | undefined): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return "/";
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+  const nextPath = safeNextPath(next);
   const user = await getCurrentUser();
-  if (user) redirect("/");
+  if (user) redirect(nextPath);
 
   return (
     <main className="relative flex min-h-screen w-full flex-col overflow-hidden bg-paper">
@@ -70,7 +84,7 @@ export default async function LoginPage() {
       {/* Sign-in card */}
       <div className="px-6 pb-10 pt-8 sm:mt-6">
         <div className="mx-auto w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <GoogleSignInButton />
+          <GoogleSignInButton next={nextPath} />
         </div>
       </div>
     </main>

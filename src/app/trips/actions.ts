@@ -1,5 +1,6 @@
 "use server";
 
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -322,6 +323,42 @@ export async function removeCollaborator(tripId: string, userId: string) {
   await requireTripOwner(tripId);
   await prisma.collaborator.delete({
     where: { tripId_userId: { tripId, userId } },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
+// Turns on (or rotates, if already on) the share link — see the Trip model
+// comment in schema.prisma. Generates a fresh token every time so
+// re-enabling after a disable invalidates whatever link was out there
+// before.
+export async function enableTripShare(tripId: string, role: "EDITOR" | "VIEWER") {
+  await requireTripOwner(tripId);
+  const shareToken = randomUUID();
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { shareEnabled: true, shareToken, shareRole: role },
+  });
+  revalidatePath(`/trips/${tripId}`);
+  return shareToken;
+}
+
+export async function disableTripShare(tripId: string) {
+  await requireTripOwner(tripId);
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { shareEnabled: false, shareToken: null, shareRole: null },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
+// Changes what a link that's already out there grants, without rotating
+// the token — so the owner can dial access up/down (e.g. 可編輯 → 僅檢視)
+// without breaking a link they already sent someone.
+export async function updateTripShareRole(tripId: string, role: "EDITOR" | "VIEWER") {
+  await requireTripOwner(tripId);
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { shareRole: role },
   });
   revalidatePath(`/trips/${tripId}`);
 }

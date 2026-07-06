@@ -49,7 +49,7 @@ function preferRedirect() {
   return isInAppBrowser();
 }
 
-export default function GoogleSignInButton() {
+export default function GoogleSignInButton({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export default function GoogleSignInButton() {
   async function completeSignIn(result: UserCredential) {
     const idToken = await result.user.getIdToken();
     await signInWithGoogle(idToken);
-    router.push("/");
+    router.push(next);
     router.refresh();
   }
 
