@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-07
 
+- **UI/UX 優化第四階段：Timeline / Item Card**：交通資訊膠囊整理成「圖示 · 交通方式 · 時間 · 距離」一行；「本日起點」卡片改成淡藍底+邊框的特殊樣式；景點名稱字級加大確立「名稱最大、時間第二」層級（時間改用排版凸顯——跟使用者確認過，之前試過左側時間軸垂直線因太雜亂被拿掉，這次不重加）；新增「停留時間」顯示；拖曳互動新增 hover 顯示拖曳把手、拖曳中卡片用陰影表現浮起、放開後用 Toast 顯示「已更新排序」。
 - **UI/UX 優化第三階段：Trip Detail Hero 跟 Day Tabs**：修掉之前發現的問題——Hero 的「目前 Day/天氣/下一站」原本是伺服器端用「今天的日期」算的，跟畫面下方 Day Tabs 選的天數是兩個互不相干的狀態；現在這些資訊移到 TripDayBoard 並跟著 Day Tabs 選的天數走，同時補上「景點數」跟「下一站」。Hero 新增協作者頭像堆疊、拿掉沒作用的英文「planning」狀態標籤（跟首頁那個是同一個問題）。Day Tabs 改卡片式：選中微陰影、未選中 hover 微浮起，每個 tab 補上景點數。
 - **UI/UX 優化第二階段：首頁改成旅行 Dashboard**：Hero 區加上依本地時間顯示的問候語（早安/午安/晚安）、「今天想規劃哪趟旅程？」標語、新增旅程 CTA；行程卡片新增協作者頭像堆疊與「X 前更新」（Trip/Item 都補上 `updatedAt`，取兩者最大值才能反映實際行程編輯，不只是標題/封面異動）；空狀態改用共用 EmptyState 元件；卡片加上依序的 fade-up 進場動畫。
 - **UI/UX 優化第一階段：設計系統基礎元件**：新增共用元件 AppButton／AppCard／AppBadge／SectionHeader／EmptyState／LoadingSkeleton／ProgressBar／ActionMenu／AppModal，以及零依賴的 Toast 通知系統（掛進全站 layout）；設計 token 新增 brand-800 深藏藍、shadow-soft、radius-card／radius-card-lg、fade-up/fade-in/toast-in 動畫，沿用現有暖色調系統而不是整套換成規格建議的 Tailwind 標準藍/灰色碼；安裝 framer-motion 但這階段還沒接上，之後只用在 Timeline／檢查清單的刪除與拖曳排序動畫。後續頁面套用（Home Dashboard、Trip Detail、Timeline、Explore、協作者面板、清單）分階段進行中。
