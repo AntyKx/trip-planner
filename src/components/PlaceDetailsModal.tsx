@@ -1,19 +1,10 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
-import {
-  X,
-  Star,
-  MapPin,
-  Phone,
-  Globe,
-  Clock,
-  ExternalLink,
-  Sparkles,
-} from "lucide-react";
+import { X, Star, MapPin, Phone, Globe, Clock, ExternalLink } from "lucide-react";
 import { getPlaceDetails, type PlaceDetails } from "@/lib/places";
-import { getPlaceInsight } from "@/app/explore/aiActions";
 import ModalOverlay from "./ModalOverlay";
+import PlaceInsightSection from "./PlaceInsightSection";
 
 type Fallback = {
   name: string;
@@ -27,12 +18,21 @@ export default function PlaceDetailsTrigger({
   externalId,
   fallback,
   footer,
+  tripId,
+  dayId,
   children,
 }: {
   provider: string;
   externalId: string;
   fallback: Fallback;
   footer?: ReactNode;
+  // Needed so the AI fit-analysis section can judge this place against
+  // whatever's already planned for that specific day (see
+  // src/app/explore/aiActions.ts's getPlaceInsight) — not optional, every
+  // caller already knows which trip/day it's showing this place in
+  // context of.
+  tripId: string;
+  dayId: string;
   children: ReactNode;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,6 +53,8 @@ export default function PlaceDetailsTrigger({
           externalId={externalId}
           fallback={fallback}
           footer={footer}
+          tripId={tripId}
+          dayId={dayId}
           onClose={() => setIsOpen(false)}
         />
       )}
@@ -65,20 +67,21 @@ function PlaceDetailsModal({
   externalId,
   fallback,
   footer,
+  tripId,
+  dayId,
   onClose,
 }: {
   provider: string;
   externalId: string;
   fallback: Fallback;
   footer?: ReactNode;
+  tripId: string;
+  dayId: string;
   onClose: () => void;
 }) {
   const [details, setDetails] = useState<PlaceDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(provider === "google");
-  const [insight, setInsight] = useState<string | null>(null);
-  const [insightError, setInsightError] = useState<string | null>(null);
-  const [isLoadingInsight, setIsLoadingInsight] = useState(false);
 
   useEffect(() => {
     if (provider !== "google") return;
@@ -102,22 +105,6 @@ function PlaceDetailsModal({
   const photoUrl = details?.photoUrl ?? fallback.photoUrl ?? undefined;
 
   const displayName = details?.name || fallback.name;
-
-  function handleGetInsight() {
-    if (!details || details.reviews.length === 0) return;
-    setIsLoadingInsight(true);
-    setInsightError(null);
-    getPlaceInsight(
-      provider,
-      externalId,
-      displayName,
-      details.reviews.map((r) => ({ rating: r.rating, text: r.text }))
-    ).then((res) => {
-      setIsLoadingInsight(false);
-      if (res.ok) setInsight(res.summary);
-      else setInsightError(res.error);
-    });
-  }
 
   return (
     <ModalOverlay
@@ -228,32 +215,14 @@ function PlaceDetailsModal({
           )}
 
           {details && details.reviews.length > 0 && (
-            <div>
-              {insight ? (
-                <div className="rounded-lg bg-violet-50 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold text-violet-700">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    AI 評論重點摘要
-                  </p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-slate-700">{insight}</p>
-                </div>
-              ) : (
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleGetInsight}
-                    disabled={isLoadingInsight}
-                    className="flex items-center gap-1.5 rounded-lg border border-violet-200 px-3 py-1.5 text-xs font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-50"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    {isLoadingInsight ? "AI 整理評論中…" : "✨ 用 AI 幫我看評論重點"}
-                  </button>
-                  {insightError && (
-                    <p className="mt-1.5 text-xs text-red-500">{insightError}</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <PlaceInsightSection
+              provider={provider}
+              externalId={externalId}
+              placeName={displayName}
+              reviews={details.reviews.map((r) => ({ rating: r.rating, text: r.text }))}
+              tripId={tripId}
+              dayId={dayId}
+            />
           )}
 
           {details && details.reviews.length > 0 && (

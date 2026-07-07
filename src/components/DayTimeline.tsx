@@ -108,6 +108,8 @@ const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
 ];
 
 function SortableItemCard({
+  tripId,
+  dayId,
   item,
   route,
   hasNextStop,
@@ -122,6 +124,8 @@ function SortableItemCard({
   onViewAlternatives,
   onOpenJapanHint,
 }: {
+  tripId: string;
+  dayId: string;
   item: TimelineItem;
   route?: TimelineRoute;
   hasNextStop: boolean;
@@ -257,6 +261,8 @@ function SortableItemCard({
                 rating: item.place.rating,
                 photoUrl: item.place.photoUrl,
               }}
+              tripId={tripId}
+              dayId={dayId}
             >
               <h3 className="mt-1 truncate text-lg font-bold text-ink-900 hover:text-brand-700">
                 {item.place.name}
@@ -918,6 +924,8 @@ export default function DayTimeline({
               return (
                 <SortableItemCard
                   key={item.id}
+                  tripId={tripId}
+                  dayId={dayId}
                   item={item}
                   route={route}
                   hasNextStop={nextId != null}

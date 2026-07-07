@@ -7,6 +7,8 @@ import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
 import { addFavorite, removeFavorite } from "@/app/explore/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
+import PlaceInsightSection from "@/components/PlaceInsightSection";
+import AppCard from "@/components/AppCard";
 import { TYPE_LABEL } from "@/lib/labels";
 import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 
@@ -179,10 +181,7 @@ export default function ExploreClient({
   function renderPlaceCard(place: PlaceResult) {
     const isFavorited = favoritedIds.has(place.externalId);
     return (
-      <div
-        key={place.externalId}
-        className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
-      >
+      <AppCard key={place.externalId} className="p-3">
         <div className="flex gap-3">
           {place.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -216,6 +215,8 @@ export default function ExploreClient({
                   {renderAddActions(place)}
                 </div>
               }
+              tripId={selectedTripId}
+              dayId={selectedDayId}
             >
               <h3 className="truncate font-semibold text-ink-900 hover:text-brand-700">
                 {place.name}
@@ -261,6 +262,17 @@ export default function ExploreClient({
                 </button>
               )}
             </div>
+            {selectedTripId && selectedDayId && (
+              <div className="mt-2">
+                <PlaceInsightSection
+                  provider="google"
+                  externalId={place.externalId}
+                  placeName={place.name}
+                  tripId={selectedTripId}
+                  dayId={selectedDayId}
+                />
+              </div>
+            )}
           </div>
         </div>
         {closedWarnings[place.externalId] && (
@@ -269,7 +281,7 @@ export default function ExploreClient({
             {closedWarnings[place.externalId]}
           </p>
         )}
-      </div>
+      </AppCard>
     );
   }
 

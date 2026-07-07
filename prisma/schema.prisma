@@ -81,18 +81,28 @@ model Favorite {
   @@unique([userId, placeId])
 }
 
-// AI-generated review digest for a place, keyed independently of Place
-// (not every previewed place gets added/favorited, so this shouldn't
-// force a full Place row into existence just to cache a summary).
-// Generated once per place and reused — no per-view cost after the first.
+// AI-generated fit assessment for a place, keyed independently of Place
+// (not every previewed place gets added/favorited, so this shouldn't force
+// a full Place row into existence just to cache a result). Scoped per
+// (place, day) rather than globally per place — fitScore/suggestedDuration
+// are judged against that specific day's already-planned itinerary, so the
+// same place can score differently for a relaxed day vs. a packed one.
+// tripId/dayId are plain ids (no relation) like AiUsageLog.userId below —
+// this is disposable analysis cache, not data that needs referential
+// integrity with Trip/TripDay.
 model PlaceInsight {
-  id         String   @id @default(cuid())
-  provider   String
-  externalId String
-  summary    String
-  createdAt  DateTime @default(now())
+  id                String   @id @default(cuid())
+  provider          String
+  externalId        String
+  tripId            String
+  dayId             String
+  summary           String
+  fitScore          Int // 0-100, how well this fits the day's existing itinerary
+  suggestedDuration String
+  caution           String?
+  createdAt         DateTime @default(now())
 
-  @@unique([provider, externalId])
+  @@unique([provider, externalId, dayId])
 }
 
 // Rate-limits AI calls per user (see getPlaceInsight) — anyone with an
