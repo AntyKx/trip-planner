@@ -301,7 +301,13 @@ function SortableItemCard({
               value={route?.mode ?? "WALK"}
               onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
               disabled={isRecomputing}
-              className="w-20 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+              // w-28 (not w-20): globals.css forces every select/input to
+              // 16px font (fixes iOS auto-zoom-on-focus — see the comment
+              // there), which overrides this text-xs class since Tailwind's
+              // utilities live in a named CSS layer and that override
+              // doesn't. At the resulting 16px, "大眾運輸" plus the native
+              // dropdown arrow no longer fit in a narrower width.
+              className="w-28 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
             >
               {TRAVEL_MODE_OPTIONS.map((opt) => {
                 const disabled =
