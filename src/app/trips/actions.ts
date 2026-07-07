@@ -497,21 +497,51 @@ export async function deleteTrip(tripId: string) {
   redirect("/");
 }
 
-export async function createTrip(formData: FormData) {
+// A trip's day count is unbounded on the client (a plain <input type="date">
+// pair), and every day becomes a real TripDay row created up front — a
+// typo'd year (2026 -> 2126) would otherwise silently create tens of
+// thousands of rows instead of failing loudly.
+const MAX_TRIP_DAYS = 180;
+
+export type CreateTripResult = { ok: false; error: string };
+
+export async function createTrip(
+  title: string,
+  startDateStr: string,
+  endDateStr: string
+): Promise<CreateTripResult | void> {
   const owner = await requireUser();
-  const title = formData.get("title") as string;
-  const startDate = new Date(formData.get("startDate") as string);
-  const endDate = new Date(formData.get("endDate") as string);
+
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return { ok: false, error: "請輸入行程名稱" };
+
+  // Date-only strings ("YYYY-MM-DD") parse as UTC midnight per the Date
+  // constructor spec — deliberately not appending a time/zone here so this
+  // keeps matching how every TripDay.date is already stored.
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return { ok: false, error: "請選擇有效的日期" };
+  }
+  if (endDate < startDate) {
+    return { ok: false, error: "結束日期不能早於開始日期" };
+  }
 
   const dayCount =
     Math.round(
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
     ) + 1;
+  if (dayCount > MAX_TRIP_DAYS) {
+    return {
+      ok: false,
+      error: `行程天數不能超過 ${MAX_TRIP_DAYS} 天，請確認日期是否正確`,
+    };
+  }
 
   const trip = await prisma.trip.create({
     data: {
       ownerId: owner.id,
-      title,
+      title: trimmedTitle,
       startDate,
       endDate,
       status: "planning",
