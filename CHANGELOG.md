@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-07
 
+- **新增 AI 適合度分析「重新分析」功能**：原本分析結果永久快取，行程內容變了也無法重新評估。`getPlaceInsight` 新增 `forceRefresh` 參數略過快取（仍受每日次數限制），`PlaceInsightSection` 加上「重新分析」按鈕。
 - **修正探索頁切換天數後殘留舊天數狀態**：「已加入」、公休警告、AI 適合度分析結果三個地方原本只用 externalId 當 key，沒考慮目前選的行程日期，切換「加入到：Day X」後會顯示錯的舊資訊（例如明明沒加到這天卻顯示已加入、AI 分析結果其實是另一天算的）。改成用 dayId+externalId 當 key，AI 分析區塊也補上依日期強制重新掛載。
 - **修正景點卡片交通方式下拉選單文字被裁切**：`globals.css` 為修 iOS 對焦自動放大問題，全站 select/input 強制 16px 字級（這條規則沒放進 Tailwind 的 CSS layer，蓋過了 `text-xs`），交通方式下拉選單原本固定 `w-20` 是照舊字級抓的，換成 16px 後「大眾運輸」四字放不下被裁切，改成 `w-28`。
 - **UI/UX 優化第七階段（最後一階段）：Loading Skeleton、Empty State、Toast、動畫收尾**：Phase 1 做好但一直沒接上任何頁面的 Loading Skeleton 終於接上（新增 Home 與 Trip Detail 的 `loading.tsx`、探索頁搜尋中改顯示骨架而不是殘留舊結果）；檢查清單/探索頁的空狀態文字全部換成共用 EmptyState 元件，探索頁區分「還沒搜尋」跟「搜尋不到結果」兩種訊息；新增/儲存/刪除/AI 分析完成補齊 Toast 通知（行程項目、檢查清單、緊急資訊、封面圖片、探索頁加入行程/收藏）；檢查清單拖曳項目補上 hover 拖曳把手、探索頁與行程卡片統一 hover 微上浮效果、AppButton 補上按下縮放回饋；切換模式/Day Tab 時內容加上 fade-in、AI 分析中圖示加上 pulse 動畫。至此 `功能擴充建議.txt` 規劃的 UI/UX 優化七個階段全部完成。
