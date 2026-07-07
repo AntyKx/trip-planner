@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-07
 
+- **UI/UX 優化第二階段：首頁改成旅行 Dashboard**：Hero 區加上依本地時間顯示的問候語（早安/午安/晚安）、「今天想規劃哪趟旅程？」標語、新增旅程 CTA；行程卡片新增協作者頭像堆疊與「X 前更新」（Trip/Item 都補上 `updatedAt`，取兩者最大值才能反映實際行程編輯，不只是標題/封面異動）；空狀態改用共用 EmptyState 元件；卡片加上依序的 fade-up 進場動畫。
 - **UI/UX 優化第一階段：設計系統基礎元件**：新增共用元件 AppButton／AppCard／AppBadge／SectionHeader／EmptyState／LoadingSkeleton／ProgressBar／ActionMenu／AppModal，以及零依賴的 Toast 通知系統（掛進全站 layout）；設計 token 新增 brand-800 深藏藍、shadow-soft、radius-card／radius-card-lg、fade-up/fade-in/toast-in 動畫，沿用現有暖色調系統而不是整套換成規格建議的 Tailwind 標準藍/灰色碼；安裝 framer-motion 但這階段還沒接上，之後只用在 Timeline／檢查清單的刪除與拖曳排序動畫。後續頁面套用（Home Dashboard、Trip Detail、Timeline、Explore、協作者面板、清單）分階段進行中。
 - **首頁行程列表優化**：拿掉永遠顯示英文、從未變動過的「planning」狀態徽章；已結束的行程移到「已結束的行程」區塊並依開始日期新到舊排序，還沒結束／即將到來的行程排最前面、依開始日期近到遠排序，避免舊行程長期卡在列表最前面；查詢改用 `select` 只挑實際會用到的欄位，不再把每個行程底下所有景點/地點的完整欄位都撈出來；共同編輯的行程徽章改顯示實際角色（可編輯／僅檢視）。
 - **安全性修補**：`/api/upload`（封面圖上傳）原本沒有任何登入檢查，任何人不用登入就能拿到有效的 Vercel Blob 上傳 token；`getJapanTransitHint`（日本轉乘建議）同樣沒有登入檢查，會被拿去消耗 Ekispert API 額度。兩者都補上登入驗證。
