@@ -15,6 +15,7 @@ export type Collaborator = {
   userId: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   role: "OWNER" | "EDITOR" | "VIEWER";
 };
 

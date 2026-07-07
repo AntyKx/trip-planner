@@ -17,6 +17,8 @@ import {
   WEATHER_UNAVAILABLE_MESSAGE,
   type DailyWeather,
 } from "@/lib/weather";
+import { getNextStop } from "@/lib/timeline";
+import { formatTime } from "@/lib/labels";
 
 export type BoardDay = {
   id: string;
@@ -90,6 +92,10 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
+  // Mirrors what page.tsx's Trip Hero used to compute from "today's real
+  // date" — moved here so it follows whichever Day Tab is selected instead
+  // (client state the server-rendered hero can't see).
+  const selectedDayNextStop = selectedDay ? getNextStop(selectedDay.timelineItems) : null;
 
   function switchToTravelMode() {
     const todayStr = new Date().toISOString().slice(0, 10);
@@ -180,10 +186,10 @@ export default function TripDayBoard({
                 key={day.id}
                 type="button"
                 onClick={() => setSelectedDayId(day.id)}
-                className={`shrink-0 snap-start rounded-2xl border p-3 text-left min-w-[92px] ${
+                className={`shrink-0 snap-start rounded-card border p-3 text-left min-w-[92px] transition ${
                   isActive
-                    ? "border-brand-600 bg-brand-600 text-white"
-                    : "border-slate-200 bg-white text-ink-700 hover:border-brand-300"
+                    ? "border-brand-600 bg-brand-600 text-white shadow-soft"
+                    : "border-slate-200 bg-white text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
                 }`}
               >
                 <div className="flex items-center gap-1 text-sm font-semibold">
@@ -204,6 +210,13 @@ export default function TripDayBoard({
                     {day.note}
                   </div>
                 )}
+                {day.timelineItems.length > 0 && (
+                  <div
+                    className={`mt-0.5 text-xs ${isActive ? "text-white/70" : "text-ink-400"}`}
+                  >
+                    {day.timelineItems.length} 個景點
+                  </div>
+                )}
               </button>
             );
           })}
@@ -211,22 +224,35 @@ export default function TripDayBoard({
 
         {selectedDay ? (
           <section className="mt-4">
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
-              <span>
-                Day {selectedDay.dayIndex} · {selectedDay.date}
-              </span>
-              {selectedDay.weather && (
-                <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
-                  <span>{weatherLabel(selectedDay.weather.weatherCode).emoji}</span>
-                  <span>
-                    {Math.round(selectedDay.weather.maxTemp)}° /{" "}
-                    {Math.round(selectedDay.weather.minTemp)}°
-                  </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
+                <span>
+                  Day {selectedDay.dayIndex} · {selectedDay.date}
                 </span>
-              )}
-            </h2>
+                {selectedDay.weather && (
+                  <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
+                    <span>{weatherLabel(selectedDay.weather.weatherCode).emoji}</span>
+                    <span>
+                      {Math.round(selectedDay.weather.maxTemp)}° /{" "}
+                      {Math.round(selectedDay.weather.minTemp)}°
+                    </span>
+                  </span>
+                )}
+              </h2>
+              <span className="text-sm text-ink-500">
+                {selectedDay.timelineItems.length} 個景點
+              </span>
+            </div>
             {selectedDay.note && (
               <p className="mt-0.5 text-sm text-ink-500">{selectedDay.note}</p>
+            )}
+            {selectedDayNextStop && (
+              <p className="mt-1 text-sm text-ink-700">
+                <span className="font-medium">下一站</span>{" "}
+                {selectedDayNextStop.place?.name ?? selectedDayNextStop.note ?? "未命名項目"}
+                {selectedDayNextStop.startTime &&
+                  ` · ${formatTime(selectedDayNextStop.startTime)}`}
+              </p>
             )}
 
             {selectedDay.weather ? (

@@ -3,11 +3,9 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import HeroWeatherBadge from "@/components/HeroWeatherBadge";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
-import { formatTime } from "@/lib/labels";
-import { getNextStop } from "@/lib/timeline";
+import { AvatarStack } from "@/components/Avatar";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function TripDetailPage({
@@ -103,11 +101,18 @@ export default async function TripDetailPage({
   const canEdit = role !== "VIEWER";
 
   const collaborators = [
-    { userId: trip.owner.id, name: trip.owner.name, email: trip.owner.email, role: "OWNER" as const },
+    {
+      userId: trip.owner.id,
+      name: trip.owner.name,
+      email: trip.owner.email,
+      avatarUrl: trip.owner.avatarUrl,
+      role: "OWNER" as const,
+    },
     ...trip.collaborators.map((c) => ({
       userId: c.user.id,
       name: c.user.name,
       email: c.user.email,
+      avatarUrl: c.user.avatarUrl,
       role: c.role,
     })),
   ];
@@ -122,22 +127,13 @@ export default async function TripDetailPage({
     new Set(allPlaces.map((p) => p.photoUrl).filter((url): url is string => !!url))
   );
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const currentDayIndex = trip.days.findIndex(
-    (d) => d.date.toISOString().slice(0, 10) === todayStr
-  );
-  const heroDayIndex = currentDayIndex >= 0 ? currentDayIndex : 0;
-  const heroDay = trip.days[heroDayIndex];
-  const heroFirstPlace = heroDay?.items.find((item) => item.place)?.place;
-  const heroNextStop = heroDay ? getNextStop(heroDay.items) : null;
-
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
       <Link href="/" className="text-sm text-ink-700 hover:underline">
         ← 回我的行程
       </Link>
 
-      <section className="relative mt-3 h-56 overflow-hidden rounded-2xl shadow-sm sm:h-72">
+      <section className="relative mt-3 h-56 overflow-hidden rounded-card-lg shadow-soft sm:h-72">
         {!coverImage && (
           <div className="absolute inset-0 bg-gradient-to-br from-brand-500 to-brand-700" />
         )}
@@ -160,36 +156,20 @@ export default async function TripDetailPage({
               {trip.startDate.toISOString().slice(0, 10)} ~{" "}
               {trip.endDate.toISOString().slice(0, 10)}
             </span>
-            {heroDay && (
-              <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
-                Day {heroDay.dayIndex}
+            {/* "目前 Day" / 天氣 / 下一站 now live in TripDayBoard instead —
+                they need to follow whichever Day Tab is selected, which is
+                client state this server-rendered hero doesn't have. Static
+                per-trip facts (dates, collaborators) stay here. */}
+            {collaborators.length > 1 && (
+              <span className="pointer-events-auto">
+                <AvatarStack members={collaborators} />
               </span>
             )}
-            {heroFirstPlace && heroDay && (
-              <HeroWeatherBadge
-                lat={heroFirstPlace.lat}
-                lng={heroFirstPlace.lng}
-                dateIso={heroDay.date.toISOString()}
-              />
-            )}
           </div>
-          {heroNextStop && (
-            <p className="mt-2 text-xs text-white/90 sm:text-sm">
-              <span className="font-medium">下一站</span>{" "}
-              {heroNextStop.place?.name ?? heroNextStop.note ?? "未命名項目"}
-              {heroNextStop.startTime &&
-                ` · ${formatTime(heroNextStop.startTime)}`}
-            </p>
-          )}
         </div>
       </section>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-ink-700">
-            {trip.status}
-          </span>
-        </div>
+      <div className="mt-4 flex justify-end">
         {isOwner && <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />}
       </div>
 
