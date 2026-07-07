@@ -64,12 +64,21 @@ export default function ExploreClient({
       ? initialDayId
       : defaultTrip?.days[0]?.id) ?? ""
   );
+  // Keyed by "dayId:externalId", not just externalId — otherwise adding a
+  // place to Day 1 made it show "已加入" (and any stale closed-day warning)
+  // on every other day too, even where it was never actually added. The
+  // same place can legitimately get added to several different days (e.g.
+  // a hotel across a multi-night stay), so this has to track per-day state.
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [isAdding, startAdding] = useTransition();
   // "This day might be closed" warning per place, shown on the search
   // result card right after adding — not shown *before* adding since we
   // don't want to block the add flow on it, just flag it.
   const [closedWarnings, setClosedWarnings] = useState<Record<string, string>>({});
+
+  function dayPlaceKey(dayId: string, externalId: string) {
+    return `${dayId}:${externalId}`;
+  }
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId);
 
@@ -98,6 +107,7 @@ export default function ExploreClient({
       // result) keeps the search list itself cheap — only the place
       // actually being added pays for the extra Places API call.
       let openHoursJson: string | undefined;
+      let warning: string | undefined;
       if (targetDay) {
         const details = await getPlaceDetails(place.externalId);
         if (details.ok) {
@@ -106,14 +116,21 @@ export default function ExploreClient({
             const periods: OpeningPeriod[] = JSON.parse(openHoursJson);
             const date = new Date(`${targetDay.date}T00:00:00`);
             if (isClosedAllDay(periods, date)) {
-              setClosedWarnings((prev) => ({
-                ...prev,
-                [place.externalId]: `⚠️ 這天（${weekdayLabel(date)}）可能公休，請確認營業時間`,
-              }));
+              warning = `⚠️ 這天（${weekdayLabel(date)}）可能公休，請確認營業時間`;
             }
           }
         }
       }
+      // Always resolve (set or clear) this day+place's entry — otherwise a
+      // closed-day warning from adding to a different, closed day would
+      // keep showing even after successfully adding to an open one.
+      setClosedWarnings((prev) => {
+        const next = { ...prev };
+        const key = dayPlaceKey(selectedDayId, place.externalId);
+        if (warning) next[key] = warning;
+        else delete next[key];
+        return next;
+      });
 
       await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
         name: place.name,
@@ -130,7 +147,7 @@ export default function ExploreClient({
         openHours: openHoursJson,
         suggestedType: place.suggestedType,
       });
-      setAddedIds((prev) => new Set(prev).add(place.externalId));
+      setAddedIds((prev) => new Set(prev).add(dayPlaceKey(selectedDayId, place.externalId)));
       toast.success(`已加入「${place.name}」`);
     });
   }
@@ -164,7 +181,7 @@ export default function ExploreClient({
   }
 
   function renderAddActions(place: PlaceResult) {
-    if (addedIds.has(place.externalId)) {
+    if (addedIds.has(dayPlaceKey(selectedDayId, place.externalId))) {
       return (
         <span className="flex items-center gap-1 text-xs text-emerald-600">
           <Check className="h-3.5 w-3.5" />
@@ -260,7 +277,7 @@ export default function ExploreClient({
                   }`}
                 />
               </button>
-              {addedIds.has(place.externalId) ? (
+              {addedIds.has(dayPlaceKey(selectedDayId, place.externalId)) ? (
                 <span className="flex shrink-0 items-center gap-1 text-xs text-emerald-600">
                   <Check className="h-3.5 w-3.5" />
                   已加入
@@ -279,6 +296,12 @@ export default function ExploreClient({
             {selectedTripId && selectedDayId && (
               <div className="mt-2">
                 <PlaceInsightSection
+                  // Forces a remount (resetting its cached analysis) when
+                  // the target day changes — otherwise it'd keep showing a
+                  // fitScore/summary computed for whichever day it was last
+                  // analyzed against, mislabeled as if it were for the
+                  // newly-selected day.
+                  key={selectedDayId}
                   provider="google"
                   externalId={place.externalId}
                   placeName={place.name}
@@ -289,10 +312,10 @@ export default function ExploreClient({
             )}
           </div>
         </div>
-        {closedWarnings[place.externalId] && (
+        {closedWarnings[dayPlaceKey(selectedDayId, place.externalId)] && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-            {closedWarnings[place.externalId]}
+            {closedWarnings[dayPlaceKey(selectedDayId, place.externalId)]}
           </p>
         )}
       </AppCard>
