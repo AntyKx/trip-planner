@@ -20,6 +20,20 @@ import {
 import { getNextStop } from "@/lib/timeline";
 import { formatTime } from "@/lib/labels";
 
+// day.date is a timezone-independent calendar date string ("YYYY-MM-DD" —
+// see ExplorePage/page.tsx's toISOString().slice(0,10) round-trip off a
+// UTC-midnight Date), so "today" has to be read from the viewer's actual
+// local calendar date (getFullYear/Month/Date), not toISOString(), which
+// reads back the UTC date and drifts a day behind local in the early
+// morning for any UTC+ timezone (e.g. 00:00-08:00 in Taipei, UTC+8).
+function localTodayStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export type BoardDay = {
   id: string;
   dayIndex: number;
@@ -92,13 +106,13 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
+  const todayStr = localTodayStr();
   // Mirrors what page.tsx's Trip Hero used to compute from "today's real
   // date" — moved here so it follows whichever Day Tab is selected instead
   // (client state the server-rendered hero can't see).
   const selectedDayNextStop = selectedDay ? getNextStop(selectedDay.timelineItems) : null;
 
   function switchToTravelMode() {
-    const todayStr = new Date().toISOString().slice(0, 10);
     const today = daysWithWeather.find((d) => d.date === todayStr);
     if (today) setSelectedDayId(today.id);
     setMode("travel");
@@ -186,21 +200,41 @@ export default function TripDayBoard({
         <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
           {daysWithWeather.map((day) => {
             const isActive = day.id === selectedDay?.id;
+            const isToday = day.date === todayStr;
             return (
               <button
                 key={day.id}
                 type="button"
                 onClick={() => setSelectedDayId(day.id)}
-                className={`shrink-0 snap-start rounded-card border p-3 text-left min-w-[92px] transition ${
+                className={`relative shrink-0 snap-start rounded-card border p-3 text-left min-w-[92px] transition ${
                   isActive
                     ? "border-brand-600 bg-brand-600 text-white shadow-soft"
-                    : "border-slate-200 bg-white text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
+                    : isToday
+                      ? "border-brand-300 bg-brand-50 text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
+                      : "border-slate-200 bg-white text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
                 }`}
               >
+                {isToday && (
+                  <span
+                    className={`absolute right-2 top-2 h-1.5 w-1.5 rounded-full ${
+                      isActive ? "bg-white" : "bg-brand-600"
+                    }`}
+                    aria-hidden="true"
+                  />
+                )}
                 <div className="flex items-center gap-1 text-sm font-semibold">
                   <span>Day {day.dayIndex}</span>
                   {day.weather && <span>{weatherLabel(day.weather.weatherCode).emoji}</span>}
                 </div>
+                {isToday && (
+                  <div
+                    className={`text-[10px] font-medium ${
+                      isActive ? "text-white/90" : "text-brand-600"
+                    }`}
+                  >
+                    今天
+                  </div>
+                )}
                 <div
                   className={`mt-0.5 text-xs ${isActive ? "text-white/80" : "text-ink-500"}`}
                 >

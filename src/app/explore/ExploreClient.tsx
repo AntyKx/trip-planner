@@ -21,6 +21,18 @@ export type TripOption = {
   days: { id: string; dayIndex: number; date: string }[];
 };
 
+const WEEKDAY_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
+
+// date is a "YYYY-MM-DD" string (see ExplorePage) — parsed and read back via
+// UTC getters so the displayed day/weekday can't drift a day off depending
+// on the viewer's local timezone offset.
+function formatDayOption(dayIndex: number, date: string): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `Day ${dayIndex} · ${mm}/${dd}（${WEEKDAY_LABEL[d.getUTCDay()]}）`;
+}
+
 export default function ExploreClient({
   trips,
   initialTripId,
@@ -353,7 +365,7 @@ export default function ExploreClient({
           再來加點。
         </p>
       ) : (
-        <div className="mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 text-sm">
+        <div className="sticky top-0 z-10 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/95 p-4 text-sm shadow-sm backdrop-blur">
           <span className="text-slate-700">加入到：</span>
           <select
             value={selectedTripId}
@@ -378,7 +390,7 @@ export default function ExploreClient({
           >
             {selectedTrip?.days.map((d) => (
               <option key={d.id} value={d.id}>
-                Day {d.dayIndex}
+                {formatDayOption(d.dayIndex, d.date)}
               </option>
             ))}
           </select>

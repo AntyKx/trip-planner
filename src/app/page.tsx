@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Luggage, MapPinned, LogOut } from "lucide-react";
+import { Plus, Luggage, MapPinned, LogOut, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/app/login/actions";
@@ -201,11 +201,6 @@ export default async function TripsPage() {
       <div className="grid gap-5">
         {upcomingTrips.map(renderTripCard)}
 
-        {pastTrips.length > 0 && (
-          <h2 className="mt-3 text-sm font-medium text-ink-500">已結束的行程</h2>
-        )}
-        {pastTrips.map(renderTripCard)}
-
         {trips.length === 0 && (
           <EmptyState
             icon={MapPinned}
@@ -224,6 +219,16 @@ export default async function TripsPage() {
           />
         )}
       </div>
+
+      {pastTrips.length > 0 && (
+        <details className="group mt-6">
+          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-700">
+            <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+            已結束的行程（{pastTrips.length}）
+          </summary>
+          <div className="mt-4 grid gap-5">{pastTrips.map(renderTripCard)}</div>
+        </details>
+      )}
     </main>
   );
 }
