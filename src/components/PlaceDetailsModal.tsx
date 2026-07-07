@@ -214,7 +214,12 @@ function PlaceDetailsModal({
             </details>
           )}
 
-          {details && details.reviews.length > 0 && (
+          {/* tripId/dayId can legitimately be empty here — Explore still
+              lets you search and open this modal before any trip exists.
+              Rendering the AI button then would be a trap: the action's
+              requireTripEditor("") finds no trip and redirect()s the user
+              to the home page mid-flow. */}
+          {details && details.reviews.length > 0 && tripId && dayId && (
             <PlaceInsightSection
               provider={provider}
               externalId={externalId}

@@ -158,7 +158,14 @@ export default function EditItemModal({
     try {
       const startIso = toIso(startTime);
       const endIso = toIso(endTime);
-      const costValue = cost.trim() ? Number(cost) : null;
+      // Number("1e") is NaN and type=number inputs still allow "-" and
+      // "e" to be typed — treat anything unparseable or negative as "no
+      // cost entered" instead of persisting garbage.
+      const parsedCost = Number(cost);
+      const costValue =
+        cost.trim() && Number.isFinite(parsedCost) && parsedCost >= 0
+          ? parsedCost
+          : null;
 
       if (item) {
         await updateItem(tripId, item.id, {
