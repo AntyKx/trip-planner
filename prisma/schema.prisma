@@ -121,6 +121,7 @@ model Trip {
   days          TripDay[]
   collaborators Collaborator[]
   createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
 
   // Share-link invite: anyone with a valid, currently-enabled token who
   // visits /trips/[id]?share=[shareToken] while signed in is auto-added as
@@ -183,6 +184,11 @@ model Item {
   cost               Float?
   currency           String? // "TWD" | "JPY" | "USD" | ...
   costCategory       CostCategory?
+  // Drives the home page's "最後更新" (last updated) per trip — itinerary
+  // edits (add/edit/reorder) touch Item rows far more often than the Trip
+  // row itself, so Trip.updatedAt alone would look stale even right after
+  // someone was actively editing.
+  updatedAt          DateTime      @default(now()) @updatedAt
 
   routesFrom Route[] @relation("RouteFrom")
   routesTo   Route[] @relation("RouteTo")

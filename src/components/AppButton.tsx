@@ -23,6 +23,18 @@ export type AppButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   icon?: ReactNode;
 };
 
+// Exported so a real <Link> (navigation, not an action) can look exactly
+// like an AppButton without actually being a <button> — e.g. the "新增
+// 旅程" CTA on Home needs real navigation semantics (prefetch, ctrl-click
+// to open in a new tab), which a <button onClick={...}> can't offer.
+export function appButtonClassName(
+  variant: AppButtonVariant = "primary",
+  size: AppButtonSize = "md",
+  className?: string
+): string {
+  return `inline-flex shrink-0 items-center justify-center rounded-xl font-medium whitespace-nowrap transition disabled:opacity-50 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`;
+}
+
 // Shared button primitive — see 功能擴充建議.txt's design-system request.
 // Covers the four cases actually used across the app (primary CTA, neutral
 // secondary action, inline ghost/link-style action, destructive action)
@@ -35,7 +47,7 @@ const AppButton = forwardRef<HTMLButtonElement, AppButtonProps>(function AppButt
     <button
       ref={ref}
       disabled={disabled || isLoading}
-      className={`inline-flex shrink-0 items-center justify-center rounded-xl font-medium whitespace-nowrap transition disabled:opacity-50 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`}
+      className={appButtonClassName(variant, size, className)}
       {...props}
     >
       {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}

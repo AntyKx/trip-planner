@@ -201,3 +201,21 @@ export function formatTime(date: Date | string | null) {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toISOString().slice(11, 16);
 }
+
+// "最後更新" on the home page's trip cards — coarse buckets are
+// deliberate (a travel-planning app doesn't need minute-level precision,
+// and coarser buckets don't need to be re-rendered every minute to stay
+// accurate the way "3 分鐘前" would).
+export function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / (60 * 1000));
+  if (diffMin < 1) return "剛剛";
+  if (diffMin < 60) return `${diffMin} 分鐘前`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour} 小時前`;
+  const diffDay = Math.floor(diffHour / 24);
+  if (diffDay < 30) return `${diffDay} 天前`;
+  const diffMonth = Math.floor(diffDay / 30);
+  if (diffMonth < 12) return `${diffMonth} 個月前`;
+  return `${Math.floor(diffMonth / 12)} 年前`;
+}

@@ -3,6 +3,12 @@ import { Plus, Luggage, MapPinned, LogOut } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/app/login/actions";
+import { formatRelativeTime } from "@/lib/labels";
+import { appButtonClassName } from "@/components/AppButton";
+import { AvatarStack } from "@/components/Avatar";
+import SectionHeader from "@/components/SectionHeader";
+import EmptyState from "@/components/EmptyState";
+import GreetingHero from "@/components/GreetingHero";
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
@@ -11,9 +17,9 @@ const FALLBACK_GRADIENTS = [
 ];
 
 // Keyed by the full Role enum for type-safety even though this only ever
-// renders for a shared trip's collaborators[0] (see renderTripCard) — the
-// owner never has their own Collaborator row, so "OWNER" shouldn't turn up
-// here in practice.
+// renders for a shared trip's collaborators (see renderTripCard) — the
+// owner is never in the Collaborator table for their own trip, so "OWNER"
+// shouldn't turn up here in practice.
 const COLLAB_ROLE_LABEL: Record<"OWNER" | "EDITOR" | "VIEWER", string> = {
   OWNER: "擁有者",
   EDITOR: "可編輯",
@@ -29,22 +35,24 @@ export default async function TripsPage() {
     // See src/app/trips/[id]/page.tsx — "join" avoids Prisma's default
     // one-query-per-relation-level strategy.
     relationLoadStrategy: "join",
-    // Explicit select (not include) — this card only ever renders a cover
-    // photo and a couple of counts, so there's no reason to pull every
-    // Item/Place column (rating, address, lat/lng, opening hours, ...) for
-    // every trip just to find "the first item with a photo."
+    // Explicit select (not include) — trim to exactly what this card
+    // renders instead of pulling every Item/Place column for every trip.
     select: {
       id: true,
       title: true,
       startDate: true,
       endDate: true,
       coverImage: true,
-      collaborators: { where: { userId: user.id }, select: { role: true } },
+      updatedAt: true,
+      owner: { select: { id: true, name: true, avatarUrl: true } },
+      collaborators: {
+        select: { role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
+      },
       days: {
         select: {
           items: {
             orderBy: { sortOrder: "asc" },
-            select: { place: { select: { photoUrl: true } } },
+            select: { updatedAt: true, place: { select: { photoUrl: true } } },
           },
         },
       },
@@ -64,7 +72,7 @@ export default async function TripsPage() {
     .filter((t) => t.endDate.toISOString().slice(0, 10) < todayStr)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
 
-  function renderTripCard(trip: (typeof trips)[number]) {
+  function renderTripCard(trip: (typeof trips)[number], index: number) {
     const coverImage =
       trip.coverImage ??
       trip.days
@@ -75,13 +83,20 @@ export default async function TripsPage() {
       FALLBACK_GRADIENTS[trips.indexOf(trip) % FALLBACK_GRADIENTS.length];
     // Owner never has a Collaborator row for their own trip, so this is
     // only ever populated for a trip someone else shared with this user.
-    const collabRole = trip.collaborators[0]?.role;
+    const collabRole = trip.collaborators.find((c) => c.user.id === user.id)?.role;
+    // Owner first, then collaborators, for the avatar stack.
+    const members = [trip.owner, ...trip.collaborators.map((c) => c.user)];
+    const lastUpdatedMs = Math.max(
+      trip.updatedAt.getTime(),
+      ...trip.days.flatMap((d) => d.items).map((i) => i.updatedAt.getTime())
+    );
 
     return (
       <Link
         key={trip.id}
         href={`/trips/${trip.id}`}
-        className="group relative block aspect-[16/9] w-full overflow-hidden rounded-2xl shadow-sm transition hover:shadow-lg sm:aspect-[21/9]"
+        style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
+        className="group relative block aspect-[16/9] w-full animate-fade-up overflow-hidden rounded-card-lg opacity-0 shadow-soft transition [animation-fill-mode:forwards] hover:shadow-lg sm:aspect-[21/9]"
       >
         {coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -123,6 +138,16 @@ export default async function TripsPage() {
               {itemCount} 個景點
             </span>
           </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            {members.length > 1 ? (
+              <AvatarStack members={members} />
+            ) : (
+              <span />
+            )}
+            <span className="text-[11px] text-white/70">
+              {formatRelativeTime(new Date(lastUpdatedMs))}更新
+            </span>
+          </div>
         </div>
       </Link>
     );
@@ -155,20 +180,25 @@ export default async function TripsPage() {
         </form>
       </div>
 
-      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-900">我的行程</h1>
-        </div>
+      <section className="mt-2">
+        <GreetingHero name={user.name} />
+        <h1 className="mt-1 text-3xl font-bold text-ink-900 sm:text-4xl">
+          今天想規劃哪趟旅程？
+        </h1>
         <Link
           href="/trips/new"
-          className="flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className={appButtonClassName("primary", "md", "mt-4 gap-1.5")}
         >
           <Plus className="h-4 w-4" />
-          新增行程
+          新增旅程
         </Link>
-      </div>
+      </section>
 
-      <div className="mt-8 grid gap-5">
+      {trips.length > 0 && (
+        <SectionHeader title="近期旅程" icon={Luggage} className="mt-10 mb-5" />
+      )}
+
+      <div className="grid gap-5">
         {upcomingTrips.map(renderTripCard)}
 
         {pastTrips.length > 0 && (
@@ -177,19 +207,21 @@ export default async function TripsPage() {
         {pastTrips.map(renderTripCard)}
 
         {trips.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-brand-200 bg-white px-6 py-16 text-center">
-            <MapPinned className="h-10 w-10 text-brand-300" />
-            <p className="text-sm text-ink-700">
-              尚無行程，先建立第一個行程開始規劃旅行吧
-            </p>
-            <Link
-              href="/trips/new"
-              className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-            >
-              <Plus className="h-4 w-4" />
-              新增行程
-            </Link>
-          </div>
+          <EmptyState
+            icon={MapPinned}
+            title="尚無旅程"
+            description="建立第一趟旅程，開始規劃你的下一次旅行"
+            className="mt-4"
+            action={
+              <Link
+                href="/trips/new"
+                className={appButtonClassName("primary", "md", "mt-2 gap-1.5")}
+              >
+                <Plus className="h-4 w-4" />
+                建立第一趟旅程
+              </Link>
+            }
+          />
         )}
       </div>
     </main>
