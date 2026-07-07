@@ -65,6 +65,7 @@ import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditIt
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
+import EmptyState from "./EmptyState";
 import ActionMenu, { type ActionMenuItem } from "./ActionMenu";
 
 export type TimelineItem = {
@@ -178,8 +179,8 @@ function SortableItemCard({
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
-        className={`group relative flex touch-manipulation items-stretch rounded-xl border select-none [-webkit-touch-callout:none] ${
-          isDragging ? "shadow-lg" : "shadow-sm"
+        className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
+          isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
         } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-slate-200 bg-white"}`}
       >
         {/* Visual-only drag affordance — the whole card is already the drag
@@ -712,6 +713,7 @@ export default function DayTimeline({
 
     const newItems = items.filter((i) => i.id !== itemId);
     setItems(newItems);
+    toast.success("已刪除");
 
     startTransition(() => {
       deleteItem(tripId, itemId);
@@ -721,6 +723,7 @@ export default function DayTimeline({
   function handleItemSaved(result: SavedItemResult) {
     setItems((prev) => {
       const exists = prev.some((i) => i.id === result.id);
+      toast.success(exists ? "已儲存" : "已新增");
       if (exists) {
         return prev.map((i) =>
           i.id === result.id
@@ -878,31 +881,32 @@ export default function DayTimeline({
       )}
 
       {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-brand-200 bg-white px-6 py-12 text-center">
-          <Compass className="h-10 w-10 text-brand-200" />
-          <p className="text-sm text-ink-700">
-            {canEdit ? "今天還沒有行程，先搜尋景點或新增自訂項目吧" : "今天還沒有行程"}
-          </p>
-          {canEdit && (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Link
-                href={`/explore?tripId=${tripId}`}
-                className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-              >
-                <Search className="h-4 w-4" />
-                搜尋景點
-              </Link>
-              <button
-                type="button"
-                onClick={() => setEditingItem("new")}
-                className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
-              >
-                <Plus className="h-4 w-4" />
-                新增自訂項目
-              </button>
-            </div>
-          )}
-        </div>
+        <EmptyState
+          icon={Compass}
+          title="今天還沒有行程"
+          description={canEdit ? "先搜尋景點或新增自訂項目吧" : undefined}
+          action={
+            canEdit && (
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  href={`/explore?tripId=${tripId}`}
+                  className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                >
+                  <Search className="h-4 w-4" />
+                  搜尋景點
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setEditingItem("new")}
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  新增自訂項目
+                </button>
+              </div>
+            )
+          }
+        />
       ) : (
       <DndContext
         sensors={sensors}

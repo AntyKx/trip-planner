@@ -9,6 +9,9 @@ import { addFavorite, removeFavorite } from "@/app/explore/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
 import PlaceInsightSection from "@/components/PlaceInsightSection";
 import AppCard from "@/components/AppCard";
+import EmptyState from "@/components/EmptyState";
+import { SearchResultSkeleton } from "@/components/LoadingSkeleton";
+import { useToast } from "@/components/Toast";
 import { TYPE_LABEL } from "@/lib/labels";
 import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 
@@ -31,6 +34,7 @@ export default function ExploreClient({
 }) {
   const defaultTripId = initialTripId ?? trips[0]?.id ?? "";
   const defaultTrip = trips.find((t) => t.id === defaultTripId);
+  const toast = useToast();
   const [query, setQuery] = useState("");
   // "JP"/"TW" get Google's precise geographic-rectangle restriction (see
   // COUNTRY_BOUNDS in src/lib/places.ts); "OTHER" means the user typed a
@@ -43,6 +47,9 @@ export default function ExploreClient({
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, startSearch] = useTransition();
+  // Distinguishes "haven't searched yet" from "searched, found nothing" —
+  // both used to show the same generic prompt.
+  const [hasSearched, setHasSearched] = useState(false);
 
   const [mode, setMode] = useState<"search" | "favorites">("search");
   const [favorites, setFavorites] = useState<PlaceResult[]>(initialFavorites);
@@ -70,6 +77,7 @@ export default function ExploreClient({
     e.preventDefault();
     if (!query.trim()) return;
     setSearchError(null);
+    setHasSearched(true);
     startSearch(async () => {
       const res = await searchPlaces(query, effectiveRegion);
       if (res.ok) {
@@ -123,6 +131,7 @@ export default function ExploreClient({
         suggestedType: place.suggestedType,
       });
       setAddedIds((prev) => new Set(prev).add(place.externalId));
+      toast.success(`已加入「${place.name}」`);
     });
   }
 
@@ -132,6 +141,7 @@ export default function ExploreClient({
       if (isFavorited) {
         await removeFavorite("google", place.externalId);
         setFavorites((prev) => prev.filter((f) => f.externalId !== place.externalId));
+        toast.success("已取消收藏");
       } else {
         await addFavorite({
           name: place.name,
@@ -148,6 +158,7 @@ export default function ExploreClient({
           suggestedType: place.suggestedType,
         });
         setFavorites((prev) => [place, ...prev]);
+        toast.success("已加入收藏");
       }
     });
   }
@@ -181,7 +192,10 @@ export default function ExploreClient({
   function renderPlaceCard(place: PlaceResult) {
     const isFavorited = favoritedIds.has(place.externalId);
     return (
-      <AppCard key={place.externalId} className="p-3">
+      <AppCard
+        key={place.externalId}
+        className="p-3 transition hover:-translate-y-0.5 hover:shadow-md"
+      >
         <div className="flex gap-3">
           {place.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -425,16 +439,30 @@ export default function ExploreClient({
       )}
 
       <div className="mt-6 space-y-3">
-        {listToShow.map(renderPlaceCard)}
+        {mode === "search" && isSearching ? (
+          <>
+            <SearchResultSkeleton />
+            <SearchResultSkeleton />
+            <SearchResultSkeleton />
+          </>
+        ) : (
+          listToShow.map(renderPlaceCard)
+        )}
 
-        {mode === "search" && results.length === 0 && !isSearching && !searchError && (
-          <p className="text-sm text-slate-600">輸入關鍵字開始搜尋。</p>
+        {mode === "search" && !isSearching && results.length === 0 && !searchError && (
+          <EmptyState
+            icon={Search}
+            title={hasSearched ? "找不到符合的景點" : "輸入關鍵字開始搜尋"}
+            description={hasSearched ? "試試其他關鍵字，或換一個地區看看。" : undefined}
+          />
         )}
 
         {mode === "favorites" && favorites.length === 0 && (
-          <p className="text-sm text-slate-600">
-            還沒有收藏的地點，搜尋時點 ♡ 就可以加入收藏。
-          </p>
+          <EmptyState
+            icon={Heart}
+            title="還沒有收藏的地點"
+            description="搜尋時點 ♡ 就可以加入收藏。"
+          />
         )}
       </div>
     </main>

@@ -32,7 +32,7 @@ export function appButtonClassName(
   size: AppButtonSize = "md",
   className?: string
 ): string {
-  return `inline-flex shrink-0 items-center justify-center rounded-xl font-medium whitespace-nowrap transition disabled:opacity-50 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-xl font-medium whitespace-nowrap transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`;
 }
 
 // Shared button primitive — see 功能擴充建議.txt's design-system request.

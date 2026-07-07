@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert, Pencil } from "lucide-react";
 import { updateEmergencyInfo } from "@/app/trips/actions";
+import { useToast } from "./Toast";
 
 export default function EmergencyInfoCard({
   tripId,
@@ -15,6 +16,7 @@ export default function EmergencyInfoCard({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(emergencyInfo ?? "");
   const [isPending, startTransition] = useTransition();
@@ -23,6 +25,7 @@ export default function EmergencyInfoCard({
     startTransition(async () => {
       await updateEmergencyInfo(tripId, text);
       setIsEditing(false);
+      toast.success("已儲存");
       router.refresh();
     });
   }

@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { upload } from "@vercel/blob/client";
 import { ImageIcon, Camera } from "lucide-react";
 import { updateTripCoverImage } from "@/app/trips/actions";
+import { useToast } from "./Toast";
 
 export default function CoverImagePicker({
   tripId,
@@ -28,6 +29,7 @@ export default function CoverImagePicker({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [showEditButton, setShowEditButton] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [customUrl, setCustomUrl] = useState("");
@@ -44,6 +46,7 @@ export default function CoverImagePicker({
   function apply(url: string | null) {
     startTransition(async () => {
       await updateTripCoverImage(tripId, url);
+      toast.success(url ? "已更新封面圖片" : "已移除封面圖片");
       router.refresh();
     });
     closeAll();

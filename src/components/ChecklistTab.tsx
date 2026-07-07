@@ -18,7 +18,17 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Pencil, Trash2, RefreshCw, X, TriangleAlert, Check } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  RefreshCw,
+  X,
+  TriangleAlert,
+  Check,
+  ClipboardList,
+  GripVertical,
+} from "lucide-react";
 import {
   addChecklistItem,
   updateChecklistItem,
@@ -37,6 +47,8 @@ import {
 import type { ChecklistCategoryValue } from "@/lib/checklistTemplates";
 import ProgressBar from "./ProgressBar";
 import { Avatar } from "./Avatar";
+import EmptyState from "./EmptyState";
+import { useToast } from "./Toast";
 
 export type ChecklistItemView = {
   id: string;
@@ -225,7 +237,6 @@ function SortableChecklistItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
@@ -234,8 +245,15 @@ function SortableChecklistItem({
       style={style}
       {...(canEdit ? attributes : {})}
       {...(canEdit ? listeners : {})}
-      className="touch-manipulation rounded-lg border border-slate-100 bg-white p-2.5 select-none [-webkit-touch-callout:none]"
+      className={`group relative touch-manipulation rounded-lg border border-slate-100 bg-white p-2.5 select-none [-webkit-touch-callout:none] ${
+        isDragging ? "shadow-lg" : ""
+      }`}
     >
+      {canEdit && (
+        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+          <GripVertical className="h-4 w-4" />
+        </span>
+      )}
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -332,6 +350,7 @@ export default function ChecklistTab({
     setItems(initialItems);
   }, [initialItems]);
 
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -363,6 +382,7 @@ export default function ChecklistTab({
     if (!confirm(`確定要刪除「${item.title}」嗎？`)) return;
     startTransition(async () => {
       await deleteChecklistItem(item.id);
+      toast.success("已刪除");
       router.refresh();
     });
   }
@@ -372,6 +392,7 @@ export default function ChecklistTab({
     if (!newTitle.trim()) return;
     startTransition(async () => {
       await addChecklistItem(tripId, { title: newTitle, category: newCategory });
+      toast.success("已新增");
       setNewTitle("");
       setNewCategory("CUSTOM");
       setShowAddForm(false);
@@ -382,6 +403,7 @@ export default function ChecklistTab({
   function handleGenerate() {
     startTransition(async () => {
       await generateChecklistForTrip(tripId);
+      toast.success("已更新清單");
       router.refresh();
     });
   }
@@ -497,6 +519,7 @@ export default function ChecklistTab({
                       onDelete={() => handleDelete(item)}
                       onSaved={() => {
                         setEditingId(null);
+                        toast.success("已儲存");
                         router.refresh();
                       }}
                     />
@@ -509,9 +532,7 @@ export default function ChecklistTab({
       })}
 
       {total === 0 && (
-        <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-500 shadow-sm">
-          還沒有清單項目。
-        </p>
+        <EmptyState icon={ClipboardList} title="還沒有清單項目" />
       )}
 
       {canEdit && (

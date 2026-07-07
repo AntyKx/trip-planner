@@ -161,6 +161,7 @@ export default function TripDayBoard({
         )}
       </div>
 
+      <div key={mode} className="animate-fade-in">
       {mode === "checklist" ? (
         <ChecklistTab
           tripId={tripId}
@@ -227,7 +228,7 @@ export default function TripDayBoard({
         </div>
 
         {selectedDay ? (
-          <section className="mt-4">
+          <section key={selectedDay.id} className="mt-4 animate-fade-in">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
                 <span>
@@ -358,6 +359,7 @@ export default function TripDayBoard({
       </aside>
       </div>
       )}
+      </div>
     </div>
   );
 }

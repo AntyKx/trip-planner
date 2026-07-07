@@ -96,7 +96,7 @@ export default async function TripsPage() {
         key={trip.id}
         href={`/trips/${trip.id}`}
         style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
-        className="group relative block aspect-[16/9] w-full animate-fade-up overflow-hidden rounded-card-lg opacity-0 shadow-soft transition [animation-fill-mode:forwards] hover:shadow-lg sm:aspect-[21/9]"
+        className="group relative block aspect-[16/9] w-full animate-fade-up overflow-hidden rounded-card-lg opacity-0 shadow-soft transition [animation-fill-mode:forwards] hover:-translate-y-0.5 hover:shadow-lg sm:aspect-[21/9]"
       >
         {coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element

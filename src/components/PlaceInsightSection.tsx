@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Sparkles, TriangleAlert, ChevronDown, ChevronUp } from "lucide-react";
 import { getPlaceInsight, type ReviewInput, type PlaceInsightResult } from "@/app/explore/aiActions";
 import { getPlaceDetails } from "@/lib/places";
+import { useToast } from "./Toast";
 
 type LoadedInsight = Extract<PlaceInsightResult, { ok: true }>;
 
@@ -37,6 +38,7 @@ export default function PlaceInsightSection({
   tripId: string;
   dayId: string;
 }) {
+  const toast = useToast();
   const [insight, setInsight] = useState<LoadedInsight | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -68,8 +70,12 @@ export default function PlaceInsightSection({
 
     const res = await getPlaceInsight(provider, externalId, placeName, usableReviews, tripId, dayId);
     setIsLoading(false);
-    if (res.ok) setInsight(res);
-    else setError(res.error);
+    if (res.ok) {
+      setInsight(res);
+      toast.success("AI 分析完成");
+    } else {
+      setError(res.error);
+    }
   }
 
   if (!insight) {
@@ -81,7 +87,7 @@ export default function PlaceInsightSection({
           disabled={isLoading}
           className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
         >
-          <Sparkles className="h-3.5 w-3.5" />
+          <Sparkles className={`h-3.5 w-3.5 ${isLoading ? "animate-pulse" : ""}`} />
           {isLoading ? "AI 分析中…" : "✨ AI 看看適不適合"}
         </button>
         {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
