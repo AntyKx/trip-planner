@@ -575,6 +575,7 @@ export default function DayTimeline({
         destination: { lat: to.place!.lat, lng: to.place!.lng },
         travelMode: GOOGLE_TRAVEL_MODE[mode],
         region: from.place!.country.toLowerCase(),
+        language: "zh-TW",
         ...(mode === "TRANSIT"
           ? { transitOptions: { departureTime: new Date() } }
           : {}),

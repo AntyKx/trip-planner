@@ -48,7 +48,10 @@ export default function TransitAlternativesModal({
             <p className="text-sm text-red-500">{error}</p>
           )}
           {!isLoading && !error && alternatives.length === 0 && (
-            <p className="text-sm text-slate-500">找不到大眾運輸路線建議。</p>
+            <p className="text-sm text-slate-500">
+              這兩點之間 Google 沒有提供大眾運輸路線建議，距離可能太近，直接
+              步行更快，建議改選步行。
+            </p>
           )}
 
           <div className="space-y-3">

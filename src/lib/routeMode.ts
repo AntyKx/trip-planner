@@ -73,6 +73,7 @@ async function fetchLeg(
       destination,
       travelMode: GOOGLE_TRAVEL_MODE[mode],
       region,
+      language: "zh-TW",
       ...(mode === "TRANSIT"
         ? { transitOptions: { departureTime: new Date() } }
         : {}),
@@ -288,6 +289,7 @@ export async function fetchTransitAlternatives(
       destination,
       travelMode: GOOGLE_TRAVEL_MODE.TRANSIT,
       region,
+      language: "zh-TW",
       provideRouteAlternatives: true,
       transitOptions: { departureTime: new Date() },
     });
@@ -295,12 +297,21 @@ export async function fetchTransitAlternatives(
       .map((route): TransitAlternative | null => {
         const leg = route.legs[0];
         if (!leg?.duration || !leg?.distance) return null;
+        const steps = summarizeSteps(leg.steps ?? []);
+        // A route Google hands back for a TRANSIT request that turns out
+        // to have zero actual transit legs isn't a real alternative — it
+        // just means the hop is short enough that walking beat waiting
+        // for any bus/train (common for e.g. two stops in the same small
+        // area). Showing that here would look like a broken "transit
+        // suggestion" that's actually just walking directions, so this
+        // is treated the same as Google not finding anything.
+        if (!steps.some((s) => s.mode === "TRANSIT")) return null;
         return {
           summary: route.summary || "",
           durationMin: Math.round(leg.duration.value / 60),
           distanceKm: Math.round((leg.distance.value / 1000) * 10) / 10,
           fareText: route.fare?.text,
-          steps: summarizeSteps(leg.steps ?? []),
+          steps,
         };
       })
       .filter((a): a is TransitAlternative => a != null);
