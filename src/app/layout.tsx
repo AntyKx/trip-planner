@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Caveat } from "next/font/google";
 import InstallPrompt from "@/components/InstallPrompt";
 import UpdateChecker from "@/components/UpdateChecker";
 import VersionBadge from "@/components/VersionBadge";
+import ToastProvider from "@/components/Toast";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -62,10 +63,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-ink-900">
-        <UpdateChecker />
-        {children}
-        <InstallPrompt />
-        <VersionBadge />
+        <ToastProvider>
+          <UpdateChecker />
+          {children}
+          <InstallPrompt />
+          <VersionBadge />
+        </ToastProvider>
       </body>
     </html>
   );

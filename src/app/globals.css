@@ -37,6 +37,12 @@ input[type="radio"] {
   --color-brand-500: #3a72ad;
   --color-brand-600: #2b6094;
   --color-brand-700: #204a75;
+  /* Deeper navy for primary CTAs / hero emphasis — additive, doesn't touch
+     50-700 (still used everywhere), so this is the one place the "產品級"
+     UI pass reaches for a richer primary without recoloring the whole app.
+     Keeps the same warm-muted family as brand-500/600/700 rather than
+     jumping to a saturated Tailwind blue. */
+  --color-brand-800: #16324f;
 
   /* 暖黃輔色 */
   --color-accent-50: #fffbeb;
@@ -55,4 +61,57 @@ input[type="radio"] {
 
   /* 手寫風強調字體（開頭/登入畫面的品牌字樣、便條式標語） */
   --font-script: var(--font-caveat), cursive;
+
+  /* Design-system tokens (see src/components/App*.tsx) — a shared soft
+     shadow and two card radii, so every card built from AppCard looks
+     consistent instead of each page picking its own shadow/radius. */
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --radius-card: 1.125rem; /* 18px — regular cards */
+  --radius-card-lg: 1.5rem; /* 24px — hero/large cards */
+
+  /* Simple, dependency-free entrance animations — anything needing exit
+     animations or layout-position transitions (delete, drag-settle) uses
+     framer-motion instead (see Timeline/Checklist), not these. */
+  --animate-fade-up: fade-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-toast-in: toast-in 0.2s ease-out;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-in,
+  .animate-toast-in {
+    animation: none;
+  }
 }

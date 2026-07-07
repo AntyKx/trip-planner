@@ -23,7 +23,6 @@ import {
   Compass,
   ExternalLink,
   MapPin,
-  MoreHorizontal,
   Navigation,
   Pencil,
   Plus,
@@ -57,6 +56,7 @@ import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditIt
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
+import ActionMenu, { type ActionMenuItem } from "./ActionMenu";
 
 export type TimelineItem = {
   id: string;
@@ -131,31 +131,26 @@ function SortableItemCard({
     useSortable({ id: item.id, disabled: !canEdit });
   const transitSupported = isGoogleTransitSupported(item.place?.country);
   const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
-  const [showMenu, setShowMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const TypeIcon = TYPE_ICON[item.type] ?? TYPE_ICON.CUSTOM;
   const typeColor = TYPE_COLOR[item.type] ?? TYPE_COLOR.CUSTOM;
   const ModeIcon = route ? MODE_ICON[route.mode] : null;
 
-  useEffect(() => {
-    if (!showMenu) return;
-    function handlePointerDown(e: MouseEvent | TouchEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    }
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setShowMenu(false);
-    }
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showMenu]);
+  const menuItems: ActionMenuItem[] = [
+    ...(item.place
+      ? [
+          {
+            key: "navigate",
+            label: "導航",
+            icon: Navigation,
+            href: `https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`,
+            external: true,
+          },
+        ]
+      : []),
+    ...(canEdit
+      ? [{ key: "delete", label: "刪除", icon: X, onClick: onDelete, variant: "danger" as const }]
+      : []),
+  ];
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -213,7 +208,7 @@ function SortableItemCard({
                 </span>
               )}
             </div>
-            <div ref={menuRef} className="relative flex shrink-0 items-center gap-1">
+            <div className="flex shrink-0 items-center gap-1">
               {canEdit && (
                 <button
                   type="button"
@@ -224,48 +219,7 @@ function SortableItemCard({
                   <Pencil className="h-4 w-4" />
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setShowMenu((v) => !v)}
-                aria-label="更多操作"
-                aria-haspopup="menu"
-                aria-expanded={showMenu}
-                className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-              {showMenu && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 text-sm shadow-lg"
-                >
-                  {item.place && (
-                    <a
-                      href={`https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => setShowMenu(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-ink-700 hover:bg-slate-50"
-                    >
-                      <Navigation className="h-4 w-4" />
-                      導航
-                    </a>
-                  )}
-                  {canEdit && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowMenu(false);
-                        onDelete();
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-red-600 hover:bg-red-50"
-                    >
-                      <X className="h-4 w-4" />
-                      刪除
-                    </button>
-                  )}
-                </div>
-              )}
+              <ActionMenu items={menuItems} />
             </div>
           </div>
           {item.place ? (

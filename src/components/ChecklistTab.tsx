@@ -35,6 +35,7 @@ import {
   CHECKLIST_CATEGORY_ORDER,
 } from "@/lib/labels";
 import type { ChecklistCategoryValue } from "@/lib/checklistTemplates";
+import ProgressBar from "./ProgressBar";
 
 export type ChecklistItemView = {
   id: string;
@@ -329,7 +330,6 @@ export default function ChecklistTab({
 
   const doneCount = items.filter((i) => i.isDone).length;
   const total = items.length;
-  const percent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const overdueCount = items.filter(
     (i) => getDueStatus(i.dueDate, i.isDone) === "overdue"
   ).length;
@@ -426,12 +426,7 @@ export default function ChecklistTab({
             </button>
           )}
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-brand-500 transition-all"
-            style={{ width: `${percent}%` }}
-          />
-        </div>
+        <ProgressBar value={doneCount} max={total} className="mt-2" />
         {(overdueCount > 0 || dueSoonCount > 0) && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-700">
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
