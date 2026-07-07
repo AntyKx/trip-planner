@@ -83,7 +83,16 @@ export default function TransitAlternativesModal({
                             {step.durationMin} 分
                           </span>
                         ) : (
-                          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5">
+                          <span
+                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                              step.color ? "" : "bg-slate-100"
+                            }`}
+                            style={
+                              step.color
+                                ? { backgroundColor: step.color, color: step.textColor || "#fff" }
+                                : undefined
+                            }
+                          >
                             <StepIcon className="h-3.5 w-3.5" />
                             {step.lineName ||
                               VEHICLE_LABEL[step.vehicleType ?? ""] ||

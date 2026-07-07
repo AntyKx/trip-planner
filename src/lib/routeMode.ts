@@ -236,6 +236,13 @@ export type TransitStepSummary = {
   lineName?: string;
   stops?: number;
   durationMin: number;
+  // Official line colors (e.g. Taipei Metro's red/blue/green lines,
+  // Kaohsiung MRT/light rail) — comes straight from Google's transit data
+  // (TransitLine.color/text_color) when the agency publishes one. Bus
+  // routes and agencies that don't brand their lines this way just won't
+  // have it, so this is optional and the UI needs a fallback.
+  color?: string;
+  textColor?: string;
 };
 
 export type TransitAlternative = {
@@ -257,6 +264,8 @@ function summarizeSteps(steps: google.maps.DirectionsStep[]): TransitStepSummary
         lineName: transit.line?.short_name || transit.line?.name,
         stops: transit.num_stops,
         durationMin,
+        color: transit.line?.color,
+        textColor: transit.line?.text_color,
       };
     }
     return { mode: "WALK" as const, durationMin };
