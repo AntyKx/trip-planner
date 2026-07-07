@@ -1,14 +1,31 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useEffect, useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Trash2, RefreshCw, X } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Plus, Pencil, Trash2, RefreshCw, X, TriangleAlert } from "lucide-react";
 import {
   addChecklistItem,
   updateChecklistItem,
   toggleChecklistItem,
   deleteChecklistItem,
   assignChecklistItem,
+  reorderChecklistItems,
   generateChecklistForTrip,
 } from "@/app/trips/[id]/checklistActions";
 import {
@@ -33,21 +50,34 @@ export type ChecklistItemView = {
 
 export type ChecklistMember = { userId: string; name: string };
 
-function dueDateBadge(dueDate: string | null, isDone: boolean) {
+// Shared by the per-item badge and the top summary banner, so "what counts
+// as overdue/soon" is only defined once.
+function getDueStatus(
+  dueDate: string | null,
+  isDone: boolean
+): "overdue" | "soon" | "normal" | null {
   if (!dueDate || isDone) return null;
   const today = new Date().toISOString().slice(0, 10);
   const due = dueDate.slice(0, 10);
+  if (due < today) return "overdue";
+  const daysUntil =
+    (new Date(due).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24);
+  return daysUntil <= 3 ? "soon" : "normal";
+}
+
+function dueDateBadge(dueDate: string | null, isDone: boolean) {
+  const status = getDueStatus(dueDate, isDone);
+  if (!status || !dueDate) return null;
+  const due = dueDate.slice(0, 10);
   const displayDate = `${due.slice(5, 7)}/${due.slice(8, 10)}`;
-  if (due < today) {
+  if (status === "overdue") {
     return (
       <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
         已逾期 · {displayDate}
       </span>
     );
   }
-  const daysUntil =
-    (new Date(due).getTime() - new Date(today).getTime()) / (1000 * 60 * 60 * 24);
-  if (daysUntil <= 3) {
+  if (status === "soon") {
     return (
       <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
         即將到期 · {displayDate}
@@ -166,9 +196,106 @@ function ItemEditForm({
   );
 }
 
+function SortableChecklistItem({
+  item,
+  canEdit,
+  isBusy,
+  isEditing,
+  members,
+  onToggle,
+  onToggleEdit,
+  onDelete,
+  onSaved,
+}: {
+  item: ChecklistItemView;
+  canEdit: boolean;
+  isBusy: boolean;
+  isEditing: boolean;
+  members: ChecklistMember[];
+  onToggle: () => void;
+  onToggleEdit: () => void;
+  onDelete: () => void;
+  onSaved: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: item.id, disabled: !canEdit });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      {...(canEdit ? attributes : {})}
+      {...(canEdit ? listeners : {})}
+      className="touch-manipulation rounded-lg border border-slate-100 bg-white p-2.5 select-none [-webkit-touch-callout:none]"
+    >
+      <div className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          checked={item.isDone}
+          disabled={!canEdit || isBusy}
+          onChange={onToggle}
+          className="mt-0.5 h-4 w-4 shrink-0"
+        />
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-sm font-medium ${
+              item.isDone ? "text-slate-400 line-through" : "text-ink-900"
+            }`}
+          >
+            {item.title}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {dueDateBadge(item.dueDate, item.isDone)}
+            {item.assignedToName && (
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                👤 {item.assignedToName}
+              </span>
+            )}
+          </div>
+          {item.note && <p className="mt-1 text-xs text-slate-500">{item.note}</p>}
+        </div>
+        {canEdit && (
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={onToggleEdit}
+              aria-label="編輯項目"
+              className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-brand-600"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              aria-label="刪除項目"
+              className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-red-500"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {canEdit && isEditing && (
+        <ItemEditForm
+          item={item}
+          members={members}
+          onCancel={onToggleEdit}
+          onSaved={onSaved}
+        />
+      )}
+    </li>
+  );
+}
+
 export default function ChecklistTab({
   tripId,
-  items,
+  items: initialItems,
   members,
   canEdit,
 }: {
@@ -178,15 +305,37 @@ export default function ChecklistTab({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  const [items, setItems] = useState(initialItems);
+  // Re-syncs whenever fresh data actually arrives from the server (every
+  // action below calls router.refresh() except drag-reorder, which mirrors
+  // reorderItems in DayTimeline.tsx and skips it on purpose) — initialItems
+  // only gets a new reference when page.tsx actually re-runs, not on every
+  // local re-render, so this doesn't fight the optimistic drag update below.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItems(initialItems);
+  }, [initialItems]);
+
   const [isPending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState<ChecklistCategoryValue>("CUSTOM");
 
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } })
+  );
+
   const doneCount = items.filter((i) => i.isDone).length;
   const total = items.length;
   const percent = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+  const overdueCount = items.filter(
+    (i) => getDueStatus(i.dueDate, i.isDone) === "overdue"
+  ).length;
+  const dueSoonCount = items.filter(
+    (i) => getDueStatus(i.dueDate, i.isDone) === "soon"
+  ).length;
 
   function handleToggle(item: ChecklistItemView) {
     startTransition(async () => {
@@ -222,6 +371,42 @@ export default function ChecklistTab({
     });
   }
 
+  // Reordering only ever happens within one category's own DndContext (see
+  // render below), so this only needs to renumber that category's subset —
+  // sortOrder values are never compared across categories (display always
+  // filters by category first), so it's fine for two categories' items to
+  // share the same underlying numbers.
+  function handleCategoryDragEnd(category: ChecklistCategoryValue) {
+    return (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const categoryItems = items
+        .filter((i) => i.category === category)
+        .sort((a, b) => a.sortOrder - b.sortOrder);
+      const oldIndex = categoryItems.findIndex((i) => i.id === active.id);
+      const newIndex = categoryItems.findIndex((i) => i.id === over.id);
+      const reordered = arrayMove(categoryItems, oldIndex, newIndex);
+      const newSortOrder = new Map(reordered.map((it, idx) => [it.id, idx]));
+
+      setItems((prev) =>
+        prev.map((it) =>
+          newSortOrder.has(it.id) ? { ...it, sortOrder: newSortOrder.get(it.id)! } : it
+        )
+      );
+
+      // No router.refresh() on purpose, matching reorderItems in
+      // src/app/trips/actions.ts — the local optimistic order above is
+      // already correct, and refreshing would just re-fetch the whole page.
+      startTransition(() => {
+        reorderChecklistItems(
+          tripId,
+          reordered.map((it) => it.id)
+        );
+      });
+    };
+  }
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -247,6 +432,14 @@ export default function ChecklistTab({
             style={{ width: `${percent}%` }}
           />
         </div>
+        {(overdueCount > 0 || dueSoonCount > 0) && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-700">
+            <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+            {overdueCount > 0 && <span>{overdueCount} 項已逾期</span>}
+            {overdueCount > 0 && dueSoonCount > 0 && <span>·</span>}
+            {dueSoonCount > 0 && <span>{dueSoonCount} 項即將到期</span>}
+          </p>
+        )}
       </div>
 
       {CHECKLIST_CATEGORY_ORDER.map((category) => {
@@ -258,83 +451,49 @@ export default function ChecklistTab({
         const color = CHECKLIST_CATEGORY_COLOR[category];
 
         return (
-          <div key={category} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div
+            key={category}
+            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+          >
             <h3
-              className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text} w-fit`}
+              className={`flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
             >
               <Icon className="h-3.5 w-3.5" />
               {CHECKLIST_CATEGORY_LABEL[category]}
             </h3>
 
-            <ul className="mt-3 space-y-2">
-              {categoryItems.map((item) => (
-                <li key={item.id} className="rounded-lg border border-slate-100 p-2.5">
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      checked={item.isDone}
-                      disabled={!canEdit || isPending}
-                      onChange={() => handleToggle(item)}
-                      className="mt-0.5 h-4 w-4 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`text-sm font-medium ${
-                          item.isDone ? "text-slate-400 line-through" : "text-ink-900"
-                        }`}
-                      >
-                        {item.title}
-                      </p>
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                        {dueDateBadge(item.dueDate, item.isDone)}
-                        {item.assignedToName && (
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                            👤 {item.assignedToName}
-                          </span>
-                        )}
-                      </div>
-                      {item.note && (
-                        <p className="mt-1 text-xs text-slate-500">{item.note}</p>
-                      )}
-                    </div>
-                    {canEdit && (
-                      <div className="flex shrink-0 items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditingId(editingId === item.id ? null : item.id)
-                          }
-                          aria-label="編輯項目"
-                          className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-brand-600"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item)}
-                          aria-label="刪除項目"
-                          className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-red-500"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {canEdit && editingId === item.id && (
-                    <ItemEditForm
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleCategoryDragEnd(category)}
+            >
+              <SortableContext
+                items={categoryItems.map((i) => i.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className={`mt-3 space-y-2 ${isPending ? "opacity-70" : ""}`}>
+                  {categoryItems.map((item) => (
+                    <SortableChecklistItem
+                      key={item.id}
                       item={item}
+                      canEdit={canEdit}
+                      isBusy={isPending}
+                      isEditing={editingId === item.id}
                       members={members}
-                      onCancel={() => setEditingId(null)}
+                      onToggle={() => handleToggle(item)}
+                      onToggleEdit={() =>
+                        setEditingId(editingId === item.id ? null : item.id)
+                      }
+                      onDelete={() => handleDelete(item)}
                       onSaved={() => {
                         setEditingId(null);
                         router.refresh();
                       }}
                     />
-                  )}
-                </li>
-              ))}
-            </ul>
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
           </div>
         );
       })}

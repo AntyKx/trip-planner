@@ -630,6 +630,10 @@ export async function getJapanTransitHint(
   destLat: number,
   destLng: number
 ): Promise<JapanTransitHint> {
+  // Unlike every other action here, this had no auth check at all — callable
+  // anonymously to burn this project's Ekispert API quota.
+  await requireUser();
+
   const key = process.env.EKISPERT_ACCESS_KEY;
   if (!key) {
     return { ok: false, error: "尚未設定 EKISPERT_ACCESS_KEY" };

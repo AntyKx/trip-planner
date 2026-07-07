@@ -108,6 +108,16 @@ export default function CollaboratorsPanel({
     });
   }
 
+  // Reuses addCollaborator rather than a new action — it already upserts
+  // by email, so calling it again with the same email just updates that
+  // row's role instead of creating a duplicate.
+  function handleRoleChange(email: string, role: "EDITOR" | "VIEWER") {
+    startTransition(async () => {
+      await addCollaborator(tripId, email, role);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
@@ -126,9 +136,23 @@ export default function CollaboratorsPanel({
               <span className="ml-2 text-xs text-slate-600">{c.email}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                {ROLE_LABEL[c.role]}
-              </span>
+              {canManage && c.role !== "OWNER" ? (
+                <select
+                  value={c.role}
+                  disabled={isPending}
+                  onChange={(e) =>
+                    handleRoleChange(c.email, e.target.value as "EDITOR" | "VIEWER")
+                  }
+                  className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-600 disabled:opacity-50"
+                >
+                  <option value="EDITOR">可編輯</option>
+                  <option value="VIEWER">僅檢視</option>
+                </select>
+              ) : (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                  {ROLE_LABEL[c.role]}
+                </span>
+              )}
               {canManage && c.role !== "OWNER" && (
                 <button
                   type="button"
