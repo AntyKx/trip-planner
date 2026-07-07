@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Compass,
   ExternalLink,
+  GripVertical,
   MapPin,
   Navigation,
   Pencil,
@@ -33,7 +34,15 @@ import {
   Waypoints,
   X,
 } from "lucide-react";
-import { TYPE_LABEL, TYPE_ICON, TYPE_COLOR, MODE_ICON, formatTime } from "@/lib/labels";
+import {
+  TYPE_LABEL,
+  TYPE_ICON,
+  TYPE_COLOR,
+  MODE_ICON,
+  formatTime,
+  formatStayDuration,
+} from "@/lib/labels";
+import { useToast } from "./Toast";
 import {
   reorderItems,
   deleteItem,
@@ -158,13 +167,26 @@ function SortableItemCard({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  const stayDuration = formatStayDuration(item.startTime, item.endTime);
+
   return (
     <div ref={setNodeRef} style={style} className="mb-3">
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
-        className="flex touch-manipulation items-stretch rounded-xl border border-slate-200 bg-white shadow-sm select-none [-webkit-touch-callout:none]"
+        className={`group relative flex touch-manipulation items-stretch rounded-xl border select-none [-webkit-touch-callout:none] ${
+          isDragging ? "shadow-lg" : "shadow-sm"
+        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-slate-200 bg-white"}`}
       >
+        {/* Visual-only drag affordance — the whole card is already the drag
+            handle (better for touch than a tiny target), this just shows
+            intent on hover for mouse users. Hidden for VIEWER since
+            attributes/listeners aren't attached at all in that case. */}
+        {canEdit && (
+          <span className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+            <GripVertical className="h-4 w-4" />
+          </span>
+        )}
         {item.place?.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -177,7 +199,7 @@ function SortableItemCard({
             <div
               className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
             >
-              <TypeIcon className={`h-6 w-6 ${typeColor.text}`} />
+              <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
             </div>
           )
         )}
@@ -185,8 +207,11 @@ function SortableItemCard({
         <div className="min-w-0 flex-1 p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {/* Time is the second-most-important thing on this card (after
+                  the place name) — sized/weighted/colored to read at a
+                  glance instead of blending into the badge row next to it. */}
               {formatTime(item.startTime) && (
-                <span className="shrink-0 text-xs font-medium text-ink-500">
+                <span className="shrink-0 text-base font-bold tabular-nums text-brand-700">
                   {formatTime(item.startTime)}
                 </span>
               )}
@@ -197,7 +222,7 @@ function SortableItemCard({
                 {TYPE_LABEL[item.type]}
               </span>
               {isAnchor && (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
                   <MapPin className="h-3 w-3" />
                   本日起點
                 </span>
@@ -233,7 +258,7 @@ function SortableItemCard({
                 photoUrl: item.place.photoUrl,
               }}
             >
-              <h3 className="mt-1 truncate text-base font-bold text-ink-900 hover:text-brand-700">
+              <h3 className="mt-1 truncate text-lg font-bold text-ink-900 hover:text-brand-700">
                 {item.place.name}
               </h3>
               {item.place.rating != null && (
@@ -244,21 +269,25 @@ function SortableItemCard({
               )}
             </PlaceDetailsTrigger>
           ) : (
-            <h3 className="mt-1 truncate text-base font-bold text-ink-900">
+            <h3 className="mt-1 truncate text-lg font-bold text-ink-900">
               {item.note ?? "未命名項目"}
             </h3>
           )}
-          {item.confirmationNumber && (
-            <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-ink-500">
-              <Ticket className="h-3 w-3 shrink-0" />
-              {item.confirmationNumber}
-            </p>
-          )}
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink-500">
+            {item.confirmationNumber && (
+              <span className="flex items-center gap-1 truncate">
+                <Ticket className="h-3 w-3 shrink-0" />
+                {item.confirmationNumber}
+              </span>
+            )}
+            {stayDuration && <span>{stayDuration}</span>}
+          </div>
         </div>
       </div>
 
       {hasNextStop && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
+          {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0 text-ink-500" />}
           {canEdit ? (
             <select
               aria-label="交通方式"
@@ -288,7 +317,7 @@ function SortableItemCard({
               })}
             </select>
           ) : (
-            <span className="shrink-0 text-xs font-medium text-ink-500">
+            <span className="shrink-0 text-xs font-medium text-ink-700">
               {TRAVEL_MODE_OPTIONS.find((opt) => opt.value === (route?.mode ?? "WALK"))
                 ?.label}
             </span>
@@ -296,10 +325,9 @@ function SortableItemCard({
           {isRecomputing || (isAutoFilling && !route) ? (
             <span className="text-xs text-ink-500">計算中…</span>
           ) : route && route.durationMin != null ? (
-            <span className="flex items-center gap-1">
-              {ModeIcon && <ModeIcon className="h-3.5 w-3.5" />}
-              <span>{route.durationMin} 分鐘</span>
-              {route.distanceKm != null && <span>· {route.distanceKm} km</span>}
+            <span className="text-xs text-ink-700">
+              {route.durationMin} 分鐘
+              {route.distanceKm != null && ` · ${route.distanceKm} km`}
             </span>
           ) : (
             <span className="text-xs text-ink-500">
@@ -363,6 +391,7 @@ export default function DayTimeline({
   // rather than by position.
   const [anchorItemId, setAnchorItemId] = useState(initialAnchorItemId);
   const [isPending, startTransition] = useTransition();
+  const toast = useToast();
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
@@ -654,6 +683,7 @@ export default function DayTimeline({
     const newIndex = items.findIndex((i) => i.id === over.id);
     const newItems = arrayMove(items, oldIndex, newIndex);
     setItems(newItems);
+    toast.success("已更新排序");
 
     startTransition(() => {
       reorderItems(

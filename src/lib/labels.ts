@@ -202,6 +202,25 @@ export function formatTime(date: Date | string | null) {
   return d.toISOString().slice(11, 16);
 }
 
+// Timeline item card's "停留時間" — only shown when both ends are known;
+// a single missing endTime is common (not every stop has one) and isn't
+// worth guessing at.
+export function formatStayDuration(
+  start: Date | string | null,
+  end: Date | string | null
+): string | null {
+  if (!start || !end) return null;
+  const startMs = (typeof start === "string" ? new Date(start) : start).getTime();
+  const endMs = (typeof end === "string" ? new Date(end) : end).getTime();
+  const diffMin = Math.round((endMs - startMs) / 60000);
+  if (diffMin <= 0) return null;
+  const h = Math.floor(diffMin / 60);
+  const m = diffMin % 60;
+  if (h === 0) return `停留 ${m} 分鐘`;
+  if (m === 0) return `停留 ${h} 小時`;
+  return `停留 ${h} 小時 ${m} 分鐘`;
+}
+
 // "最後更新" on the home page's trip cards — coarse buckets are
 // deliberate (a travel-planning app doesn't need minute-level precision,
 // and coarser buckets don't need to be re-rendered every minute to stay
