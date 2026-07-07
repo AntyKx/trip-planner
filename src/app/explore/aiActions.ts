@@ -57,7 +57,14 @@ export async function getPlaceInsight(
   placeName: string,
   reviews: ReviewInput[],
   tripId: string,
-  dayId: string
+  dayId: string,
+  // Set when the user explicitly hits "重新分析" — the itinerary for this
+  // day may have changed since the cached result was generated (more
+  // stops added, reordered, etc.), and there was previously no way to get
+  // a fresh read short of waiting for the cache to disappear (it never
+  // does). Still goes through the same rate limit below, so this can't be
+  // used to bypass it by "reanalyzing" repeatedly.
+  forceRefresh = false
 ): Promise<PlaceInsightResult> {
   const user = await requireTripEditor(tripId);
 
@@ -72,17 +79,19 @@ export async function getPlaceInsight(
   });
   if (!day) redirect("/");
 
-  const existing = await prisma.placeInsight.findUnique({
-    where: { provider_externalId_dayId: { provider, externalId, dayId } },
-  });
-  if (existing) {
-    return {
-      ok: true,
-      fitScore: existing.fitScore,
-      summary: existing.summary,
-      suggestedDuration: existing.suggestedDuration,
-      caution: existing.caution,
-    };
+  if (!forceRefresh) {
+    const existing = await prisma.placeInsight.findUnique({
+      where: { provider_externalId_dayId: { provider, externalId, dayId } },
+    });
+    if (existing) {
+      return {
+        ok: true,
+        fitScore: existing.fitScore,
+        summary: existing.summary,
+        suggestedDuration: existing.suggestedDuration,
+        caution: existing.caution,
+      };
+    }
   }
 
   const usableReviews = reviews.filter((r) => r.text && r.text.trim());

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, TriangleAlert, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, TriangleAlert, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { getPlaceInsight, type ReviewInput, type PlaceInsightResult } from "@/app/explore/aiActions";
 import { getPlaceDetails } from "@/lib/places";
 import { useToast } from "./Toast";
@@ -48,7 +48,7 @@ export default function PlaceInsightSection({
   // undefined (not yet fetched) still shows the button.
   if (reviews && reviews.length === 0) return null;
 
-  async function handleAnalyze() {
+  async function handleAnalyze(forceRefresh = false) {
     setIsLoading(true);
     setError(null);
 
@@ -68,11 +68,19 @@ export default function PlaceInsightSection({
       }
     }
 
-    const res = await getPlaceInsight(provider, externalId, placeName, usableReviews, tripId, dayId);
+    const res = await getPlaceInsight(
+      provider,
+      externalId,
+      placeName,
+      usableReviews,
+      tripId,
+      dayId,
+      forceRefresh
+    );
     setIsLoading(false);
     if (res.ok) {
       setInsight(res);
-      toast.success("AI 分析完成");
+      toast.success(forceRefresh ? "已重新分析" : "AI 分析完成");
     } else {
       setError(res.error);
     }
@@ -83,7 +91,7 @@ export default function PlaceInsightSection({
       <div>
         <button
           type="button"
-          onClick={handleAnalyze}
+          onClick={() => handleAnalyze()}
           disabled={isLoading}
           className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
         >
@@ -137,6 +145,20 @@ export default function PlaceInsightSection({
           {insight.caution}
         </p>
       )}
+
+      {/* The cached result never expires on its own — if the day's
+          itinerary changed since this was generated (more stops added,
+          reordered, ...), this is the only way to get a fresh read. */}
+      <button
+        type="button"
+        onClick={() => handleAnalyze(true)}
+        disabled={isLoading}
+        className="mt-2 flex items-center gap-1 text-xs text-accent-700 hover:underline disabled:opacity-50"
+      >
+        <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
+        {isLoading ? "重新分析中…" : "重新分析"}
+      </button>
+      {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
     </div>
   );
 }
