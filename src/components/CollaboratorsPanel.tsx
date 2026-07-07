@@ -10,6 +10,10 @@ import {
   disableTripShare,
   updateTripShareRole,
 } from "@/app/trips/actions";
+import { Avatar } from "./Avatar";
+import AppCard from "./AppCard";
+import AppBadge from "./AppBadge";
+import { useToast } from "./Toast";
 
 export type Collaborator = {
   userId: string;
@@ -41,6 +45,7 @@ export default function CollaboratorsPanel({
   shareRole: "EDITOR" | "VIEWER" | null;
 }) {
   const router = useRouter();
+  const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -56,6 +61,7 @@ export default function CollaboratorsPanel({
     setCopied(false);
     startShareTransition(async () => {
       await enableTripShare(tripId, "EDITOR");
+      toast.success("已開啟分享連結");
       router.refresh();
     });
   }
@@ -64,6 +70,7 @@ export default function CollaboratorsPanel({
     setCopied(false);
     startShareTransition(async () => {
       await disableTripShare(tripId);
+      toast.success("已關閉分享連結");
       router.refresh();
     });
   }
@@ -71,6 +78,7 @@ export default function CollaboratorsPanel({
   function handleShareRoleChange(role: "EDITOR" | "VIEWER") {
     startShareTransition(async () => {
       await updateTripShareRole(tripId, role);
+      toast.success("已更新分享連結權限");
       router.refresh();
     });
   }
@@ -97,6 +105,7 @@ export default function CollaboratorsPanel({
 
     startTransition(async () => {
       await addCollaborator(tripId, email, role);
+      toast.success(`已邀請 ${email}`);
       formRef.current?.reset();
       router.refresh();
     });
@@ -105,6 +114,7 @@ export default function CollaboratorsPanel({
   function handleRemove(userId: string) {
     startTransition(async () => {
       await removeCollaborator(tripId, userId);
+      toast.success("已移除協作者");
       router.refresh();
     });
   }
@@ -115,12 +125,13 @@ export default function CollaboratorsPanel({
   function handleRoleChange(email: string, role: "EDITOR" | "VIEWER") {
     startTransition(async () => {
       await addCollaborator(tripId, email, role);
+      toast.success("已更新角色");
       router.refresh();
     });
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <AppCard className="p-4">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
         <Users className="h-4 w-4" />
         共同協作者
@@ -132,9 +143,12 @@ export default function CollaboratorsPanel({
             key={c.userId}
             className="flex items-center justify-between gap-2 text-sm"
           >
-            <div>
-              <span className="font-medium text-slate-700">{c.name}</span>
-              <span className="ml-2 text-xs text-slate-600">{c.email}</span>
+            <div className="flex min-w-0 items-center gap-2">
+              <Avatar name={c.name} avatarUrl={c.avatarUrl} />
+              <div className="min-w-0">
+                <span className="font-medium text-slate-700">{c.name}</span>
+                <span className="ml-2 text-xs text-slate-600">{c.email}</span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {canManage && c.role !== "OWNER" ? (
@@ -150,9 +164,9 @@ export default function CollaboratorsPanel({
                   <option value="VIEWER">僅檢視</option>
                 </select>
               ) : (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                <AppBadge variant={c.role === "OWNER" ? "brand" : "neutral"}>
                   {ROLE_LABEL[c.role]}
-                </span>
+                </AppBadge>
               )}
               {canManage && c.role !== "OWNER" && (
                 <button
@@ -270,6 +284,6 @@ export default function CollaboratorsPanel({
           </div>
         </>
       )}
-    </div>
+    </AppCard>
   );
 }

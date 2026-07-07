@@ -193,6 +193,7 @@ export default async function TripDetailPage({
               isDone: c.isDone,
               assignedToId: c.assignedToId,
               assignedToName: c.assignedTo?.name ?? null,
+              assignedToAvatarUrl: c.assignedTo?.avatarUrl ?? null,
               dueDate: c.dueDate ? c.dueDate.toISOString() : null,
               sortOrder: c.sortOrder,
             }))}

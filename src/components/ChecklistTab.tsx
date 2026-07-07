@@ -18,7 +18,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Plus, Pencil, Trash2, RefreshCw, X, TriangleAlert } from "lucide-react";
+import { Plus, Pencil, Trash2, RefreshCw, X, TriangleAlert, Check } from "lucide-react";
 import {
   addChecklistItem,
   updateChecklistItem,
@@ -36,6 +36,7 @@ import {
 } from "@/lib/labels";
 import type { ChecklistCategoryValue } from "@/lib/checklistTemplates";
 import ProgressBar from "./ProgressBar";
+import { Avatar } from "./Avatar";
 
 export type ChecklistItemView = {
   id: string;
@@ -45,11 +46,12 @@ export type ChecklistItemView = {
   isDone: boolean;
   assignedToId: string | null;
   assignedToName: string | null;
+  assignedToAvatarUrl: string | null;
   dueDate: string | null; // ISO date, e.g. "2026-08-01"
   sortOrder: number;
 };
 
-export type ChecklistMember = { userId: string; name: string };
+export type ChecklistMember = { userId: string; name: string; avatarUrl?: string | null };
 
 // Shared by the per-item badge and the top summary banner, so "what counts
 // as overdue/soon" is only defined once.
@@ -235,13 +237,25 @@ function SortableChecklistItem({
       className="touch-manipulation rounded-lg border border-slate-100 bg-white p-2.5 select-none [-webkit-touch-callout:none]"
     >
       <div className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          checked={item.isDone}
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={item.isDone}
+          aria-label={item.isDone ? "標記為未完成" : "標記為已完成"}
           disabled={!canEdit || isBusy}
-          onChange={onToggle}
-          className="mt-0.5 h-4 w-4 shrink-0"
-        />
+          onClick={onToggle}
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors disabled:opacity-50 ${
+            item.isDone
+              ? "border-brand-600 bg-brand-600"
+              : "border-slate-300 bg-white hover:border-brand-400"
+          }`}
+        >
+          <Check
+            className={`h-3.5 w-3.5 text-white transition-all duration-150 ${
+              item.isDone ? "scale-100 opacity-100" : "scale-0 opacity-0"
+            }`}
+          />
+        </button>
         <div className="min-w-0 flex-1">
           <p
             className={`text-sm font-medium ${
@@ -253,8 +267,9 @@ function SortableChecklistItem({
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {dueDateBadge(item.dueDate, item.isDone)}
             {item.assignedToName && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-                👤 {item.assignedToName}
+              <span className="flex items-center gap-1 rounded-full bg-slate-100 py-0.5 pr-2 pl-0.5 text-xs text-slate-600">
+                <Avatar name={item.assignedToName} avatarUrl={item.assignedToAvatarUrl} size="sm" />
+                {item.assignedToName}
               </span>
             )}
           </div>

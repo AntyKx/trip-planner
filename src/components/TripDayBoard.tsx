@@ -165,7 +165,11 @@ export default function TripDayBoard({
         <ChecklistTab
           tripId={tripId}
           items={checklistItems}
-          members={collaborators.map((c) => ({ userId: c.userId, name: c.name }))}
+          members={collaborators.map((c) => ({
+            userId: c.userId,
+            name: c.name,
+            avatarUrl: c.avatarUrl,
+          }))}
           canEdit={canEdit}
         />
       ) : mode === "travel" ? (
