@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Share, X } from "lucide-react";
 
 const DISMISS_KEY = "trip-planner-install-hint-dismissed";
 
 export default function InstallPrompt() {
   const [show, setShow] = useState(false);
+  const pathname = usePathname();
+  // Trip detail pages have their own fixed bottom tab bar on mobile (see
+  // TripDayBoard) — without this, the two would stack on top of each other
+  // on iOS Safari before the app's ever been installed.
+  const hasBottomTabBar = pathname?.startsWith("/trips/") && pathname !== "/trips/new";
 
   useEffect(() => {
     const isIOS =
@@ -31,7 +37,11 @@ export default function InstallPrompt() {
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+    <div
+      className={`fixed inset-x-0 z-40 mx-auto w-full max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+        hasBottomTabBar ? "bottom-16" : "bottom-0"
+      }`}
+    >
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-lg">
         <p className="flex-1 text-slate-700">
           點下方分享鍵 <Share className="inline h-4 w-4 align-text-bottom" />{" "}

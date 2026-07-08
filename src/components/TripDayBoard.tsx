@@ -104,46 +104,45 @@ export default function TripDayBoard({
     setMode("travel");
   }
 
+  // Shared by both the desktop pill switcher and the mobile bottom tab bar
+  // below, so the three modes/labels/icons can't drift out of sync between
+  // the two responsive variants of the same control.
+  const modeTabs = [
+    { key: "edit" as const, label: "編輯模式", icon: ListChecks, onSelect: () => setMode("edit") },
+    { key: "travel" as const, label: "旅行模式", icon: Luggage, onSelect: switchToTravelMode },
+    {
+      key: "checklist" as const,
+      label: "檢查清單",
+      icon: ClipboardCheck,
+      onSelect: () => setMode("checklist"),
+    },
+  ];
+
   return (
-    <div>
+    <div className="pb-24 lg:pb-0">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
-          <button
-            type="button"
-            onClick={() => setMode("edit")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
-              mode === "edit"
-                ? "bg-brand-600 text-white"
-                : "text-ink-700 hover:bg-slate-50"
-            }`}
-          >
-            <ListChecks className="h-4 w-4" />
-            編輯模式
-          </button>
-          <button
-            type="button"
-            onClick={switchToTravelMode}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
-              mode === "travel"
-                ? "bg-brand-600 text-white"
-                : "text-ink-700 hover:bg-slate-50"
-            }`}
-          >
-            <Luggage className="h-4 w-4" />
-            旅行模式
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("checklist")}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
-              mode === "checklist"
-                ? "bg-brand-600 text-white"
-                : "text-ink-700 hover:bg-slate-50"
-            }`}
-          >
-            <ClipboardCheck className="h-4 w-4" />
-            檢查清單
-          </button>
+        <div
+          role="tablist"
+          aria-label="檢視模式"
+          className="hidden rounded-lg border border-slate-200 bg-white p-1 text-sm lg:inline-flex"
+        >
+          {modeTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={mode === tab.key}
+              onClick={tab.onSelect}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+                mode === tab.key
+                  ? "bg-brand-600 text-white"
+                  : "text-ink-700 hover:bg-slate-50"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Uses selectedDayId (client state) so this always points at
@@ -160,6 +159,34 @@ export default function TripDayBoard({
           </Link>
         )}
       </div>
+
+      {/* Mobile-only bottom tab bar — this is where most time is actually
+          spent (planning/viewing a trip), so the mode switch lives in the
+          thumb zone instead of only at the top. Desktop keeps the pill
+          switcher above since there's no reachability problem with a mouse.
+          pb-24 on the root div above reserves room so this doesn't cover
+          the bottom of the timeline/checklist content. */}
+      <nav
+        role="tablist"
+        aria-label="檢視模式"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        {modeTabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            role="tab"
+            aria-selected={mode === tab.key}
+            onClick={tab.onSelect}
+            className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 text-xs font-medium ${
+              mode === tab.key ? "text-brand-600" : "text-ink-500"
+            }`}
+          >
+            <tab.icon className={`h-5 w-5 ${mode === tab.key ? "text-brand-600" : "text-ink-400"}`} />
+            {tab.label}
+          </button>
+        ))}
+      </nav>
 
       <div key={mode} className="animate-fade-in">
       {mode === "checklist" ? (
