@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Luggage, MapPinned, LogOut, ChevronRight } from "lucide-react";
+import { Plus, Luggage, MapPinned, LogOut, ChevronRight, ArrowRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/app/login/actions";
@@ -71,6 +71,94 @@ export default async function TripsPage() {
   const pastTrips = trips
     .filter((t) => t.endDate.toISOString().slice(0, 10) < todayStr)
     .sort((a, b) => b.startDate.getTime() - a.startDate.getTime());
+
+  const [nextTrip, ...otherUpcomingTrips] = upcomingTrips;
+
+  // Positive = days until departure, 0 = departs today, negative = already
+  // underway (startDate has passed but endDate hasn't — still counts as
+  // "upcoming" per the filter above). Computed from the date-only strings
+  // (not the Date objects directly) for the same reason todayStr itself is
+  // a string comparison — avoids any time-of-day component sneaking into
+  // what should be a whole-calendar-day difference.
+  function daysUntil(trip: (typeof trips)[number]): number {
+    const startStr = trip.startDate.toISOString().slice(0, 10);
+    return Math.round(
+      (new Date(startStr).getTime() - new Date(todayStr).getTime()) / (1000 * 60 * 60 * 24)
+    );
+  }
+
+  function countdownLabel(trip: (typeof trips)[number]): string {
+    const until = daysUntil(trip);
+    if (until > 0) return `${until} 天後出發`;
+    if (until === 0) return "今天出發";
+    return "旅行中";
+  }
+
+  // The large featured card for whichever trip is coming up next — same
+  // underlying data as renderTripCard below, but with the countdown,
+  // member list, and an explicit "繼續規劃" affordance that a trip this
+  // prominent deserves, instead of just a compact info strip.
+  function renderNextTripCard(trip: (typeof trips)[number]) {
+    const coverImage =
+      trip.coverImage ??
+      trip.days
+        .flatMap((day) => day.items)
+        .find((item) => item.place?.photoUrl)?.place?.photoUrl;
+    const itemCount = trip.days.reduce((sum, day) => sum + day.items.length, 0);
+    const members = [trip.owner, ...trip.collaborators.map((c) => c.user)];
+
+    return (
+      <Link
+        href={`/trips/${trip.id}`}
+        className="group relative block aspect-[4/3] w-full overflow-hidden rounded-card-lg shadow-raised transition hover:-translate-y-0.5 sm:aspect-[21/9]"
+      >
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt={trip.title}
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-500 to-brand-700">
+            <Luggage className="h-20 w-20 text-white/25" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+
+        <span className="absolute left-4 top-4 rounded-full bg-surface/90 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur">
+          {countdownLabel(trip)}
+        </span>
+
+        <div className="absolute inset-x-0 bottom-0 p-5">
+          <h2 className="text-2xl font-bold text-white drop-shadow-sm">{trip.title}</h2>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/90">
+            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+              {trip.startDate.toISOString().slice(0, 10)} ~{" "}
+              {trip.endDate.toISOString().slice(0, 10)}
+            </span>
+            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+              共 {trip.days.length} 天
+            </span>
+            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+              已安排 {itemCount} 個景點
+            </span>
+          </div>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            {members.length > 1 ? (
+              <AvatarStack members={members} />
+            ) : (
+              <span />
+            )}
+            <span className="inline-flex items-center gap-1 rounded-lg bg-surface px-3 py-1.5 text-sm font-medium text-brand-700">
+              繼續規劃
+              <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   function renderTripCard(trip: (typeof trips)[number], index: number) {
     const coverImage =
@@ -155,51 +243,65 @@ export default async function TripsPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <div className="flex items-center justify-end gap-3 text-sm text-ink-700">
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatarUrl}
-            alt={user.name}
-            className="h-7 w-7 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
-            {user.name.slice(0, 1)}
-          </div>
-        )}
-        <span className="max-w-[8rem] truncate">{user.name}</span>
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex items-center gap-1 text-xs text-ink-500 hover:text-brand-600"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            登出
-          </button>
-        </form>
+      <div className="flex items-center justify-between gap-3 text-sm text-ink-700">
+        {/* Deliberately not a big primary CTA here — with a next-trip hero
+            card below, a loud "新增旅程" button competing for attention
+            above it undercuts the trip that's actually coming up. No
+            AppHeader to tuck this into yet (see project_design_system_v2
+            memory — AppHeader was explicitly dropped from this pass), so
+            it lives here as a small link instead. */}
+        <Link
+          href="/trips/new"
+          className="flex items-center gap-1 text-ink-700 hover:text-brand-600"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          新增旅程
+        </Link>
+        <div className="flex items-center gap-3">
+          {user.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="h-7 w-7 rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
+              {user.name.slice(0, 1)}
+            </div>
+          )}
+          <span className="max-w-[8rem] truncate">{user.name}</span>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="flex items-center gap-1 text-xs text-ink-500 hover:text-brand-600"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              登出
+            </button>
+          </form>
+        </div>
       </div>
 
       <section className="mt-2">
         <GreetingHero name={user.name} />
         <h1 className="mt-1 text-3xl font-bold text-ink-900 sm:text-4xl">
-          今天想規劃哪趟旅程？
+          {nextTrip
+            ? `「${nextTrip.title}」${countdownLabel(nextTrip)}`
+            : "今天想規劃哪趟旅程？"}
         </h1>
-        <Link
-          href="/trips/new"
-          className={appButtonClassName("primary", "md", "mt-4 gap-1.5")}
-        >
-          <Plus className="h-4 w-4" />
-          新增旅程
-        </Link>
       </section>
 
-      {trips.length > 0 && (
-        <SectionHeader title="近期旅程" icon={Luggage} className="mt-10 mb-5" />
+      {nextTrip && (
+        <section className="mt-6">{renderNextTripCard(nextTrip)}</section>
+      )}
+
+      {otherUpcomingTrips.length > 0 && (
+        <SectionHeader title="其他即將到來的旅程" icon={Luggage} className="mt-10 mb-5" />
       )}
 
       <div className="grid gap-5">
-        {upcomingTrips.map(renderTripCard)}
+        {otherUpcomingTrips.map(renderTripCard)}
 
         {trips.length === 0 && (
           <EmptyState
