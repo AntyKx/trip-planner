@@ -894,23 +894,14 @@ export default function DayTimeline({
           description={canEdit ? "先搜尋景點或新增自訂項目吧" : undefined}
           action={
             canEdit && (
-              <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
-                <Link
-                  href={`/explore?tripId=${tripId}`}
-                  className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
-                >
-                  <Search className="h-4 w-4" />
-                  搜尋景點
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => setEditingItem("new")}
-                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
-                >
-                  <Plus className="h-4 w-4" />
-                  新增自訂項目
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setEditingItem("new")}
+                className="mt-1 flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+              >
+                <Plus className="h-4 w-4" />
+                新增自訂項目
+              </button>
             )
           }
         />
