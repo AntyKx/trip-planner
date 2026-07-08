@@ -281,48 +281,49 @@ export default function ExploreClient({
                 <span className="text-xs text-ink-500">{"$".repeat(place.priceLevel)}</span>
               )}
             </div>
+          </div>
+        </div>
 
-            {/* AI trigger shares this row with favorite/add instead of
-                getting its own line below — it's just a small button
-                until analyzed, so a whole separate row for it left a big
-                empty-looking gap. flex-wrap handles the one case where it
-                doesn't fit: once analysis is loaded, the result card (see
-                PlaceInsightSection's w-full on that branch) is wide
-                enough that it wraps onto its own line naturally. */}
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              {selectedTripId && selectedDayId ? (
-                <PlaceInsightSection
-                  // Forces a remount (resetting its cached analysis) when
-                  // the target day changes — otherwise it'd keep showing a
-                  // fitScore/summary computed for whichever day it was last
-                  // analyzed against, mislabeled as if it were for the
-                  // newly-selected day.
-                  key={selectedDayId}
-                  provider="google"
-                  externalId={place.externalId}
-                  placeName={place.name}
-                  tripId={selectedTripId}
-                  dayId={selectedDayId}
+        {/* Outside the photo+text row on purpose — squeezed into the
+            narrow column next to the photo, there isn't enough width for
+            the AI trigger and favorite/add to actually stay side by side
+            (they'd wrap under each other despite the row/justify-between
+            styling, since flex-wrap only keeps things on one line when
+            they fit). Spanning the full card width instead gives them
+            enough room. */}
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+          {selectedTripId && selectedDayId ? (
+            <PlaceInsightSection
+              // Forces a remount (resetting its cached analysis) when
+              // the target day changes — otherwise it'd keep showing a
+              // fitScore/summary computed for whichever day it was last
+              // analyzed against, mislabeled as if it were for the
+              // newly-selected day.
+              key={selectedDayId}
+              provider="google"
+              externalId={place.externalId}
+              placeName={place.name}
+              tripId={selectedTripId}
+              dayId={selectedDayId}
+              compact
+            />
+          ) : (
+            <span />
+          )}
+          <div className="flex items-center gap-2">
+            <IconButton
+              variant="ghost"
+              onClick={() => handleToggleFavorite(place)}
+              disabled={isTogglingFavorite}
+              aria-label={isFavorited ? "取消收藏" : "加入收藏"}
+              aria-pressed={isFavorited}
+              icon={
+                <Heart
+                  className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
                 />
-              ) : (
-                <span />
-              )}
-              <div className="flex items-center gap-2">
-                <IconButton
-                  variant="ghost"
-                  onClick={() => handleToggleFavorite(place)}
-                  disabled={isTogglingFavorite}
-                  aria-label={isFavorited ? "取消收藏" : "加入收藏"}
-                  aria-pressed={isFavorited}
-                  icon={
-                    <Heart
-                      className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
-                    />
-                  }
-                />
-                {renderAddControl(place)}
-              </div>
-            </div>
+              }
+            />
+            {renderAddControl(place)}
           </div>
         </div>
         {closedWarning && (
