@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-08
 
+- **還原首頁 App Dashboard 改版**：使用者實際看過後不喜歡下一趟旅程大型主卡跟「其他即將到來的旅程」分區的設計，還原回原本的首頁版面。色彩 token、AppCard/AppButton、Day Selector、探索頁的改動維持不變。
 - **UI Design System 收斂：首頁改成 App Dashboard**：拆出「下一趟旅程」大型主卡（出發倒數、日期天數、已安排景點數、協作者頭像、「繼續規劃」操作），其他即將到來的旅程維持原本緊湊卡片樣式。「新增旅程」從主要 CTA 降級成頁面右上角小連結（沒有 AppHeader 可以放）。問候標語改成動態顯示下一趟旅程倒數。
 - **UI Design System 收斂：Day Selector 降卡片感、探索頁重整**：Day Tabs 選中狀態從實心填色改成淺底色＋品牌色文字＋底部指示線，拿掉窄籤內塞的 note 跟景點數（下方內容標題本來就會重複顯示）；探索頁重新整理版面順序（標題→搜尋列(sticky)→地區選擇→加入目標選擇器→搜尋/收藏分頁），結果卡片圖片放大到 72×72、補上原本沒顯示的地址、評分/類型/價格降級為次要資訊、收藏改用新的 IconButton、拿掉 modal footer 跟卡片本體重複的類型 Badge/加入按鈕。AppHeader、手機版 FAB 仍擱置未做。
 - **UI Design System 收斂第 1-2 階段**：色彩 token 微調成同一個暖藍/暖米白家族的精修版（不是換色系），新增 `brand-300/900`、`ink-400`、`line`/`line-strong` 邊框色、`shadow-raised`/`shadow-overlay` 兩級陰影，card 圓角從 18px 調成 16px。`AppCard` 新增 `variant`（flat/raised/interactive）與 `padding` props，預設改成 flat 不帶陰影（原本每張卡都預設 `shadow-soft`）。`AppButton` 新增 `dangerFilled` 變體。新增 `IconButton` 共用元件。AppHeader（全站導覽列）等有版面衝突的部分先擱著待討論，全站 slate 色彩清理是規格第 8 階段，這次沒動。
