@@ -47,7 +47,7 @@ export default function ModalOverlay({
         aria-labelledby={titleId}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={`rounded-t-2xl bg-white outline-none sm:rounded-2xl ${panelClassName}`}
+        className={`rounded-t-2xl bg-surface outline-none sm:rounded-2xl ${panelClassName}`}
       >
         {children}
       </div>

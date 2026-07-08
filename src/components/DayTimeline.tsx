@@ -181,7 +181,7 @@ function SortableItemCard({
         {...(canEdit ? listeners : {})}
         className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
-        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-slate-200 bg-white"}`}
+        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-slate-200 bg-surface"}`}
       >
         {/* Visual-only drag affordance — the whole card is already the drag
             handle (better for touch than a tiny target), this just shows
@@ -307,7 +307,7 @@ function SortableItemCard({
               // utilities live in a named CSS layer and that override
               // doesn't. At the resulting 16px, "大眾運輸" plus the native
               // dropdown arrow no longer fit in a narrower width.
-              className="w-28 shrink-0 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs disabled:opacity-50"
+              className="w-28 shrink-0 rounded-md border border-slate-200 bg-surface px-1 py-0.5 text-xs disabled:opacity-50"
             >
               {TRAVEL_MODE_OPTIONS.map((opt) => {
                 const disabled =

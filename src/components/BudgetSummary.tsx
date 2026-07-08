@@ -17,7 +17,7 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
           <Wallet className="h-4 w-4" />
           預算統計
@@ -45,7 +45,7 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
         <Wallet className="h-4 w-4" />
         預算統計

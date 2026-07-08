@@ -246,7 +246,7 @@ function SortableChecklistItem({
       style={style}
       {...(canEdit ? attributes : {})}
       {...(canEdit ? listeners : {})}
-      className={`group relative touch-manipulation rounded-lg border border-slate-100 bg-white p-2.5 select-none [-webkit-touch-callout:none] ${
+      className={`group relative touch-manipulation rounded-lg border border-slate-100 bg-surface p-2.5 select-none [-webkit-touch-callout:none] ${
         isDragging ? "shadow-lg" : ""
       }`}
     >
@@ -266,7 +266,7 @@ function SortableChecklistItem({
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors disabled:opacity-50 ${
             item.isDone
               ? "border-brand-600 bg-brand-600"
-              : "border-slate-300 bg-white hover:border-brand-400"
+              : "border-slate-300 bg-surface hover:border-brand-400"
           }`}
         >
           <Check
@@ -447,7 +447,7 @@ export default function ChecklistTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-ink-700">
             已完成 {doneCount} / {total}
@@ -486,7 +486,7 @@ export default function ChecklistTab({
         return (
           <div
             key={category}
-            className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+            className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm"
           >
             <h3
               className={`flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
@@ -537,7 +537,7 @@ export default function ChecklistTab({
       )}
 
       {canEdit && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
           {showAddForm ? (
             <form onSubmit={handleAddSubmit} className="flex flex-col gap-2">
               <div className="flex flex-col gap-2 sm:flex-row">

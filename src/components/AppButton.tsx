@@ -6,7 +6,7 @@ export type AppButtonSize = "sm" | "md";
 
 const VARIANT_CLASSES: Record<AppButtonVariant, string> = {
   primary: "bg-brand-800 text-white hover:bg-brand-700",
-  secondary: "border border-slate-200 bg-white text-ink-700 hover:bg-slate-50",
+  secondary: "border border-slate-200 bg-surface text-ink-700 hover:bg-slate-50",
   ghost: "text-brand-600 hover:bg-brand-50",
   danger: "text-red-600 hover:bg-red-50",
 };

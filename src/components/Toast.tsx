@@ -76,7 +76,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role="status"
-              className={`pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-ink-900 shadow-soft transition-all duration-200 ${
+              className={`pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-full border border-slate-200 bg-surface px-4 py-2.5 text-sm font-medium text-ink-900 shadow-soft transition-all duration-200 ${
                 t.leaving
                   ? "translate-y-2 opacity-0"
                   : "translate-y-0 opacity-100 animate-toast-in"

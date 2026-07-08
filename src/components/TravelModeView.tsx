@@ -85,7 +85,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
               className={`flex items-center gap-3 rounded-xl border p-3 ${
                 item.id === nextStop?.id
                   ? "border-brand-400 bg-brand-50"
-                  : "border-slate-200 bg-white"
+                  : "border-slate-200 bg-surface"
               }`}
             >
               <TypeIcon className="h-4 w-4 shrink-0 text-ink-500" />

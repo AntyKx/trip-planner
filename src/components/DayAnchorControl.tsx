@@ -189,7 +189,7 @@ export default function DayAnchorControl({
         <select
           value={region}
           onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}
-          className="rounded-md border border-slate-200 bg-white px-1.5 py-1.5 text-xs"
+          className="rounded-md border border-slate-200 bg-surface px-1.5 py-1.5 text-xs"
         >
           <option value="JP">日本</option>
           <option value="TW">台灣</option>
@@ -230,7 +230,7 @@ export default function DayAnchorControl({
                 className={`flex items-center gap-1 rounded-full border px-2 py-1 ${
                   applyToDayIds.has(day.id)
                     ? "border-brand-600 bg-brand-50 text-brand-700"
-                    : "border-slate-200 bg-white text-ink-600"
+                    : "border-slate-200 bg-surface text-ink-600"
                 }`}
               >
                 <input
@@ -256,7 +256,7 @@ export default function DayAnchorControl({
                 type="button"
                 onClick={() => handlePick(place)}
                 disabled={isSaving}
-                className="flex w-full items-start gap-2 rounded-md border border-slate-200 bg-white p-2 text-left hover:border-brand-300 disabled:opacity-50"
+                className="flex w-full items-start gap-2 rounded-md border border-slate-200 bg-surface p-2 text-left hover:border-brand-300 disabled:opacity-50"
               >
                 <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-500" />
                 <span>

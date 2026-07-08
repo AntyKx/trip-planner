@@ -124,7 +124,7 @@ export default function TripDayBoard({
         <div
           role="tablist"
           aria-label="檢視模式"
-          className="hidden rounded-lg border border-slate-200 bg-white p-1 text-sm lg:inline-flex"
+          className="hidden rounded-lg border border-slate-200 bg-surface p-1 text-sm lg:inline-flex"
         >
           {modeTabs.map((tab) => (
             <button
@@ -169,7 +169,7 @@ export default function TripDayBoard({
       <nav
         role="tablist"
         aria-label="檢視模式"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         {modeTabs.map((tab) => (
           <button
@@ -224,7 +224,7 @@ export default function TripDayBoard({
                     ? "border-brand-600 bg-brand-600 text-white shadow-soft"
                     : isToday
                       ? "border-brand-300 bg-brand-50 text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
-                      : "border-slate-200 bg-white text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
+                      : "border-slate-200 bg-surface text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
                 }`}
               >
                 {isToday && (
@@ -350,7 +350,7 @@ export default function TripDayBoard({
 
       {/* Map panel — always scoped to the day selected above */}
       <aside className="space-y-4 lg:sticky lg:top-10">
-        <div className="h-fit rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="h-fit rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <MapIcon className="h-4 w-4" />
             地圖{selectedDay && ` · Day ${selectedDay.dayIndex}`}

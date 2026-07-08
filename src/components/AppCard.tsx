@@ -17,7 +17,7 @@ export type AppCardProps = HTMLAttributes<HTMLDivElement> & {
 export default function AppCard({ size = "md", className, children, ...props }: AppCardProps) {
   return (
     <div
-      className={`border border-slate-200 bg-white shadow-soft ${SIZE_CLASSES[size]} ${className ?? ""}`}
+      className={`border border-slate-200 bg-surface shadow-soft ${SIZE_CLASSES[size]} ${className ?? ""}`}
       {...props}
     >
       {children}

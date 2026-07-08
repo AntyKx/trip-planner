@@ -365,7 +365,7 @@ export default function ExploreClient({
           再來加點。
         </p>
       ) : (
-        <div className="sticky top-0 z-10 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/95 p-4 text-sm shadow-sm backdrop-blur">
+        <div className="sticky top-0 z-10 mt-6 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-surface/95 p-4 text-sm shadow-sm backdrop-blur">
           <span className="text-slate-700">加入到：</span>
           <select
             value={selectedTripId}
@@ -397,7 +397,7 @@ export default function ExploreClient({
         </div>
       )}
 
-      <div className="mt-6 inline-flex rounded-lg border border-slate-200 bg-white p-1 text-sm">
+      <div className="mt-6 inline-flex rounded-lg border border-slate-200 bg-surface p-1 text-sm">
         <button
           type="button"
           onClick={() => setMode("search")}

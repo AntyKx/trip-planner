@@ -15,7 +15,7 @@ export function TripCardSkeleton() {
 
 export function TimelineItemSkeleton() {
   return (
-    <div className="mb-3 flex items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-3">
+    <div className="mb-3 flex items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 bg-surface p-3">
       <Skeleton className="h-20 w-20 shrink-0 sm:w-28" />
       <div className="ml-3 flex-1 space-y-2 py-1">
         <Skeleton className="h-4 w-2/3" />
@@ -28,7 +28,7 @@ export function TimelineItemSkeleton() {
 
 export function SearchResultSkeleton() {
   return (
-    <div className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3">
+    <div className="flex gap-3 rounded-xl border border-slate-200 bg-surface p-3">
       <Skeleton className="h-13 w-13 shrink-0 rounded-lg" />
       <div className="flex-1 space-y-2 py-1">
         <Skeleton className="h-4 w-3/4" />
