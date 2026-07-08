@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-08
 
+- **修正安裝提示在行程頁沒有正確避開底部導覽列**：底部 tab bar 加上時，安裝提示用固定 `bottom-16` 往上讓開，沒把 tab bar 自己也會加的 `safe-area-inset-bottom` 算進去，在有 Home Indicator 的 iPhone 上還是會被蓋到一截，改成用同樣的算法。
 - **移除深色模式，維持淺色暖色調**：即使改成暖咖啡色調，使用者實際體驗後還是覺得太沉重、跟旅遊 App 的調性不合，決定不做深色模式。拿掉 `@media (prefers-color-scheme: dark)` 那個區塊，全站回到單一淺色主題；新增的 `--color-surface` token 跟把 44 處 `bg-white` 換成 `bg-surface` 的改動保留，純語意化命名沒有副作用。
 - **深色模式改用暖色調**：使用者回饋原本冷色調深藍灰的深色配色感覺太沉重，不符合「旅遊是快樂的事」的調性。改成跟淺色主題同一個暖色家族反過來走——深色模式變成深咖啡棕紙張＋米白墨色文字，border/次要文字的 slate 色階也從冷灰藍改成暖棕色，不是換一套冷色系。
 - **新增深色模式（跟隨系統設定）**：不做手動切換（目前沒有設定頁可以放開關）。做法：`globals.css` 新增 `--color-surface` token（卡片/彈窗底色，跟 Tailwind 內建的 white 分開，因為 `text-white` 用在有色按鈕文字上不能跟著變深色），在 `@media (prefers-color-scheme: dark)` 裡重新定義 paper/ink-500/700/900/surface 這幾個既有 token 以及 Tailwind 內建的 slate 色階（確認過編譯後的 CSS 是真的 CSS 變數參照、不是內聯值，蓋掉變數就能連動全站約 200 處 border-slate/text-slate/bg-slate 用法）；44 處寫死的 `bg-white` 卡片背景手動換成 `bg-surface`，刻意保留約 13 處「白色文字/圖示疊在有色背景或照片上」的用法不變。已知還沒處理：紅/綠/黃/藍等淺色狀態徽章（例如逾期提示）深色模式下還是亮色調；沒有實機可以視覺驗證，需要使用者實際切到深色模式確認對比度。
