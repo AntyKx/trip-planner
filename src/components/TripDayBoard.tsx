@@ -210,7 +210,11 @@ export default function TripDayBoard({
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       {/* Day timeline */}
       <div>
-        <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
+        <div
+          role="tablist"
+          aria-label="選擇日期"
+          className="flex gap-1 overflow-x-auto border-b border-line pb-0 snap-x snap-mandatory"
+        >
           {daysWithWeather.map((day) => {
             const isActive = day.id === selectedDay?.id;
             const isToday = day.date === todayStr;
@@ -218,57 +222,31 @@ export default function TripDayBoard({
               <button
                 key={day.id}
                 type="button"
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setSelectedDayId(day.id)}
-                className={`relative shrink-0 snap-start rounded-card border p-3 text-left min-w-[92px] transition ${
+                className={`shrink-0 snap-start rounded-t-lg border-b-2 px-3 py-2 text-left min-w-[76px] transition ${
                   isActive
-                    ? "border-brand-600 bg-brand-600 text-white shadow-soft"
-                    : isToday
-                      ? "border-brand-300 bg-brand-50 text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
-                      : "border-slate-200 bg-surface text-ink-700 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-soft"
+                    ? "border-brand-600 bg-brand-50 text-brand-700"
+                    : "border-transparent text-ink-700 hover:bg-paper-alt"
                 }`}
               >
-                {isToday && (
-                  <span
-                    className={`absolute right-2 top-2 h-1.5 w-1.5 rounded-full ${
-                      isActive ? "bg-white" : "bg-brand-600"
-                    }`}
-                    aria-hidden="true"
-                  />
-                )}
                 <div className="flex items-center gap-1 text-sm font-semibold">
                   <span>Day {day.dayIndex}</span>
-                  {day.weather && <span>{weatherLabel(day.weather.weatherCode).emoji}</span>}
+                  {isToday && (
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-brand-600"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {day.weather && (
+                    <span className="text-xs">{weatherLabel(day.weather.weatherCode).emoji}</span>
+                  )}
                 </div>
-                {isToday && (
-                  <div
-                    className={`text-[10px] font-medium ${
-                      isActive ? "text-white/90" : "text-brand-600"
-                    }`}
-                  >
-                    今天
-                  </div>
-                )}
-                <div
-                  className={`mt-0.5 text-xs ${isActive ? "text-white/80" : "text-ink-500"}`}
-                >
+                <div className={`mt-0.5 text-xs ${isActive ? "text-brand-600" : "text-ink-500"}`}>
                   {day.date.slice(5)}
+                  {isToday && "・今天"}
                 </div>
-                {day.note && (
-                  <div
-                    className={`mt-0.5 truncate text-xs ${
-                      isActive ? "text-white/80" : "text-ink-500"
-                    }`}
-                  >
-                    {day.note}
-                  </div>
-                )}
-                {day.timelineItems.length > 0 && (
-                  <div
-                    className={`mt-0.5 text-xs ${isActive ? "text-white/70" : "text-ink-400"}`}
-                  >
-                    {day.timelineItems.length} 個景點
-                  </div>
-                )}
               </button>
             );
           })}
