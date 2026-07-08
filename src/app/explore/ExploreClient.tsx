@@ -282,24 +282,15 @@ export default function ExploreClient({
               )}
             </div>
 
-            <div className="mt-2 flex items-center justify-end gap-2">
-              <IconButton
-                variant="ghost"
-                onClick={() => handleToggleFavorite(place)}
-                disabled={isTogglingFavorite}
-                aria-label={isFavorited ? "取消收藏" : "加入收藏"}
-                aria-pressed={isFavorited}
-                icon={
-                  <Heart
-                    className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
-                  />
-                }
-              />
-              {renderAddControl(place)}
-            </div>
-
-            {selectedTripId && selectedDayId && (
-              <div className="mt-2">
+            {/* AI trigger shares this row with favorite/add instead of
+                getting its own line below — it's just a small button
+                until analyzed, so a whole separate row for it left a big
+                empty-looking gap. flex-wrap handles the one case where it
+                doesn't fit: once analysis is loaded, the result card (see
+                PlaceInsightSection's w-full on that branch) is wide
+                enough that it wraps onto its own line naturally. */}
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              {selectedTripId && selectedDayId ? (
                 <PlaceInsightSection
                   // Forces a remount (resetting its cached analysis) when
                   // the target day changes — otherwise it'd keep showing a
@@ -313,8 +304,25 @@ export default function ExploreClient({
                   tripId={selectedTripId}
                   dayId={selectedDayId}
                 />
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-2">
+                <IconButton
+                  variant="ghost"
+                  onClick={() => handleToggleFavorite(place)}
+                  disabled={isTogglingFavorite}
+                  aria-label={isFavorited ? "取消收藏" : "加入收藏"}
+                  aria-pressed={isFavorited}
+                  icon={
+                    <Heart
+                      className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
+                    />
+                  }
+                />
+                {renderAddControl(place)}
               </div>
-            )}
+            </div>
           </div>
         </div>
         {closedWarning && (

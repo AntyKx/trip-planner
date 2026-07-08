@@ -30,6 +30,12 @@ export default function PlaceInsightSection({
   reviews,
   tripId,
   dayId,
+  // Lets a caller (e.g. ExploreClient's result-card action row) place the
+  // not-yet-analyzed trigger button inline next to other buttons instead
+  // of always on its own line — the expanded result card ignores this in
+  // practice since its own content is wide enough to fill a flex row on
+  // its own regardless.
+  className,
 }: {
   provider: string;
   externalId: string;
@@ -37,6 +43,7 @@ export default function PlaceInsightSection({
   reviews?: ReviewInput[];
   tripId: string;
   dayId: string;
+  className?: string;
 }) {
   const toast = useToast();
   const [insight, setInsight] = useState<LoadedInsight | null>(null);
@@ -88,7 +95,7 @@ export default function PlaceInsightSection({
 
   if (!insight) {
     return (
-      <div>
+      <div className={className}>
         <button
           type="button"
           onClick={() => handleAnalyze()}
@@ -104,7 +111,7 @@ export default function PlaceInsightSection({
   }
 
   return (
-    <div className="rounded-lg border border-accent-100 bg-accent-50 p-3 text-sm">
+    <div className={`w-full rounded-lg border border-accent-100 bg-accent-50 p-3 text-sm ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-700">
           <Sparkles className="h-3.5 w-3.5" />
