@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-08
 
+- **UI Design System 收斂：Day Selector 降卡片感、探索頁重整**：Day Tabs 選中狀態從實心填色改成淺底色＋品牌色文字＋底部指示線，拿掉窄籤內塞的 note 跟景點數（下方內容標題本來就會重複顯示）；探索頁重新整理版面順序（標題→搜尋列(sticky)→地區選擇→加入目標選擇器→搜尋/收藏分頁），結果卡片圖片放大到 72×72、補上原本沒顯示的地址、評分/類型/價格降級為次要資訊、收藏改用新的 IconButton、拿掉 modal footer 跟卡片本體重複的類型 Badge/加入按鈕。AppHeader、手機版 FAB 仍擱置未做。
 - **UI Design System 收斂第 1-2 階段**：色彩 token 微調成同一個暖藍/暖米白家族的精修版（不是換色系），新增 `brand-300/900`、`ink-400`、`line`/`line-strong` 邊框色、`shadow-raised`/`shadow-overlay` 兩級陰影，card 圓角從 18px 調成 16px。`AppCard` 新增 `variant`（flat/raised/interactive）與 `padding` props，預設改成 flat 不帶陰影（原本每張卡都預設 `shadow-soft`）。`AppButton` 新增 `dangerFilled` 變體。新增 `IconButton` 共用元件。AppHeader（全站導覽列）等有版面衝突的部分先擱著待討論，全站 slate 色彩清理是規格第 8 階段，這次沒動。
 - **修正安裝提示在行程頁沒有正確避開底部導覽列**：底部 tab bar 加上時，安裝提示用固定 `bottom-16` 往上讓開，沒把 tab bar 自己也會加的 `safe-area-inset-bottom` 算進去，在有 Home Indicator 的 iPhone 上還是會被蓋到一截，改成用同樣的算法。
 - **移除深色模式，維持淺色暖色調**：即使改成暖咖啡色調，使用者實際體驗後還是覺得太沉重、跟旅遊 App 的調性不合，決定不做深色模式。拿掉 `@media (prefers-color-scheme: dark)` 那個區塊，全站回到單一淺色主題；新增的 `--color-surface` token 跟把 44 處 `bg-white` 換成 `bg-surface` 的改動保留，純語意化命名沒有副作用。
