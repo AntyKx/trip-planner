@@ -2,6 +2,10 @@
 
 Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在最上面。
 
+## 2026-07-09
+
+- **UI Design System 收斂：全站 slate 色彩清理（規格第 8 階段，最後一節）**：機械式替換全站約 185 處寫死的 Tailwind slate 顏色，改用第 1 階段定義好的語意 token（26 個檔案）——`border-slate-*`→`border-line`/`border-line-strong`、`text-slate-*`→`text-ink-400`/`text-ink-500`/`text-ink-700`、`bg-slate-*`→`bg-paper-alt`/`bg-line`。至此 UI Design System 收斂規格全部完成（AppHeader、FAB、首頁 Dashboard 改版維持先前結論：不做／已還原）。
+
 ## 2026-07-08
 
 - **還原首頁 App Dashboard 改版**：使用者實際看過後不喜歡下一趟旅程大型主卡跟「其他即將到來的旅程」分區的設計，還原回原本的首頁版面。色彩 token、AppCard/AppButton、Day Selector、探索頁的改動維持不變。
