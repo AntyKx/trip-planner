@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-09
 
+- **探索頁調整順序：地區選擇放到搜尋框前面**：重整版面時把地區選擇放到搜尋框後面，但選地區其實是在縮小搜尋範圍，應該先選好地區再打關鍵字，順序反了，改回地區在前。
 - **UI Design System 收斂：全站 slate 色彩清理（規格第 8 階段，最後一節）**：機械式替換全站約 185 處寫死的 Tailwind slate 顏色，改用第 1 階段定義好的語意 token（26 個檔案）——`border-slate-*`→`border-line`/`border-line-strong`、`text-slate-*`→`text-ink-400`/`text-ink-500`/`text-ink-700`、`bg-slate-*`→`bg-paper-alt`/`bg-line`。至此 UI Design System 收斂規格全部完成（AppHeader、FAB、首頁 Dashboard 改版維持先前結論：不做／已還原）。
 
 ## 2026-07-08
