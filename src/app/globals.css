@@ -1,10 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* "light dark" (not just "light") lets native form controls/scrollbars
-     follow whichever theme actually applies below, instead of always
-     rendering light chrome even when the page itself has gone dark. */
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 /* iOS Safari auto-zooms the page when a focused form field's computed
@@ -72,11 +69,13 @@ input[type="radio"] {
   --color-paper: #faf7f2;
   --color-paper-alt: #f4efe6;
 
-  /* Card, modal, and dropdown surface color — kept separate from
+  /* Card, modal, and dropdown surface color — a named token instead of
+     each component hardcoding white directly, kept separate from
      Tailwind's built-in white token (also used for white button label
-     text, which must NOT flip in dark mode) so this can be redefined for
-     dark mode without breaking button label contrast. Light value matches
-     what every card already was (plain white) before this token existed. */
+     text) so the two can vary independently if needed later. Same value
+     as before this token existed (plain white); dark mode was tried and
+     reverted (felt too heavy for this app's warm travel-journal tone —
+     see CHANGELOG), so this currently only ever resolves to white. */
   --color-surface: #ffffff;
 
   /* 暖灰文字（取代 slate，避免偏藍冷灰） */
@@ -100,64 +99,6 @@ input[type="radio"] {
   --animate-fade-up: fade-up 0.2s ease-out;
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-toast-in: toast-in 0.2s ease-out;
-}
-
-/* Dark mode: follows the OS setting only (no in-app toggle — there's no
-   settings surface to host one yet). Redefines the SAME custom properties
-   used above instead of adding dark variants everywhere, so every
-   existing usage of these tokens (paper, ink text colors, the surface
-   card background) across the app picks this up automatically with zero
-   per-component changes.
-
-   Also redefines Tailwind's OWN built-in slate color scale (not just
-   this app's custom tokens) — confirmed via the compiled CSS that Tailwind
-   v4 emits real CSS variable references for color utilities rather than
-   inlining resolved values, so overriding the variable here retroactively
-   flips every existing border, text, and background utility built on that
-   scale across the codebase too, without having to hunt down and edit
-   each of the roughly 200 call sites individually. Deliberately NOT
-   touching Tailwind's built-in white and black tokens — those are relied
-   on for white text on brand-colored buttons and must stay white
-   regardless of theme; the surface token (defined above) exists
-   specifically so card backgrounds have something safe to flip
-   independently of that.
-
-   The slate ramp below is a genuine reversal, not just "shifted" hex
-   values: in light mode a higher slate number reads as MORE emphasis
-   (slate-700 text is more prominent than slate-400), so in dark mode a
-   higher number has to become LIGHTER (not darker) to preserve that same
-   relative emphasis against a dark background.
-
-   Not covered by this pass: light-tinted badge and status backgrounds
-   (error, success, warning colors, etc.) — those still render as bright
-   boxes on a dark page. Flagged as a known follow-up, not silently
-   missed. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    /* Warm espresso/leather-journal family (same hue direction as the
-       light theme's cream paper and warm ink), not a cool navy/slate —
-       a cool blue-black dark palette reads as a somber late-night
-       dashboard, which fights this app's warm travel-journal identity.
-       Light mode: cream paper + dark ink. Dark mode inverts that as dark
-       espresso paper + cream ink, keeping the same warm hue family both
-       ways instead of switching families for dark mode. */
-    --color-paper: #1e1811;
-    --color-paper-alt: #251e15;
-    --color-surface: #2b2318;
-
-    --color-ink-500: #b0a08c;
-    --color-ink-700: #ddd0bd;
-    --color-ink-900: #f8f1e6;
-
-    --color-slate-50: #282013;
-    --color-slate-100: #2e2517;
-    --color-slate-200: #3b2f1d;
-    --color-slate-300: #4c3d26;
-    --color-slate-400: #8c7a5c;
-    --color-slate-500: #a8967a;
-    --color-slate-600: #c3b294;
-    --color-slate-700: #ddceb0;
-  }
 }
 
 @keyframes fade-up {
