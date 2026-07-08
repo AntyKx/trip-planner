@@ -39,7 +39,13 @@ export default function InstallPrompt() {
   return (
     <div
       className={`fixed inset-x-0 z-40 mx-auto w-full max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
-        hasBottomTabBar ? "bottom-16" : "bottom-0"
+        // Flat "4rem" alone underestimates on devices with a tall
+        // safe-area-inset-bottom (e.g. ~34px Home Indicator) — the tab
+        // bar's own height already includes that inset (see
+        // TripDayBoard's bottom nav), so this has to add it again here
+        // too, or the prompt still overlaps the bottom of the tab bar on
+        // exactly the notched iPhones this prompt targets.
+        hasBottomTabBar ? "bottom-[calc(4rem+env(safe-area-inset-bottom))]" : "bottom-0"
       }`}
     >
       <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-surface p-3 text-sm shadow-lg">
