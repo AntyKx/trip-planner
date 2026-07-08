@@ -51,7 +51,7 @@ export const TYPE_COLOR: Record<string, { bg: string; text: string; hex: string 
   RESTAURANT: { bg: "bg-accent-50", text: "text-accent-600", hex: "#b45309" },
   HOTEL: { bg: "bg-violet-50", text: "text-violet-600", hex: "#7c3aed" },
   TRANSPORT: { bg: "bg-sky-50", text: "text-sky-600", hex: "#0284c7" },
-  CUSTOM: { bg: "bg-slate-100", text: "text-slate-600", hex: "#64748b" },
+  CUSTOM: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#64748b" },
 };
 
 // Place.category is a free-text, localized display name from the provider
@@ -137,7 +137,7 @@ export const CHECKLIST_CATEGORY_COLOR: Record<
   LUGGAGE: { bg: "bg-orange-50", text: "text-orange-600" },
   HEALTH: { bg: "bg-rose-50", text: "text-rose-600" },
   TICKET: { bg: "bg-brand-50", text: "text-brand-600" },
-  CUSTOM: { bg: "bg-slate-100", text: "text-slate-600" },
+  CUSTOM: { bg: "bg-paper-alt", text: "text-ink-700" },
 };
 
 // Display order for the category-grouped checklist view — enum

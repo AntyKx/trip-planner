@@ -83,7 +83,7 @@ export default async function LoginPage({
 
       {/* Sign-in card */}
       <div className="px-6 pb-10 pt-8 sm:mt-6">
-        <div className="mx-auto w-full max-w-sm rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm">
+        <div className="mx-auto w-full max-w-sm rounded-2xl border border-line bg-surface p-6 shadow-sm">
           <GoogleSignInButton next={nextPath} />
         </div>
       </div>

@@ -3,7 +3,7 @@ import type { HTMLAttributes } from "react";
 export type AppBadgeVariant = "neutral" | "brand" | "success" | "warning" | "danger" | "ai";
 
 const VARIANT_CLASSES: Record<AppBadgeVariant, string> = {
-  neutral: "bg-slate-100 text-slate-600",
+  neutral: "bg-paper-alt text-ink-700",
   brand: "bg-brand-50 text-brand-700",
   success: "bg-emerald-50 text-emerald-700",
   warning: "bg-amber-50 text-amber-700",

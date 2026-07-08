@@ -28,7 +28,7 @@ export default function TransitAlternativesModal({
       titleId="transit-alternatives-modal-title"
       panelClassName="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden"
     >
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
+        <div className="flex items-center justify-between gap-3 border-b border-line p-4">
           <h2 id="transit-alternatives-modal-title" className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromName} → {toName}
           </h2>
@@ -36,19 +36,19 @@ export default function TransitAlternativesModal({
             type="button"
             onClick={onClose}
             aria-label="關閉"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="overflow-y-auto p-4">
-          {isLoading && <p className="text-sm text-slate-500">查詢路線中…</p>}
+          {isLoading && <p className="text-sm text-ink-500">查詢路線中…</p>}
           {!isLoading && error && (
             <p className="text-sm text-red-500">{error}</p>
           )}
           {!isLoading && !error && alternatives.length === 0 && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               這兩點之間 Google 沒有提供大眾運輸路線建議，距離可能太近，直接
               步行更快，建議改選步行。
             </p>
@@ -60,18 +60,18 @@ export default function TransitAlternativesModal({
                 key={i}
                 type="button"
                 onClick={() => onChoose(alt)}
-                className="w-full rounded-xl border border-slate-200 p-3 text-left hover:border-brand-400 hover:bg-brand-50"
+                className="w-full rounded-xl border border-line p-3 text-left hover:border-brand-400 hover:bg-brand-50"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-ink-900">
                     {alt.durationMin} 分鐘
                   </span>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-ink-500">
                     {alt.distanceKm} km
                     {alt.fareText ? ` · ${alt.fareText}` : ""}
                   </span>
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-1 text-sm text-slate-700">
+                <div className="mt-2 flex flex-wrap items-center gap-1 text-sm text-ink-700">
                   {alt.steps.map((step, j) => {
                     const StepIcon =
                       step.mode === "WALK"
@@ -79,16 +79,16 @@ export default function TransitAlternativesModal({
                         : VEHICLE_ICON[step.vehicleType ?? ""] ?? Footprints;
                     return (
                       <span key={j} className="flex items-center gap-1">
-                        {j > 0 && <span className="text-slate-300">→</span>}
+                        {j > 0 && <span className="text-ink-400">→</span>}
                         {step.mode === "WALK" ? (
-                          <span className="flex items-center gap-1 text-slate-500">
+                          <span className="flex items-center gap-1 text-ink-500">
                             <StepIcon className="h-3.5 w-3.5" />
                             {step.durationMin} 分
                           </span>
                         ) : (
                           <span
                             className={`flex items-center gap-1 rounded-full px-2 py-0.5 ${
-                              step.color ? "" : "bg-slate-100"
+                              step.color ? "" : "bg-paper-alt"
                             }`}
                             style={
                               step.color

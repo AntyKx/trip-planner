@@ -139,7 +139,7 @@ export default function CoverImagePicker({
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-slate-200 bg-surface p-4 text-left shadow-lg sm:w-80">
+            <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -162,7 +162,7 @@ export default function CoverImagePicker({
 
               {availablePhotos.length > 0 && (
                 <>
-                  <p className="mt-3 text-xs font-medium text-slate-600">
+                  <p className="mt-3 text-xs font-medium text-ink-700">
                     或從行程裡的地點照片挑選
                   </p>
                   <div className="mt-2 grid grid-cols-4 gap-2">
@@ -171,7 +171,7 @@ export default function CoverImagePicker({
                         key={url}
                         type="button"
                         onClick={() => apply(url)}
-                        className="overflow-hidden rounded-lg border border-slate-200 hover:border-brand-400"
+                        className="overflow-hidden rounded-lg border border-line hover:border-brand-400"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt="" className="h-14 w-full object-cover" />
@@ -186,7 +186,7 @@ export default function CoverImagePicker({
                   value={customUrl}
                   onChange={(e) => setCustomUrl(e.target.value)}
                   placeholder="或貼上圖片網址"
-                  className="min-w-0 flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
+                  className="min-w-0 flex-1 rounded-md border border-line px-2 py-1 text-sm"
                 />
                 <button
                   type="submit"
@@ -209,7 +209,7 @@ export default function CoverImagePicker({
                 <button
                   type="button"
                   onClick={closeAll}
-                  className="ml-auto text-xs text-slate-500 hover:underline"
+                  className="ml-auto text-xs text-ink-500 hover:underline"
                 >
                   關閉
                 </button>

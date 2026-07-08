@@ -121,7 +121,7 @@ function PlaceDetailsModal({
             type="button"
             onClick={onClose}
             aria-label="關閉"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -137,13 +137,13 @@ function PlaceDetailsModal({
         )}
 
         {isLoading && (
-          <p className="mt-4 text-sm text-slate-500">載入中…</p>
+          <p className="mt-4 text-sm text-ink-500">載入中…</p>
         )}
 
         {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
 
         {provider !== "google" && (
-          <p className="mt-4 text-sm text-slate-500">
+          <p className="mt-4 text-sm text-ink-500">
             這筆資料不是來自 Google，暫時沒有電話、營業時間、評論等詳細資訊。
           </p>
         )}
@@ -154,7 +154,7 @@ function PlaceDetailsModal({
               <Star className="h-4 w-4 fill-amber-500" />
               {(details?.rating ?? fallback.rating)!.toFixed(1)}
               {details?.userRatingCount != null && (
-                <span className="text-slate-500">
+                <span className="text-ink-500">
                   （{details.userRatingCount} 則評論）
                 </span>
               )}
@@ -162,8 +162,8 @@ function PlaceDetailsModal({
           )}
 
           {(details?.address ?? fallback.address) && (
-            <p className="flex items-start gap-2 text-slate-700">
-              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+            <p className="flex items-start gap-2 text-ink-700">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
               {details?.address ?? fallback.address}
             </p>
           )}
@@ -173,7 +173,7 @@ function PlaceDetailsModal({
               href={`tel:${details.phoneNumber}`}
               className="flex items-center gap-2 text-ink-700 hover:text-brand-600"
             >
-              <Phone className="h-4 w-4 text-slate-400" />
+              <Phone className="h-4 w-4 text-ink-400" />
               {details.phoneNumber}
             </a>
           )}
@@ -202,8 +202,8 @@ function PlaceDetailsModal({
           )}
 
           {details?.weekdayDescriptions && details.weekdayDescriptions.length > 0 && (
-            <details className="text-slate-600">
-              <summary className="cursor-pointer text-slate-700">
+            <details className="text-ink-700">
+              <summary className="cursor-pointer text-ink-700">
                 查看完整營業時間
               </summary>
               <ul className="mt-1 space-y-0.5 pl-1">
@@ -232,15 +232,15 @@ function PlaceDetailsModal({
 
           {details && details.reviews.length > 0 && (
             <div>
-              <p className="font-medium text-slate-700">評論</p>
+              <p className="font-medium text-ink-700">評論</p>
               <div className="mt-2 space-y-3">
                 {details.reviews.map((r, i) => (
-                  <div key={i} className="rounded-lg bg-slate-50 p-3">
+                  <div key={i} className="rounded-lg bg-paper-alt p-3">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-slate-700">
+                      <span className="font-medium text-ink-700">
                         {r.authorName}
                       </span>
-                      <span className="shrink-0 text-xs text-slate-400">
+                      <span className="shrink-0 text-xs text-ink-400">
                         {r.relativeTime}
                       </span>
                     </div>
@@ -251,7 +251,7 @@ function PlaceDetailsModal({
                       </p>
                     )}
                     {r.text && (
-                      <p className="mt-1 line-clamp-4 text-slate-600">{r.text}</p>
+                      <p className="mt-1 line-clamp-4 text-ink-700">{r.text}</p>
                     )}
                   </div>
                 ))}
@@ -264,7 +264,7 @@ function PlaceDetailsModal({
               href={details.googleMapsUri}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-slate-200 py-2 text-brand-600 hover:bg-slate-50"
+              className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-line py-2 text-brand-600 hover:bg-paper-alt"
             >
               <ExternalLink className="h-4 w-4" />
               在 Google Maps 開啟
@@ -274,7 +274,7 @@ function PlaceDetailsModal({
       </div>
 
       {footer && (
-        <div className="shrink-0 border-t border-slate-200 p-3">{footer}</div>
+        <div className="shrink-0 border-t border-line p-3">{footer}</div>
       )}
     </ModalOverlay>
   );

@@ -101,7 +101,7 @@ function dueDateBadge(dueDate: string | null, isDone: boolean) {
     );
   }
   return (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">
+    <span className="rounded-full bg-paper-alt px-2 py-0.5 text-xs text-ink-500">
       {displayDate}
     </span>
   );
@@ -145,19 +145,19 @@ function ItemEditForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3"
+      className="mt-2 flex flex-col gap-2 rounded-lg border border-line bg-paper-alt p-3"
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="項目名稱"
-        className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+        className="rounded-md border border-line px-2 py-1 text-sm"
       />
       <div className="flex flex-wrap gap-2">
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as ChecklistCategoryValue)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+          className="rounded-md border border-line px-2 py-1 text-sm"
         >
           {CHECKLIST_CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
@@ -169,12 +169,12 @@ function ItemEditForm({
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+          className="rounded-md border border-line px-2 py-1 text-sm"
         />
         <select
           value={assignedToId}
           onChange={(e) => setAssignedToId(e.target.value)}
-          className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+          className="rounded-md border border-line px-2 py-1 text-sm"
         >
           <option value="">未指派</option>
           {members.map((m) => (
@@ -189,7 +189,7 @@ function ItemEditForm({
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         placeholder="備註"
-        className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+        className="rounded-md border border-line px-2 py-1 text-sm"
       />
       <div className="flex gap-2">
         <button
@@ -203,7 +203,7 @@ function ItemEditForm({
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50"
+          className="rounded-md border border-line px-3 py-1 text-xs text-ink-700 hover:bg-paper-alt"
         >
           取消
         </button>
@@ -246,12 +246,12 @@ function SortableChecklistItem({
       style={style}
       {...(canEdit ? attributes : {})}
       {...(canEdit ? listeners : {})}
-      className={`group relative touch-manipulation rounded-lg border border-slate-100 bg-surface p-2.5 select-none [-webkit-touch-callout:none] ${
+      className={`group relative touch-manipulation rounded-lg border border-line bg-surface p-2.5 select-none [-webkit-touch-callout:none] ${
         isDragging ? "shadow-lg" : ""
       }`}
     >
       {canEdit && (
-        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+        <span className="absolute left-1 top-1/2 -translate-y-1/2 text-ink-400 opacity-0 transition-opacity group-hover:opacity-100">
           <GripVertical className="h-4 w-4" />
         </span>
       )}
@@ -266,7 +266,7 @@ function SortableChecklistItem({
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors disabled:opacity-50 ${
             item.isDone
               ? "border-brand-600 bg-brand-600"
-              : "border-slate-300 bg-surface hover:border-brand-400"
+              : "border-line-strong bg-surface hover:border-brand-400"
           }`}
         >
           <Check
@@ -278,7 +278,7 @@ function SortableChecklistItem({
         <div className="min-w-0 flex-1">
           <p
             className={`text-sm font-medium ${
-              item.isDone ? "text-slate-400 line-through" : "text-ink-900"
+              item.isDone ? "text-ink-400 line-through" : "text-ink-900"
             }`}
           >
             {item.title}
@@ -286,13 +286,13 @@ function SortableChecklistItem({
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {dueDateBadge(item.dueDate, item.isDone)}
             {item.assignedToName && (
-              <span className="flex items-center gap-1 rounded-full bg-slate-100 py-0.5 pr-2 pl-0.5 text-xs text-slate-600">
+              <span className="flex items-center gap-1 rounded-full bg-paper-alt py-0.5 pr-2 pl-0.5 text-xs text-ink-700">
                 <Avatar name={item.assignedToName} avatarUrl={item.assignedToAvatarUrl} size="sm" />
                 {item.assignedToName}
               </span>
             )}
           </div>
-          {item.note && <p className="mt-1 text-xs text-slate-500">{item.note}</p>}
+          {item.note && <p className="mt-1 text-xs text-ink-500">{item.note}</p>}
         </div>
         {canEdit && (
           <div className="flex shrink-0 items-center gap-1">
@@ -447,7 +447,7 @@ export default function ChecklistTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+      <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-ink-700">
             已完成 {doneCount} / {total}
@@ -486,7 +486,7 @@ export default function ChecklistTab({
         return (
           <div
             key={category}
-            className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm"
+            className="rounded-xl border border-line bg-surface p-4 shadow-sm"
           >
             <h3
               className={`flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
@@ -537,7 +537,7 @@ export default function ChecklistTab({
       )}
 
       {canEdit && (
-        <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+        <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
           {showAddForm ? (
             <form onSubmit={handleAddSubmit} className="flex flex-col gap-2">
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -545,12 +545,12 @@ export default function ChecklistTab({
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="新增項目名稱"
-                  className="flex-1 rounded-md border border-slate-200 px-2 py-1.5 text-sm"
+                  className="flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
                 />
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as ChecklistCategoryValue)}
-                  className="rounded-md border border-slate-200 px-2 py-1.5 text-sm"
+                  className="rounded-md border border-line px-2 py-1.5 text-sm"
                 >
                   {CHECKLIST_CATEGORY_ORDER.map((c) => (
                     <option key={c} value={c}>
@@ -570,7 +570,7 @@ export default function ChecklistTab({
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="flex items-center gap-1 rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
+                  className="flex items-center gap-1 rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 hover:bg-paper-alt"
                 >
                   <X className="h-3.5 w-3.5" />
                   取消

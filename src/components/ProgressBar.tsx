@@ -14,7 +14,7 @@ export default function ProgressBar({
       aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={`h-2 overflow-hidden rounded-full bg-slate-100 ${className ?? ""}`}
+      className={`h-2 overflow-hidden rounded-full bg-paper-alt ${className ?? ""}`}
     >
       <div
         className="h-full rounded-full bg-brand-500 transition-all duration-300"

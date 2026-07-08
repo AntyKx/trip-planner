@@ -30,7 +30,7 @@ export default function AppModal({
       titleId={titleId}
       panelClassName={`flex max-h-[85vh] w-full ${maxWidthClassName} flex-col overflow-hidden`}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 p-4">
+      <div className="flex items-center justify-between gap-3 border-b border-line p-4">
         <h2 id={titleId} className="min-w-0 truncate text-base font-bold text-ink-900">
           {title}
         </h2>
@@ -38,13 +38,13 @@ export default function AppModal({
           type="button"
           onClick={onClose}
           aria-label="關閉"
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-slate-400 hover:text-slate-700"
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
         >
           <X className="h-5 w-5" />
         </button>
       </div>
       <div className="overflow-y-auto p-4">{children}</div>
-      {footer && <div className="border-t border-slate-200 p-4">{footer}</div>}
+      {footer && <div className="border-t border-line p-4">{footer}</div>}
     </ModalOverlay>
   );
 }

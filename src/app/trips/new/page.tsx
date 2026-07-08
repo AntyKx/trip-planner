@@ -58,7 +58,7 @@ export default function NewTripPage() {
       <AppCard className="mt-6 p-5">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="title" className="block text-sm font-medium text-ink-700">
               行程名稱
             </label>
             <input
@@ -67,13 +67,13 @@ export default function NewTripPage() {
               onChange={(e) => setTitle(e.target.value)}
               required
               placeholder="例如：東京五日自由行"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-base"
+              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
             />
           </div>
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label htmlFor="startDate" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="startDate" className="block text-sm font-medium text-ink-700">
                 開始日期
               </label>
               <input
@@ -82,11 +82,11 @@ export default function NewTripPage() {
                 required
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-base"
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
               />
             </div>
             <div className="flex-1">
-              <label htmlFor="endDate" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="endDate" className="block text-sm font-medium text-ink-700">
                 結束日期
               </label>
               <input
@@ -96,7 +96,7 @@ export default function NewTripPage() {
                 min={startDate || undefined}
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-base"
+                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
               />
             </div>
           </div>

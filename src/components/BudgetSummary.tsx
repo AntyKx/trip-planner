@@ -17,12 +17,12 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+      <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
           <Wallet className="h-4 w-4" />
           預算統計
         </h3>
-        <p className="mt-3 text-sm text-slate-400">
+        <p className="mt-3 text-sm text-ink-400">
           還沒有任何花費紀錄，編輯項目時可以填寫費用。
         </p>
       </div>
@@ -45,7 +45,7 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+    <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
         <Wallet className="h-4 w-4" />
         預算統計
@@ -63,7 +63,7 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
                 .map(([category, amount]) => (
                   <li
                     key={category}
-                    className="flex items-center justify-between text-xs text-slate-600"
+                    className="flex items-center justify-between text-xs text-ink-700"
                   >
                     <span>{CATEGORY_LABEL[category] ?? category}</span>
                     <span>{amount.toLocaleString()}</span>

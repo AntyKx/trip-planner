@@ -132,7 +132,7 @@ export default function CollaboratorsPanel({
 
   return (
     <AppCard className="p-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
         <Users className="h-4 w-4" />
         共同協作者
       </h3>
@@ -146,8 +146,8 @@ export default function CollaboratorsPanel({
             <div className="flex min-w-0 items-center gap-2">
               <Avatar name={c.name} avatarUrl={c.avatarUrl} />
               <div className="min-w-0">
-                <span className="font-medium text-slate-700">{c.name}</span>
-                <span className="ml-2 text-xs text-slate-600">{c.email}</span>
+                <span className="font-medium text-ink-700">{c.name}</span>
+                <span className="ml-2 text-xs text-ink-700">{c.email}</span>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ export default function CollaboratorsPanel({
                   onChange={(e) =>
                     handleRoleChange(c.email, e.target.value as "EDITOR" | "VIEWER")
                   }
-                  className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-xs text-slate-600 disabled:opacity-50"
+                  className="rounded-full border border-line bg-paper-alt px-2 py-0.5 text-xs text-ink-700 disabled:opacity-50"
                 >
                   <option value="EDITOR">可編輯</option>
                   <option value="VIEWER">僅檢視</option>
@@ -183,7 +183,7 @@ export default function CollaboratorsPanel({
         ))}
 
         {collaborators.length === 0 && (
-          <p className="text-sm text-slate-600">還沒有共同協作者。</p>
+          <p className="text-sm text-ink-700">還沒有共同協作者。</p>
         )}
       </ul>
 
@@ -199,12 +199,12 @@ export default function CollaboratorsPanel({
               type="email"
               required
               placeholder="邀請夥伴的 email"
-              className="flex-1 rounded-md border border-slate-200 px-2 py-1 text-sm"
+              className="flex-1 rounded-md border border-line px-2 py-1 text-sm"
             />
             <select
               name="role"
               defaultValue="EDITOR"
-              className="rounded-md border border-slate-200 px-2 py-1 text-sm"
+              className="rounded-md border border-line px-2 py-1 text-sm"
             >
               <option value="EDITOR">可編輯</option>
               <option value="VIEWER">僅檢視</option>
@@ -220,9 +220,9 @@ export default function CollaboratorsPanel({
 
           {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
 
-          <div className="mt-4 border-t border-slate-100 pt-4">
+          <div className="mt-4 border-t border-line pt-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+              <span className="flex items-center gap-1.5 text-xs font-medium text-ink-700">
                 <Link2 className="h-3.5 w-3.5" />
                 分享連結
               </span>
@@ -232,7 +232,7 @@ export default function CollaboratorsPanel({
                 onClick={shareEnabled ? handleDisableShare : handleEnableShare}
                 className={`rounded-md px-2.5 py-1 text-xs disabled:opacity-50 ${
                   shareEnabled
-                    ? "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "border border-line text-ink-700 hover:bg-paper-alt"
                     : "bg-brand-600 text-white hover:bg-brand-700"
                 }`}
               >
@@ -243,14 +243,14 @@ export default function CollaboratorsPanel({
             {shareEnabled && (
               <div className="mt-2 flex flex-col gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-600">連結權限：</span>
+                  <span className="text-xs text-ink-700">連結權限：</span>
                   <select
                     value={shareRole ?? "EDITOR"}
                     disabled={isSharePending}
                     onChange={(e) =>
                       handleShareRoleChange(e.target.value as "EDITOR" | "VIEWER")
                     }
-                    className="rounded-md border border-slate-200 px-2 py-1 text-xs"
+                    className="rounded-md border border-line px-2 py-1 text-xs"
                   >
                     <option value="EDITOR">可編輯</option>
                     <option value="VIEWER">僅檢視</option>
@@ -261,12 +261,12 @@ export default function CollaboratorsPanel({
                     readOnly
                     value={shareUrl}
                     onFocus={(e) => e.target.select()}
-                    className="min-w-0 flex-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-600"
+                    className="min-w-0 flex-1 rounded-md border border-line bg-paper-alt px-2 py-1 text-xs text-ink-700"
                   />
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="flex shrink-0 items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs hover:bg-slate-50"
+                    className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
                   >
                     {copied ? (
                       <Check className="h-3.5 w-3.5 text-emerald-600" />
@@ -276,7 +276,7 @@ export default function CollaboratorsPanel({
                     {copied ? "已複製" : "複製"}
                   </button>
                 </div>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-ink-500">
                   任何人拿到這個連結，登入後就會自動加入為協作者。
                 </p>
               </div>

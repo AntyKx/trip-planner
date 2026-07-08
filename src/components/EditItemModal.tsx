@@ -234,7 +234,7 @@ export default function EditItemModal({
           type="button"
           onClick={onClose}
           aria-label="關閉"
-          className="flex min-h-11 min-w-11 items-center justify-center text-slate-400 hover:text-slate-700"
+          className="flex min-h-11 min-w-11 items-center justify-center text-ink-400 hover:text-ink-700"
         >
           <X className="h-5 w-5" />
         </button>
@@ -242,14 +242,14 @@ export default function EditItemModal({
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
         <div>
-          <label htmlFor="edit-item-type" className="block text-xs font-medium text-slate-600">
+          <label htmlFor="edit-item-type" className="block text-xs font-medium text-ink-700">
             類型
           </label>
           <select
             id="edit-item-type"
             value={type}
             onChange={(e) => setType(e.target.value as ItemTypeValue)}
-            className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
           >
             {TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -261,7 +261,7 @@ export default function EditItemModal({
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label htmlFor="edit-item-start" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="edit-item-start" className="block text-xs font-medium text-ink-700">
               開始時間
             </label>
             <input
@@ -269,7 +269,7 @@ export default function EditItemModal({
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
             />
             {startTimeWarning && (
               <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
@@ -279,7 +279,7 @@ export default function EditItemModal({
             )}
           </div>
           <div className="flex-1">
-            <label htmlFor="edit-item-end" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="edit-item-end" className="block text-xs font-medium text-ink-700">
               結束時間
             </label>
             <input
@@ -287,7 +287,7 @@ export default function EditItemModal({
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
             />
             {endTimeWarning && (
               <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
@@ -300,7 +300,7 @@ export default function EditItemModal({
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label htmlFor="edit-item-cost" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="edit-item-cost" className="block text-xs font-medium text-ink-700">
               費用
             </label>
             <input
@@ -312,18 +312,18 @@ export default function EditItemModal({
               value={cost}
               onChange={(e) => setCost(e.target.value)}
               placeholder="選填"
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
             />
           </div>
           <div className="w-20">
-            <label htmlFor="edit-item-currency" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="edit-item-currency" className="block text-xs font-medium text-ink-700">
               幣別
             </label>
             <select
               id="edit-item-currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
             >
               {CURRENCY_OPTIONS.map((c) => (
                 <option key={c} value={c}>
@@ -333,7 +333,7 @@ export default function EditItemModal({
             </select>
           </div>
           <div className="flex-1">
-            <label htmlFor="edit-item-cost-category" className="block text-xs font-medium text-slate-600">
+            <label htmlFor="edit-item-cost-category" className="block text-xs font-medium text-ink-700">
               費用類型
             </label>
             <select
@@ -342,7 +342,7 @@ export default function EditItemModal({
               onChange={(e) =>
                 setCostCategory(e.target.value as CostCategoryValue)
               }
-              className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
             >
               {COST_CATEGORY_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -354,7 +354,7 @@ export default function EditItemModal({
         </div>
 
         <div>
-          <label htmlFor="edit-item-confirmation" className="block text-xs font-medium text-slate-600">
+          <label htmlFor="edit-item-confirmation" className="block text-xs font-medium text-ink-700">
             {CONFIRMATION_LABEL[type]}
           </label>
           <input
@@ -363,12 +363,12 @@ export default function EditItemModal({
             value={confirmationNumber}
             onChange={(e) => setConfirmationNumber(e.target.value)}
             placeholder="選填"
-            className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
           />
         </div>
 
         <div>
-          <label htmlFor="edit-item-note" className="block text-xs font-medium text-slate-600">
+          <label htmlFor="edit-item-note" className="block text-xs font-medium text-ink-700">
             備註{!item && "（例如：買票、集合、Check-in）"}
           </label>
           <textarea
@@ -377,7 +377,7 @@ export default function EditItemModal({
             onChange={(e) => setNote(e.target.value)}
             rows={3}
             placeholder={item ? "" : "買票 / 集合 / Check-in ..."}
-            className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
           />
         </div>
 

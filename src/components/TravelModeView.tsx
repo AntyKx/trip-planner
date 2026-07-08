@@ -26,7 +26,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
 
       {day.weather ? (
         <div className="mt-1 space-y-0.5">
-          <p className="flex items-center gap-1 text-sm text-slate-600">
+          <p className="flex items-center gap-1 text-sm text-ink-700">
             <span>{weatherLabel(day.weather.weatherCode).emoji}</span>
             <span>
               {Math.round(day.weather.maxTemp)}° / {Math.round(day.weather.minTemp)}°
@@ -39,7 +39,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
           ))}
         </div>
       ) : (
-        <p className="mt-1 text-xs text-slate-400">{WEATHER_UNAVAILABLE_MESSAGE}</p>
+        <p className="mt-1 text-xs text-ink-400">{WEATHER_UNAVAILABLE_MESSAGE}</p>
       )}
 
       {nextStop && (
@@ -85,7 +85,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
               className={`flex items-center gap-3 rounded-xl border p-3 ${
                 item.id === nextStop?.id
                   ? "border-brand-400 bg-brand-50"
-                  : "border-slate-200 bg-surface"
+                  : "border-line bg-surface"
               }`}
             >
               <TypeIcon className="h-4 w-4 shrink-0 text-ink-500" />

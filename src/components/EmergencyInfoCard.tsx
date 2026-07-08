@@ -31,9 +31,9 @@ export default function EmergencyInfoCard({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+    <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-slate-700">
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
           <ShieldAlert className="h-4 w-4" />
           緊急資訊
         </h3>
@@ -56,7 +56,7 @@ export default function EmergencyInfoCard({
             onChange={(e) => setText(e.target.value)}
             rows={5}
             placeholder="護照影本存放位置、保險保單號碼、緊急聯絡人..."
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-line px-3 py-2 text-sm"
           />
           <div className="flex gap-2">
             <button
@@ -74,18 +74,18 @@ export default function EmergencyInfoCard({
                 setIsEditing(false);
               }}
               disabled={isPending}
-              className="rounded-md border border-slate-200 px-3 py-1 text-sm text-slate-600 hover:bg-slate-50"
+              className="rounded-md border border-line px-3 py-1 text-sm text-ink-700 hover:bg-paper-alt"
             >
               取消
             </button>
           </div>
         </div>
       ) : emergencyInfo ? (
-        <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">
+        <p className="mt-3 whitespace-pre-wrap text-sm text-ink-700">
           {emergencyInfo}
         </p>
       ) : (
-        <p className="mt-3 text-sm text-slate-400">
+        <p className="mt-3 text-sm text-ink-400">
           尚未填寫，可記錄護照影本位置、保險資訊、緊急聯絡人等。
         </p>
       )}

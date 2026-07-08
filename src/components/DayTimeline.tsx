@@ -181,14 +181,14 @@ function SortableItemCard({
         {...(canEdit ? listeners : {})}
         className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
-        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-slate-200 bg-surface"}`}
+        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"}`}
       >
         {/* Visual-only drag affordance — the whole card is already the drag
             handle (better for touch than a tiny target), this just shows
             intent on hover for mouse users. Hidden for VIEWER since
             attributes/listeners aren't attached at all in that case. */}
         {canEdit && (
-          <span className="absolute left-1 top-1/2 -translate-y-1/2 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="absolute left-1 top-1/2 -translate-y-1/2 text-ink-400 opacity-0 transition-opacity group-hover:opacity-100">
             <GripVertical className="h-4 w-4" />
           </span>
         )}
@@ -293,7 +293,7 @@ function SortableItemCard({
       </div>
 
       {hasNextStop && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-ink-700">
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-line bg-paper-alt px-3 py-1.5 text-sm text-ink-700">
           {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0 text-ink-500" />}
           {canEdit ? (
             <select
@@ -307,7 +307,7 @@ function SortableItemCard({
               // utilities live in a named CSS layer and that override
               // doesn't. At the resulting 16px, "大眾運輸" plus the native
               // dropdown arrow no longer fit in a narrower width.
-              className="w-28 shrink-0 rounded-md border border-slate-200 bg-surface px-1 py-0.5 text-xs disabled:opacity-50"
+              className="w-28 shrink-0 rounded-md border border-line bg-surface px-1 py-0.5 text-xs disabled:opacity-50"
             >
               {TRAVEL_MODE_OPTIONS.map((opt) => {
                 const disabled =
@@ -830,7 +830,7 @@ export default function DayTimeline({
             <button
               type="button"
               onClick={() => setEditingItem("new")}
-              className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50"
+              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt"
             >
               <Plus className="h-3.5 w-3.5" />
               新增自訂項目
@@ -842,7 +842,7 @@ export default function DayTimeline({
               title={
                 !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
               }
-              className="flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-2 text-xs text-ink-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Waypoints className="h-3.5 w-3.5" />
               自動安排最順路線
@@ -898,7 +898,7 @@ export default function DayTimeline({
                 <button
                   type="button"
                   onClick={() => setEditingItem("new")}
-                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-ink-700 hover:bg-slate-50"
+                  className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-700 hover:bg-paper-alt"
                 >
                   <Plus className="h-4 w-4" />
                   新增自訂項目

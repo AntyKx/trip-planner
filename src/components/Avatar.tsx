@@ -51,7 +51,7 @@ export function AvatarStack({
       ))}
       {overflow > 0 && (
         <div
-          className={`flex shrink-0 items-center justify-center rounded-full bg-slate-200 font-medium text-slate-600 ring-2 ring-white ${SIZE_CLASSES[size]}`}
+          className={`flex shrink-0 items-center justify-center rounded-full bg-line font-medium text-ink-700 ring-2 ring-white ${SIZE_CLASSES[size]}`}
         >
           +{overflow}
         </div>

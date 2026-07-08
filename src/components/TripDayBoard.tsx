@@ -124,7 +124,7 @@ export default function TripDayBoard({
         <div
           role="tablist"
           aria-label="檢視模式"
-          className="hidden rounded-lg border border-slate-200 bg-surface p-1 text-sm lg:inline-flex"
+          className="hidden rounded-lg border border-line bg-surface p-1 text-sm lg:inline-flex"
         >
           {modeTabs.map((tab) => (
             <button
@@ -136,7 +136,7 @@ export default function TripDayBoard({
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
                 mode === tab.key
                   ? "bg-brand-600 text-white"
-                  : "text-ink-700 hover:bg-slate-50"
+                  : "text-ink-700 hover:bg-paper-alt"
               }`}
             >
               <tab.icon className="h-4 w-4" />
@@ -169,7 +169,7 @@ export default function TripDayBoard({
       <nav
         role="tablist"
         aria-label="檢視模式"
-        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-slate-200 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         {modeTabs.map((tab) => (
           <button
@@ -295,7 +295,7 @@ export default function TripDayBoard({
                 </p>
               ))
             ) : (
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-ink-400">
                 {WEATHER_UNAVAILABLE_MESSAGE}
               </p>
             )}
@@ -328,7 +328,7 @@ export default function TripDayBoard({
 
       {/* Map panel — always scoped to the day selected above */}
       <aside className="space-y-4 lg:sticky lg:top-10">
-        <div className="h-fit rounded-xl border border-slate-200 bg-surface p-4 shadow-sm">
+        <div className="h-fit rounded-xl border border-line bg-surface p-4 shadow-sm">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <MapIcon className="h-4 w-4" />
             地圖{selectedDay && ` · Day ${selectedDay.dayIndex}`}
