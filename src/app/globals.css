@@ -134,22 +134,29 @@ input[type="radio"] {
    missed. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-paper: #14181f;
-    --color-paper-alt: #1a1f28;
-    --color-surface: #1f2530;
+    /* Warm espresso/leather-journal family (same hue direction as the
+       light theme's cream paper and warm ink), not a cool navy/slate —
+       a cool blue-black dark palette reads as a somber late-night
+       dashboard, which fights this app's warm travel-journal identity.
+       Light mode: cream paper + dark ink. Dark mode inverts that as dark
+       espresso paper + cream ink, keeping the same warm hue family both
+       ways instead of switching families for dark mode. */
+    --color-paper: #1e1811;
+    --color-paper-alt: #251e15;
+    --color-surface: #2b2318;
 
-    --color-ink-500: #a39a91;
-    --color-ink-700: #d6d0c8;
-    --color-ink-900: #f2ede6;
+    --color-ink-500: #b0a08c;
+    --color-ink-700: #ddd0bd;
+    --color-ink-900: #f8f1e6;
 
-    --color-slate-50: #232a35;
-    --color-slate-100: #29313d;
-    --color-slate-200: #333d4b;
-    --color-slate-300: #454f5e;
-    --color-slate-400: #7c8a9c;
-    --color-slate-500: #98a5b5;
-    --color-slate-600: #b3bdc9;
-    --color-slate-700: #cbd3dc;
+    --color-slate-50: #282013;
+    --color-slate-100: #2e2517;
+    --color-slate-200: #3b2f1d;
+    --color-slate-300: #4c3d26;
+    --color-slate-400: #8c7a5c;
+    --color-slate-500: #a8967a;
+    --color-slate-600: #c3b294;
+    --color-slate-700: #ddceb0;
   }
 }
 
