@@ -17,22 +17,8 @@ import {
   WEATHER_UNAVAILABLE_MESSAGE,
   type DailyWeather,
 } from "@/lib/weather";
-import { getNextStop } from "@/lib/timeline";
+import { getNextStop, localTodayStr } from "@/lib/timeline";
 import { formatTime } from "@/lib/labels";
-
-// day.date is a timezone-independent calendar date string ("YYYY-MM-DD" —
-// see ExplorePage/page.tsx's toISOString().slice(0,10) round-trip off a
-// UTC-midnight Date), so "today" has to be read from the viewer's actual
-// local calendar date (getFullYear/Month/Date), not toISOString(), which
-// reads back the UTC date and drifts a day behind local in the early
-// morning for any UTC+ timezone (e.g. 00:00-08:00 in Taipei, UTC+8).
-function localTodayStr(): string {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
 
 export type BoardDay = {
   id: string;

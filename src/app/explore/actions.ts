@@ -63,6 +63,6 @@ export async function getFavorites(): Promise<PlaceResult[]> {
     category: place.category,
     photoUrl: place.photoUrl ?? undefined,
     suggestedType: place.suggestedType === "RESTAURANT" ? "RESTAURANT" : "PLACE",
-    country: place.country === "TW" ? "TW" : "JP",
+    country: place.country,
   }));
 }

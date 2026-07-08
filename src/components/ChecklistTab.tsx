@@ -49,6 +49,7 @@ import ProgressBar from "./ProgressBar";
 import { Avatar } from "./Avatar";
 import EmptyState from "./EmptyState";
 import { useToast } from "./Toast";
+import { localTodayStr } from "@/lib/timeline";
 
 export type ChecklistItemView = {
   id: string;
@@ -72,7 +73,7 @@ function getDueStatus(
   isDone: boolean
 ): "overdue" | "soon" | "normal" | null {
   if (!dueDate || isDone) return null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localTodayStr();
   const due = dueDate.slice(0, 10);
   if (due < today) return "overdue";
   const daysUntil =

@@ -20,6 +20,20 @@ function wallClockNowMs(): number {
   );
 }
 
+// day.date / checklist dueDate are calendar-only date strings ("YYYY-MM-DD")
+// meant to represent the viewer's local calendar day, not a UTC instant —
+// toISOString() reads back the UTC date, which drifts a day behind local in
+// any UTC+ timezone during the early morning (e.g. Taipei, UTC+8, local
+// 00:00-08:00 is still "yesterday" in UTC). Read the local getters directly
+// instead so "today" always matches the viewer's actual wall calendar.
+export function localTodayStr(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function getNextStop(
   items: TimelineItem[],
   // Injectable for tests; production callers use the wall-clock default.
