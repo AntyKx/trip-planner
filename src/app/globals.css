@@ -29,6 +29,21 @@ input[type="radio"] {
 }
 
 @theme {
+  /* Geist is loaded via next/font (see layout.tsx) but was never actually
+     wired up — next/font only registers --font-geist-sans as a CSS
+     variable, it doesn't make Tailwind use it. Overriding --font-sans here
+     is what makes Tailwind's preflight actually apply it site-wide (see
+     --default-font-family in tailwindcss/theme.css). Geist itself has no
+     CJK glyphs, so Traditional Chinese text falls through to explicit
+     platform fonts (PingFang TC on iOS/macOS, Microsoft JhengHei on
+     Windows, Noto Sans TC as a broad web fallback) before Tailwind's own
+     generic system-ui/sans-serif tail.
+  */
+  --font-sans:
+    var(--font-geist-sans), "PingFang TC", "Microsoft JhengHei", "Noto Sans TC",
+    ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+
   /* 旅行藍主色 */
   --color-brand-50: #eef4fb;
   --color-brand-100: #dbe8f6;

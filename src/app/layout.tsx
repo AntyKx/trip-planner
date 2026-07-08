@@ -33,7 +33,12 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    // "black-translucent" lets the webview draw behind the notch/status
+    // bar (needed for the full-bleed top strip below) instead of iOS
+    // reserving that space with its own opaque bar — only takes effect
+    // when installed to the home screen (standalone mode); a no-op in
+    // regular Safari tabs.
+    statusBarStyle: "black-translucent",
     title: "Trip Planner",
   },
 };
@@ -50,6 +55,10 @@ export const viewport: Viewport = {
   // iOS from needing to zoom in the first place.
   width: "device-width",
   initialScale: 1,
+  // Required for env(safe-area-inset-*) to report real values instead of
+  // 0 — without this, both the status-bar strip and every safe-area
+  // padding below (Toast, InstallPrompt, VersionBadge) is a no-op.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -62,7 +71,22 @@ export default function RootLayout({
       lang="zh-TW"
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper text-ink-900">
+      <body className="min-h-full flex flex-col bg-paper pt-[env(safe-area-inset-top)] text-ink-900">
+        {/* Solid strip behind the notch/status bar — with statusBarStyle
+            "black-translucent" the webview draws full-bleed under it, so
+            without this the status bar icons (always white/light) would
+            sit directly on whatever the page's own background happens to
+            be, which is unreadable against this app's light paper tone.
+            A solid color (not a translucent gradient) keeps the icons
+            legible regardless of what's on the page — deterministic
+            rather than something that needs checking on a real device.
+            body's own top padding (env safe-area-inset-top) above reserves
+            the exact same height, so page content starts right where this
+            strip ends. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-brand-800"
+        />
         <ToastProvider>
           <UpdateChecker />
           {children}
