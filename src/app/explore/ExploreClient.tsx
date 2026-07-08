@@ -358,18 +358,11 @@ export default function ExploreClient({
         <div className="sticky top-0 z-10 -mx-4 mt-4 space-y-3 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
           {mode === "search" && (
             <>
+              {/* Region comes before the search box — it narrows/biases
+                  what the search box's own results mean, so picking it
+                  first (not after typing a query) matches the order
+                  someone actually reasons through the search in. */}
               <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="搜尋景點、餐廳關鍵字，例如：淺草 拉麵"
-                  className="flex-1 rounded-lg border border-line px-3 py-2 text-base"
-                />
-                <AppButton type="submit" isLoading={isSearching} icon={<Search className="h-4 w-4" />}>
-                  {isSearching ? "搜尋中..." : "搜尋"}
-                </AppButton>
-              </form>
-              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}
@@ -384,10 +377,19 @@ export default function ExploreClient({
                     value={customRegion}
                     onChange={(e) => setCustomRegion(e.target.value)}
                     placeholder="輸入國家或城市，例如：法國、首爾"
-                    className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-base sm:w-40 sm:flex-none"
+                    className="min-w-0 rounded-lg border border-line px-3 py-2 text-base sm:w-40"
                   />
                 )}
-              </div>
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="搜尋景點、餐廳關鍵字，例如：淺草 拉麵"
+                  className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-base"
+                />
+                <AppButton type="submit" isLoading={isSearching} icon={<Search className="h-4 w-4" />}>
+                  {isSearching ? "搜尋中..." : "搜尋"}
+                </AppButton>
+              </form>
               {region === "OTHER" && (
                 <p className="text-xs text-ink-500">
                   非日本／台灣地區採關鍵字搜尋，範圍與精確度會依 Google 判斷，建議在關鍵字或地區中加上城市名。
