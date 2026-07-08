@@ -4,6 +4,7 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-08
 
+- **專業 App 質感優化：iOS 安全區域、沉浸式狀態列、正式套用 Geist 字體**：(1) Toast／安裝提示／版本徽章補上 `env(safe-area-inset-*)`，避免在有 Home Indicator 的 iPhone 全螢幕模式下被系統手勢列擋到；(2) 狀態列改成沉浸式（`black-translucent` + `viewportFit: cover`），notch 區域鋪一條純色深藍條確保狀態列圖示可讀，body 補等高 padding 避免內容被蓋到（沒有實機測試，需要之後在裝置上確認）；(3) 發現 Geist 字體其實從未真正套用——`next/font` 只註冊了 CSS 變數，沒接上 Tailwind 的 `--font-sans`，全站一直顯示的是 Tailwind 內建系統字體。補上覆寫，中文補齊 PingFang TC／Microsoft JhengHei／Noto Sans TC 平台字體 fallback。
 - **修正收藏清單國家標籤錯誤**：`getFavorites()` 把非台灣的收藏地點一律標成「JP」，是支援自訂地區搜尋之前的舊邏輯殘留（當時只會是台灣或日本），改成直接回傳實際國碼。
 - **修正檢查清單到期判斷的時區 bug**：跟先前修過的 Day Tabs「今天」判斷是同一類問題——用 `toISOString()` 讀 UTC 日期，在台灣時區凌晨 0-8 點之間會少算一天，導致昨天到期的項目暫時不會標記逾期。抽成共用的 `localTodayStr()`，Day Tabs 和檢查清單改用同一份。
 - **調整重複「搜尋景點」按鈕的取捨**：原本有三個功能相同的入口（頁面上方常駐按鈕、工具列、空狀態）；先拿掉空狀態那個，後來確認使用者實際在意的是工具列那顆（永遠跟「新增自訂項目」排在一起，比較顯眼），改成拿掉工具列的、把空狀態那組放回來。
