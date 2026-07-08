@@ -1,14 +1,20 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
-export type AppButtonVariant = "primary" | "secondary" | "ghost" | "danger";
+export type AppButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "dangerFilled";
 export type AppButtonSize = "sm" | "md";
 
+// danger is the ghost-style destructive action (safe to show inline,
+// e.g. next to other actions); dangerFilled is reserved for the actual
+// confirm step of a destructive flow (a confirm dialog's real "delete"
+// button), so a destructive action never looks equally loud everywhere
+// it appears.
 const VARIANT_CLASSES: Record<AppButtonVariant, string> = {
   primary: "bg-brand-800 text-white hover:bg-brand-700",
-  secondary: "border border-slate-200 bg-surface text-ink-700 hover:bg-slate-50",
+  secondary: "border border-line bg-surface text-ink-700 hover:bg-paper-alt",
   ghost: "text-brand-600 hover:bg-brand-50",
   danger: "text-red-600 hover:bg-red-50",
+  dangerFilled: "bg-red-600 text-white hover:bg-red-700",
 };
 
 const SIZE_CLASSES: Record<AppButtonSize, string> = {
