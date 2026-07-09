@@ -503,6 +503,102 @@ export async function deleteTrip(tripId: string) {
 // thousands of rows instead of failing loudly.
 const MAX_TRIP_DAYS = 180;
 
+export type UpdateTripInfoResult = { ok: true } | { ok: false; error: string };
+
+// Editing the date range after the trip already has TripDay rows is only
+// safe in two shapes: a pure shift (day count unchanged — every existing
+// day just gets its calendar date moved by the same delta, so dayIndex,
+// items, routes, and the anchor all stay attached to the right day) or a
+// full regenerate (day count changed, but only allowed when nothing has
+// been scheduled yet, so there's nothing a day's identity needs to stay
+// attached to). A day-count change once any Item exists would force
+// picking which days to drop/add and what happens to their items — that's
+// a decision only the user should make (by clearing the days themselves
+// first), not something to guess at silently.
+export async function updateTripInfo(
+  tripId: string,
+  title: string,
+  startDateStr: string,
+  endDateStr: string
+): Promise<UpdateTripInfoResult> {
+  await requireTripOwner(tripId);
+
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return { ok: false, error: "請輸入行程名稱" };
+
+  // Date-only strings parse as UTC midnight, matching how TripDay.date and
+  // Trip.startDate/endDate are already stored (see createTrip).
+  const startDate = new Date(startDateStr);
+  const endDate = new Date(endDateStr);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return { ok: false, error: "請選擇有效的日期" };
+  }
+  if (endDate < startDate) {
+    return { ok: false, error: "結束日期不能早於開始日期" };
+  }
+
+  const newDayCount =
+    Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  if (newDayCount > MAX_TRIP_DAYS) {
+    return {
+      ok: false,
+      error: `行程天數不能超過 ${MAX_TRIP_DAYS} 天，請確認日期是否正確`,
+    };
+  }
+
+  const days = await prisma.tripDay.findMany({
+    where: { tripId },
+    orderBy: { dayIndex: "asc" },
+    select: { id: true, _count: { select: { items: true } } },
+  });
+  const hasItems = days.some((d) => d._count.items > 0);
+
+  if (hasItems && newDayCount !== days.length) {
+    return {
+      ok: false,
+      error: "行程已經有排定的景點，無法調整總天數，請先清空多餘日期的行程內容再修改",
+    };
+  }
+
+  if (newDayCount === days.length) {
+    await prisma.$transaction([
+      prisma.trip.update({ where: { id: tripId }, data: { title: trimmedTitle, startDate, endDate } }),
+      ...days.map((day, i) =>
+        prisma.tripDay.update({
+          where: { id: day.id },
+          data: { date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000) },
+        })
+      ),
+    ]);
+  } else {
+    // Only reachable when hasItems is false, so dropping every existing
+    // TripDay row and rebuilding from scratch can't lose any scheduled
+    // content.
+    await prisma.$transaction([
+      prisma.tripDay.deleteMany({ where: { tripId } }),
+      prisma.trip.update({
+        where: { id: tripId },
+        data: {
+          title: trimmedTitle,
+          startDate,
+          endDate,
+          days: {
+            create: Array.from({ length: newDayCount }, (_, i) => ({
+              date: new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000),
+              dayIndex: i + 1,
+            })),
+          },
+        },
+      }),
+    ]);
+  }
+
+  revalidatePath(`/trips/${tripId}`);
+  revalidatePath(`/trips/${tripId}/settings`);
+  revalidatePath("/");
+  return { ok: true };
+}
+
 export type CreateTripResult = { ok: false; error: string };
 
 export async function createTrip(

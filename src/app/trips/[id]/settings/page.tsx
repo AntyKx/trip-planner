@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import AppCard from "@/components/AppCard";
 import DeleteTripButton from "@/components/DeleteTripButton";
+import TripInfoForm from "@/components/TripInfoForm";
 
 export default async function TripSettingsPage({
   params,
@@ -17,7 +18,14 @@ export default async function TripSettingsPage({
     getCurrentUser(),
     prisma.trip.findUnique({
       where: { id },
-      select: { id: true, title: true, ownerId: true },
+      select: {
+        id: true,
+        title: true,
+        ownerId: true,
+        startDate: true,
+        endDate: true,
+        days: { select: { _count: { select: { items: true } } } },
+      },
     }),
   ]);
 
@@ -26,6 +34,8 @@ export default async function TripSettingsPage({
   // Settings (and the delete button inside it) are owner-only — anyone
   // else lands back on the trip page instead of a dead end.
   if (trip.ownerId !== user.id) redirect(`/trips/${id}`);
+
+  const hasItems = trip.days.some((d) => d._count.items > 0);
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
@@ -38,7 +48,17 @@ export default async function TripSettingsPage({
       </Link>
 
       <h1 className="mt-3 text-2xl font-bold text-ink-900">行程設定</h1>
-      <p className="mt-1 text-sm text-ink-500">{trip.title}</p>
+
+      <AppCard padding="lg" className="mt-6">
+        <TripInfoForm
+          tripId={trip.id}
+          initialTitle={trip.title}
+          initialStartDate={trip.startDate.toISOString().slice(0, 10)}
+          initialEndDate={trip.endDate.toISOString().slice(0, 10)}
+          dayCount={trip.days.length}
+          hasItems={hasItems}
+        />
+      </AppCard>
 
       <AppCard
         padding="lg"
