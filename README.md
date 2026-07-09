@@ -29,7 +29,6 @@
 ## 已知限制
 
 - 沒有登入系統，`Collaborator` 只是名單管理，不做實際權限檢查
-- Neon 免費方案的 Point-in-Time Restore 只有 6 小時歷史，資料庫沒有其他備援
 - 只有 `provider: "google"` 的地點能看到即時詳情（電話/評論/營業時間），HotPepper、TDX 等其他 provider 目前只存基本資料
 - Prisma 透過 D1（如果之後改部署到 Cloudflare）不支援 transaction，目前 Postgres 上沒有這個限制
 
