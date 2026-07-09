@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Settings } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
-import DeleteTripButton from "@/components/DeleteTripButton";
 import CoverImagePicker from "@/components/CoverImagePicker";
 import { AvatarStack } from "@/components/Avatar";
 import { getCurrentUser } from "@/lib/auth";
@@ -129,9 +129,20 @@ export default async function TripDetailPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-      <Link href="/" className="text-sm text-ink-700 hover:underline">
-        ← 回我的行程
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/" className="text-sm text-ink-700 hover:underline">
+          ← 回我的行程
+        </Link>
+        {isOwner && (
+          <Link
+            href={`/trips/${trip.id}/settings`}
+            aria-label="行程設定"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
+        )}
+      </div>
 
       <section className="relative mt-3 h-56 overflow-hidden rounded-card-lg shadow-soft sm:h-72">
         {!coverImage && (
@@ -168,10 +179,6 @@ export default async function TripDetailPage({
           </div>
         </div>
       </section>
-
-      <div className="mt-4 flex justify-end">
-        {isOwner && <DeleteTripButton tripId={trip.id} tripTitle={trip.title} />}
-      </div>
 
       <GoogleMapsProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}>
         <div className="mt-8">
