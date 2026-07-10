@@ -6,6 +6,7 @@ import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Plus } fro
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
+import JournalSharePanel from "./JournalSharePanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
@@ -44,6 +45,8 @@ export default function TripDayBoard({
   shareEnabled,
   shareToken,
   shareRole,
+  journalShareEnabled,
+  journalShareToken,
   checklistItems,
 }: {
   tripId: string;
@@ -56,6 +59,8 @@ export default function TripDayBoard({
   shareEnabled: boolean;
   shareToken: string | null;
   shareRole: "EDITOR" | "VIEWER" | null;
+  journalShareEnabled: boolean;
+  journalShareToken: string | null;
   checklistItems: ChecklistItemView[];
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
@@ -380,6 +385,13 @@ export default function TripDayBoard({
           shareEnabled={shareEnabled}
           shareToken={shareToken}
           shareRole={shareRole}
+        />
+
+        <JournalSharePanel
+          tripId={tripId}
+          canManage={isOwner}
+          journalShareEnabled={journalShareEnabled}
+          journalShareToken={journalShareToken}
         />
       </aside>
       </div>

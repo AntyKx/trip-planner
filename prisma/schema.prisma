@@ -146,6 +146,15 @@ model Trip {
   shareToken   String? @unique
   shareRole    Role?
 
+  // Separate from the collaborator share link above — this one is for the
+  // read-only "旅遊書" (travel scrapbook) page, meant to be sent to family
+  // and friends who don't have (and shouldn't need) an account just to
+  // look at photos and stories. No role, no auto-join-as-collaborator: the
+  // public /journal/[token] page never touches auth at all, it just
+  // checks this flag + token directly.
+  journalShareEnabled Boolean @default(false)
+  journalShareToken   String? @unique
+
   checklistItems ChecklistItem[]
 }
 
@@ -194,6 +203,12 @@ model Item {
   cost               Float?
   currency           String? // "TWD" | "JPY" | "USD" | ...
   costCategory       CostCategory?
+  // Longer-form story text for the "旅遊書" travel-book page — deliberately
+  // separate from `note` above, which is short logistics scribbles written
+  // while planning (gate codes, "arrive early"), not something meant to be
+  // read by someone you're sharing photos with after the trip.
+  journalText        String?
+  photos             ItemPhoto[]
   // Drives the home page's "最後更新" (last updated) per trip — itinerary
   // edits (add/edit/reorder) touch Item rows far more often than the Trip
   // row itself, so Trip.updatedAt alone would look stale even right after
@@ -204,6 +219,21 @@ model Item {
   routesTo   Route[] @relation("RouteTo")
 
   anchorForDay TripDay? @relation("TripDayAnchorItem")
+}
+
+// User's own trip photos attached to a stop, for the "旅遊書" page — distinct
+// from Place.photoUrl (a single stock photo from Google/hotpepper search
+// results), since a journal needs the traveler's actual pictures, and more
+// than one per stop.
+model ItemPhoto {
+  id        String   @id @default(cuid())
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
 }
 
 model Place {

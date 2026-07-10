@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
+  BookOpen,
   Compass,
   ExternalLink,
   GripVertical,
@@ -62,6 +63,7 @@ import {
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
+import JournalEditModal, { type JournalPhoto } from "./JournalEditModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
@@ -78,6 +80,8 @@ export type TimelineItem = {
   cost: number | null;
   currency: string | null;
   costCategory: string | null;
+  journalText: string | null;
+  photos: JournalPhoto[];
   place: {
     name: string;
     address: string | null;
@@ -121,6 +125,7 @@ function SortableItemCard({
   isLoadingJapanHint,
   onDelete,
   onEdit,
+  onOpenJournal,
   onModeChange,
   onViewAlternatives,
   onOpenJapanHint,
@@ -137,6 +142,7 @@ function SortableItemCard({
   isLoadingJapanHint: boolean;
   onDelete: () => void;
   onEdit: () => void;
+  onOpenJournal: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
   onOpenJapanHint: () => void;
@@ -239,6 +245,21 @@ function SortableItemCard({
               )}
             </div>
             <div className="flex shrink-0 items-center gap-1">
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={onOpenJournal}
+                  aria-label="編輯遊記"
+                  title="遊記與照片"
+                  className={`flex min-h-11 min-w-11 items-center justify-center hover:text-brand-600 ${
+                    item.journalText || item.photos.length > 0
+                      ? "text-brand-600"
+                      : "text-ink-500"
+                  }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                </button>
+              )}
               {canEdit && (
                 <button
                   type="button"
@@ -429,6 +450,7 @@ export default function DayTimeline({
   const [editingItem, setEditingItem] = useState<TimelineItem | "new" | null>(
     null
   );
+  const [journalItem, setJournalItem] = useState<TimelineItem | null>(null);
   const sensors = useSensors(
     // Mouse: quick distance-based activation (no scroll to conflict with).
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -760,10 +782,25 @@ export default function DayTimeline({
           cost: result.cost,
           currency: result.currency,
           costCategory: result.costCategory,
+          journalText: null,
+          photos: [],
           place: null,
         },
       ];
     });
+  }
+
+  function handleJournalSaved(
+    itemId: string,
+    result: { journalText: string | null; photos: JournalPhoto[] }
+  ) {
+    setItems((prev) =>
+      prev.map((i) =>
+        i.id === itemId
+          ? { ...i, journalText: result.journalText, photos: result.photos }
+          : i
+      )
+    );
   }
 
   // Splices the anchor card into local state immediately instead of
@@ -792,6 +829,8 @@ export default function DayTimeline({
           cost: null,
           currency: null,
           costCategory: null,
+          journalText: null,
+          photos: [],
           place,
         },
         ...prev,
@@ -880,6 +919,18 @@ export default function DayTimeline({
         />
       )}
 
+      {journalItem && (
+        <JournalEditModal
+          tripId={tripId}
+          itemId={journalItem.id}
+          itemTitle={journalItem.place?.name ?? journalItem.note ?? "遊記"}
+          journalText={journalItem.journalText}
+          photos={journalItem.photos}
+          onClose={() => setJournalItem(null)}
+          onSaved={(result) => handleJournalSaved(journalItem.id, result)}
+        />
+      )}
+
       {items.length === 0 ? (
         <EmptyState
           icon={Compass}
@@ -944,6 +995,7 @@ export default function DayTimeline({
                   }
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
+                  onOpenJournal={() => setJournalItem(item)}
                   onModeChange={(mode) => {
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) handleLegModeChange(item, to, mode);

@@ -13,6 +13,8 @@ function item(id: string, startTime: string | null): TimelineItem {
     cost: null,
     currency: null,
     costCategory: null,
+    journalText: null,
+    photos: [],
     place: null,
   };
 }

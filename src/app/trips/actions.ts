@@ -364,6 +364,29 @@ export async function updateTripShareRole(tripId: string, role: "EDITOR" | "VIEW
   revalidatePath(`/trips/${tripId}`);
 }
 
+// Separate token/toggle from the collaborator share link above — this one
+// gates the public, no-login "旅遊書" page (see src/app/journal/[token]).
+// Owner-only, same as the other share settings.
+export async function enableJournalShare(tripId: string) {
+  await requireTripOwner(tripId);
+  const journalShareToken = randomUUID();
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { journalShareEnabled: true, journalShareToken },
+  });
+  revalidatePath(`/trips/${tripId}/settings`);
+  return journalShareToken;
+}
+
+export async function disableJournalShare(tripId: string) {
+  await requireTripOwner(tripId);
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { journalShareEnabled: false, journalShareToken: null },
+  });
+  revalidatePath(`/trips/${tripId}/settings`);
+}
+
 export async function deleteItem(tripId: string, itemId: string) {
   await requireTripEditor(tripId);
   // If this item is some day's anchor card, unlink it first — TripDay's FK
@@ -466,6 +489,52 @@ export async function addCustomItem(
 
   revalidatePath(`/trips/${tripId}`);
   return { id: item.id };
+}
+
+export async function updateItemJournalText(
+  tripId: string,
+  itemId: string,
+  journalText: string
+) {
+  await requireTripEditor(tripId);
+  // updateMany (not update) so this scopes to tripId via the day relation —
+  // an itemId belonging to another trip just updates zero rows.
+  await prisma.item.updateMany({
+    where: { id: itemId, day: { tripId } },
+    data: { journalText: journalText.trim() || null },
+  });
+  revalidatePath(`/trips/${tripId}`);
+}
+
+export async function addItemPhoto(tripId: string, itemId: string, url: string) {
+  await requireTripEditor(tripId);
+  // The item has no direct tripId column (only via day), so confirm
+  // ownership with a scoped lookup before the create — ItemPhoto.create
+  // has no `where` clause to scope through the way updateMany/deleteMany
+  // do, so this check is the only thing standing between a caller who
+  // supplies someone else's itemId and attaching a photo to that trip.
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, day: { tripId } },
+    select: {
+      id: true,
+      photos: { select: { sortOrder: true }, orderBy: { sortOrder: "desc" }, take: 1 },
+    },
+  });
+  if (!item) redirect("/");
+
+  const photo = await prisma.itemPhoto.create({
+    data: { itemId, url, sortOrder: (item.photos[0]?.sortOrder ?? -1) + 1 },
+  });
+  revalidatePath(`/trips/${tripId}`);
+  return { id: photo.id, url: photo.url };
+}
+
+export async function deleteItemPhoto(tripId: string, itemId: string, photoId: string) {
+  await requireTripEditor(tripId);
+  await prisma.itemPhoto.deleteMany({
+    where: { id: photoId, itemId, item: { day: { tripId } } },
+  });
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function updateEmergencyInfo(tripId: string, text: string) {

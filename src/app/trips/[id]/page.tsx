@@ -39,7 +39,10 @@ export default async function TripDetailPage({
           include: {
             items: {
               orderBy: { sortOrder: "asc" },
-              include: { place: true },
+              include: {
+                place: true,
+                photos: { orderBy: { sortOrder: "asc" } },
+              },
             },
             routes: true,
           },
@@ -202,6 +205,8 @@ export default async function TripDetailPage({
             shareEnabled={trip.shareEnabled}
             shareToken={trip.shareToken}
             shareRole={trip.shareRole === "OWNER" ? null : trip.shareRole}
+            journalShareEnabled={trip.journalShareEnabled}
+            journalShareToken={trip.journalShareToken}
             checklistItems={trip.checklistItems.map((c) => ({
               id: c.id,
               title: c.title,
@@ -234,6 +239,8 @@ export default async function TripDetailPage({
                 cost: item.cost,
                 currency: item.currency,
                 costCategory: item.costCategory,
+                journalText: item.journalText,
+                photos: item.photos.map((photo) => ({ id: photo.id, url: photo.url })),
                 place: item.place
                   ? {
                       name: item.place.name,
