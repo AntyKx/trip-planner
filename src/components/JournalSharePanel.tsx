@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { BookOpen, Copy, Check } from "lucide-react";
+import { BookOpen, Copy, Check, Eye } from "lucide-react";
 import { enableJournalShare, disableJournalShare } from "@/app/trips/actions";
 import AppCard from "./AppCard";
 import { useToast } from "./Toast";
@@ -64,6 +65,14 @@ export default function JournalSharePanel({
       <p className="mt-1 text-xs text-ink-500">
         把有寫遊記或上傳照片的景點整理成一頁可分享的旅遊書，任何拿到連結的人都能看，不需要登入帳號。
       </p>
+
+      <Link
+        href={`/trips/${tripId}/journal`}
+        className="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:underline"
+      >
+        <Eye className="h-3.5 w-3.5" />
+        預覽旅遊書（不需要先開啟分享）
+      </Link>
 
       <div className="mt-3 flex items-center justify-between gap-2">
         <span className="text-xs font-medium text-ink-700">公開連結</span>

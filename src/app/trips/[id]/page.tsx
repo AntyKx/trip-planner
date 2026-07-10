@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Settings, CalendarDays } from "lucide-react";
+import { Settings, CalendarDays, BookOpen } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
@@ -137,6 +137,14 @@ export default async function TripDetailPage({
           ← 回我的行程
         </Link>
         <div className="flex items-center gap-1">
+          <Link
+            href={`/trips/${trip.id}/journal`}
+            aria-label="預覽旅遊書"
+            title="預覽旅遊書"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
+          >
+            <BookOpen className="h-5 w-5" />
+          </Link>
           <a
             href={`/trips/${trip.id}/ics`}
             aria-label="匯出行事曆"

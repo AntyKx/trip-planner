@@ -1,17 +1,24 @@
-import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { requireTripRole } from "@/lib/auth";
 import JournalBook from "@/components/JournalBook";
 
-// Public, no-login "旅遊書" (travel scrapbook) page — the token itself is the
-// only credential, so this deliberately never touches getCurrentUser()/
-// requireUser(). Unlisted but guessable-token content shouldn't end up in
-// search results, hence the noindex below.
-export const dynamic = "force-dynamic";
+// Signed-in preview of the "旅遊書" — same query/rendering as the public
+// /journal/[token] page, just reached by tripId + session instead of the
+// share token, so the owner/collaborators can see exactly what a public
+// viewer would see without first turning sharing on.
+export default async function JournalPreviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  await requireTripRole(id);
 
-async function getJournalTrip(token: string) {
-  return prisma.trip.findFirst({
-    where: { journalShareToken: token, journalShareEnabled: true },
+  const trip = await prisma.trip.findUnique({
+    where: { id },
     select: {
       title: true,
       startDate: true,
@@ -44,32 +51,17 @@ async function getJournalTrip(token: string) {
       },
     },
   });
-}
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}): Promise<Metadata> {
-  const { token } = await params;
-  const trip = await getJournalTrip(token);
-  return {
-    title: trip ? `${trip.title} · 旅遊書` : "旅遊書",
-    robots: { index: false, follow: false },
-  };
-}
-
-export default async function JournalPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
-  const trip = await getJournalTrip(token);
   if (!trip) notFound();
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-2xl bg-paper px-4 pb-16 pt-8 sm:px-6">
+      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <Link href={`/trips/${id}`} className="flex items-center gap-1 hover:underline">
+          <ArrowLeft className="h-3.5 w-3.5" />
+          回行程
+        </Link>
+        <span>預覽模式 · 只有你看得到這個畫面，公開連結需要另外開啟</span>
+      </div>
       <JournalBook trip={trip} />
     </main>
   );
