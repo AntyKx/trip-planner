@@ -55,13 +55,13 @@ export default async function JournalPreviewPage({
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-2xl bg-paper px-4 pb-16 pt-8 sm:px-6">
-      <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-        <Link href={`/trips/${id}`} className="flex items-center gap-1 hover:underline">
-          <ArrowLeft className="h-3.5 w-3.5" />
-          回行程
-        </Link>
-        <span>預覽模式 · 只有你看得到這個畫面，公開連結需要另外開啟</span>
-      </div>
+      <Link
+        href={`/trips/${id}`}
+        className="mb-3 flex items-center gap-1 text-sm text-ink-700 hover:underline"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        回行程
+      </Link>
       <JournalBook trip={trip} />
     </main>
   );
