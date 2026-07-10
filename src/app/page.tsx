@@ -1,14 +1,14 @@
 import Link from "next/link";
-import { Plus, Luggage, MapPinned, LogOut, ChevronRight } from "lucide-react";
+import { Plus, Luggage, MapPinned, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
-import { signOutAction } from "@/app/login/actions";
 import { formatRelativeTime } from "@/lib/labels";
 import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
 import SectionHeader from "@/components/SectionHeader";
 import EmptyState from "@/components/EmptyState";
 import GreetingHero from "@/components/GreetingHero";
+import SignOutButton from "@/components/SignOutButton";
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
@@ -169,15 +169,7 @@ export default async function TripsPage() {
           </div>
         )}
         <span className="max-w-[8rem] truncate">{user.name}</span>
-        <form action={signOutAction}>
-          <button
-            type="submit"
-            className="flex items-center gap-1 text-xs text-ink-500 hover:text-brand-600"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            登出
-          </button>
-        </form>
+        <SignOutButton />
       </div>
 
       <section className="mt-2">

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Settings } from "lucide-react";
+import { Settings, CalendarDays } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
@@ -133,15 +133,25 @@ export default async function TripDetailPage({
         <Link href="/" className="text-sm text-ink-700 hover:underline">
           ← 回我的行程
         </Link>
-        {isOwner && (
-          <Link
-            href={`/trips/${trip.id}/settings`}
-            aria-label="行程設定"
+        <div className="flex items-center gap-1">
+          <a
+            href={`/trips/${trip.id}/ics`}
+            aria-label="匯出行事曆"
+            title="匯出行事曆（.ics）"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
           >
-            <Settings className="h-5 w-5" />
-          </Link>
-        )}
+            <CalendarDays className="h-5 w-5" />
+          </a>
+          {isOwner && (
+            <Link
+              href={`/trips/${trip.id}/settings`}
+              aria-label="行程設定"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
+            >
+              <Settings className="h-5 w-5" />
+            </Link>
+          )}
+        </div>
       </div>
 
       <section className="relative mt-3 h-56 overflow-hidden rounded-card-lg shadow-soft sm:h-72">

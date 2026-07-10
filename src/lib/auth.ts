@@ -25,7 +25,7 @@ export type TripRole = "OWNER" | "EDITOR" | "VIEWER";
 // rather than trusted from the client. The trip detail page doesn't call
 // this — it already fetches ownerId + collaborators as part of its own
 // deep query and derives the role from that instead of querying twice.
-async function requireTripRole(
+export async function requireTripRole(
   tripId: string
 ): Promise<{ userId: string; role: TripRole }> {
   const store = await cookies();

@@ -4,6 +4,8 @@ import InstallPrompt from "@/components/InstallPrompt";
 import UpdateChecker from "@/components/UpdateChecker";
 import VersionBadge from "@/components/VersionBadge";
 import ToastProvider from "@/components/Toast";
+import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
+import OfflineBanner from "@/components/OfflineBanner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -87,8 +89,10 @@ export default function RootLayout({
           aria-hidden="true"
           className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-brand-800"
         />
+        <ServiceWorkerRegister />
         <ToastProvider>
           <UpdateChecker />
+          <OfflineBanner />
           {children}
           <InstallPrompt />
           <VersionBadge />
