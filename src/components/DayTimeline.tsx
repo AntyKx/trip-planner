@@ -238,6 +238,12 @@ function SortableItemCard({
                   本日起點
                 </span>
               )}
+              {(item.journalText || item.photos.length > 0) && (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-600">
+                  <BookOpen className="h-3 w-3" />
+                  遊記{item.photos.length > 0 && ` · ${item.photos.length}張照片`}
+                </span>
+              )}
               {item.cost != null && (
                 <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
                   {item.currency} {item.cost.toLocaleString()}
@@ -251,9 +257,9 @@ function SortableItemCard({
                   onClick={onOpenJournal}
                   aria-label="編輯遊記"
                   title="遊記與照片"
-                  className={`flex min-h-11 min-w-11 items-center justify-center hover:text-brand-600 ${
+                  className={`flex min-h-11 min-w-11 items-center justify-center hover:text-rose-600 ${
                     item.journalText || item.photos.length > 0
-                      ? "text-brand-600"
+                      ? "text-rose-600"
                       : "text-ink-500"
                   }`}
                 >
