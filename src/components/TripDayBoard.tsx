@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
@@ -65,6 +66,7 @@ export default function TripDayBoard({
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel" | "checklist">("edit");
+  const shouldReduceMotion = useReducedMotion();
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant
   // the whole trip page waited on the slowest of N external calls.
@@ -102,6 +104,9 @@ export default function TripDayBoard({
   // date" — moved here so it follows whichever Day Tab is selected instead
   // (client state the server-rendered hero can't see).
   const selectedDayNextStop = selectedDay ? getNextStop(selectedDay.timelineItems) : null;
+  const SelectedWeatherIcon = selectedDay?.weather
+    ? weatherLabel(selectedDay.weather.weatherCode).icon
+    : null;
 
   function switchToTravelMode() {
     const today = daysWithWeather.find((d) => d.date === todayStr);
@@ -230,10 +235,10 @@ export default function TripDayBoard({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setSelectedDayId(day.id)}
-                className={`shrink-0 snap-start rounded-t-lg border-b-2 px-3 py-2 text-left min-w-[76px] transition ${
+                className={`relative shrink-0 snap-start rounded-t-lg px-3 py-2 text-left min-w-[76px] transition ${
                   isActive
-                    ? "border-brand-600 bg-brand-50 text-brand-700"
-                    : "border-transparent text-ink-700 hover:bg-paper-alt"
+                    ? "bg-brand-50 text-brand-700"
+                    : "text-ink-700 hover:bg-paper-alt"
                 }`}
               >
                 <div className="flex items-center gap-1 text-sm font-semibold">
@@ -244,14 +249,26 @@ export default function TripDayBoard({
                       aria-hidden="true"
                     />
                   )}
-                  {day.weather && (
-                    <span className="text-xs">{weatherLabel(day.weather.weatherCode).emoji}</span>
-                  )}
+                  {day.weather &&
+                    (() => {
+                      const WeatherIcon = weatherLabel(day.weather.weatherCode).icon;
+                      return <WeatherIcon className="h-3.5 w-3.5" />;
+                    })()}
                 </div>
                 <div className={`mt-0.5 text-xs ${isActive ? "text-brand-600" : "text-ink-500"}`}>
                   {day.date.slice(5)}
                   {isToday && "・今天"}
                 </div>
+                {isActive && (
+                  <motion.div
+                    layoutId="day-tab-indicator"
+                    aria-hidden="true"
+                    className="absolute inset-x-0 bottom-0 h-0.5 bg-brand-600"
+                    transition={
+                      shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }
+                    }
+                  />
+                )}
               </button>
             );
           })}
@@ -264,9 +281,9 @@ export default function TripDayBoard({
                 <span>
                   Day {selectedDay.dayIndex} · {selectedDay.date}
                 </span>
-                {selectedDay.weather && (
+                {selectedDay.weather && SelectedWeatherIcon && (
                   <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
-                    <span>{weatherLabel(selectedDay.weather.weatherCode).emoji}</span>
+                    <SelectedWeatherIcon className="h-4 w-4" />
                     <span>
                       {Math.round(selectedDay.weather.maxTemp)}° /{" "}
                       {Math.round(selectedDay.weather.minTemp)}°

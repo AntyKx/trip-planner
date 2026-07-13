@@ -1,35 +1,52 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Sun,
+  CloudSun,
+  Cloud,
+  CloudFog,
+  CloudDrizzle,
+  CloudRain,
+  CloudSnow,
+  CloudLightning,
+  Snowflake,
+  Thermometer,
+} from "lucide-react";
+
 export type DailyWeather = {
   maxTemp: number;
   minTemp: number;
   weatherCode: number;
 };
 
-const WEATHER_LABEL: Record<number, { emoji: string; label: string }> = {
-  0: { emoji: "☀️", label: "晴朗" },
-  1: { emoji: "🌤️", label: "大致晴朗" },
-  2: { emoji: "⛅", label: "多雲" },
-  3: { emoji: "☁️", label: "陰天" },
-  45: { emoji: "🌫️", label: "有霧" },
-  48: { emoji: "🌫️", label: "有霧" },
-  51: { emoji: "🌦️", label: "毛毛雨" },
-  53: { emoji: "🌦️", label: "毛毛雨" },
-  55: { emoji: "🌦️", label: "毛毛雨" },
-  61: { emoji: "🌧️", label: "小雨" },
-  63: { emoji: "🌧️", label: "中雨" },
-  65: { emoji: "🌧️", label: "大雨" },
-  71: { emoji: "🌨️", label: "小雪" },
-  73: { emoji: "🌨️", label: "中雪" },
-  75: { emoji: "❄️", label: "大雪" },
-  80: { emoji: "🌦️", label: "陣雨" },
-  81: { emoji: "🌧️", label: "陣雨" },
-  82: { emoji: "⛈️", label: "強陣雨" },
-  95: { emoji: "⛈️", label: "雷雨" },
-  96: { emoji: "⛈️", label: "雷雨" },
-  99: { emoji: "⛈️", label: "強雷雨" },
+// Icons (not emoji — rendered inconsistently across platforms and clashed
+// with the rest of the app's lucide-based icon language) keyed by Open-Meteo
+// WMO weather codes.
+const WEATHER_LABEL: Record<number, { icon: LucideIcon; label: string }> = {
+  0: { icon: Sun, label: "晴朗" },
+  1: { icon: CloudSun, label: "大致晴朗" },
+  2: { icon: CloudSun, label: "多雲" },
+  3: { icon: Cloud, label: "陰天" },
+  45: { icon: CloudFog, label: "有霧" },
+  48: { icon: CloudFog, label: "有霧" },
+  51: { icon: CloudDrizzle, label: "毛毛雨" },
+  53: { icon: CloudDrizzle, label: "毛毛雨" },
+  55: { icon: CloudDrizzle, label: "毛毛雨" },
+  61: { icon: CloudRain, label: "小雨" },
+  63: { icon: CloudRain, label: "中雨" },
+  65: { icon: CloudRain, label: "大雨" },
+  71: { icon: CloudSnow, label: "小雪" },
+  73: { icon: CloudSnow, label: "中雪" },
+  75: { icon: Snowflake, label: "大雪" },
+  80: { icon: CloudDrizzle, label: "陣雨" },
+  81: { icon: CloudRain, label: "陣雨" },
+  82: { icon: CloudLightning, label: "強陣雨" },
+  95: { icon: CloudLightning, label: "雷雨" },
+  96: { icon: CloudLightning, label: "雷雨" },
+  99: { icon: CloudLightning, label: "強雷雨" },
 };
 
 export function weatherLabel(code: number) {
-  return WEATHER_LABEL[code] ?? { emoji: "🌡️", label: "" };
+  return WEATHER_LABEL[code] ?? { icon: Thermometer, label: "" };
 }
 
 const RAIN_CODES = new Set([51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99]);

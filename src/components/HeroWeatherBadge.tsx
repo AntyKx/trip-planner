@@ -27,9 +27,11 @@ export default function HeroWeatherBadge({
 
   if (!weather) return null;
 
+  const WeatherIcon = weatherLabel(weather.weatherCode).icon;
+
   return (
-    <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
-      {weatherLabel(weather.weatherCode).emoji}{" "}
+    <span className="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+      <WeatherIcon className="h-3.5 w-3.5" />
       {Math.round(weather.maxTemp)}° / {Math.round(weather.minTemp)}°
     </span>
   );

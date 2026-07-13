@@ -17,6 +17,7 @@ function navUrl(lat: number, lng: number) {
 export default function TravelModeView({ day }: { day: BoardDay }) {
   const items = day.timelineItems;
   const nextStop = getNextStop(items);
+  const WeatherIcon = day.weather ? weatherLabel(day.weather.weatherCode).icon : null;
 
   return (
     <div>
@@ -27,7 +28,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
       {day.weather ? (
         <div className="mt-1 space-y-0.5">
           <p className="flex items-center gap-1 text-sm text-ink-700">
-            <span>{weatherLabel(day.weather.weatherCode).emoji}</span>
+            {WeatherIcon && <WeatherIcon className="h-4 w-4" />}
             <span>
               {Math.round(day.weather.maxTemp)}° / {Math.round(day.weather.minTemp)}°
             </span>
