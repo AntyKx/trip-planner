@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
+import { isOwnBlobUrl, deleteBlobsQuietly } from "@/lib/blob";
+import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { generateChecklistForTrip } from "./[id]/checklistActions";
 
 // requireTripEditor/requireTripOwner only check that the caller has a role
@@ -389,6 +391,13 @@ export async function disableJournalShare(tripId: string) {
 
 export async function deleteItem(tripId: string, itemId: string) {
   await requireTripEditor(tripId);
+  // Journal photo blobs won't be reachable once the cascade removes their
+  // ItemPhoto rows — snapshot the URLs first (same trip scoping as the
+  // delete below) so the files can be cleaned out of Blob storage too.
+  const photos = await prisma.itemPhoto.findMany({
+    where: { itemId, item: { day: { tripId } } },
+    select: { url: true },
+  });
   // If this item is some day's anchor card, unlink it first — TripDay's FK
   // to Item would otherwise block the delete, and this keeps the day's
   // "no anchor set" state consistent when the anchor card is removed via
@@ -399,7 +408,10 @@ export async function deleteItem(tripId: string, itemId: string) {
   });
   // deleteMany (not delete) so this scopes to tripId via the day relation —
   // an itemId belonging to another trip just deletes zero rows.
-  await prisma.item.deleteMany({ where: { id: itemId, day: { tripId } } });
+  const deleted = await prisma.item.deleteMany({ where: { id: itemId, day: { tripId } } });
+  if (deleted.count > 0) {
+    await deleteBlobsQuietly(photos.map((p) => p.url));
+  }
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -501,13 +513,32 @@ export async function updateItemJournalText(
   // an itemId belonging to another trip just updates zero rows.
   await prisma.item.updateMany({
     where: { id: itemId, day: { tripId } },
-    data: { journalText: journalText.trim() || null },
+    // Server-side cap regardless of the textarea's own maxLength — the
+    // action is reachable by direct POST with a payload of any size.
+    data: { journalText: journalText.trim().slice(0, MAX_JOURNAL_TEXT_LENGTH) || null },
   });
   revalidatePath(`/trips/${tripId}`);
 }
 
-export async function addItemPhoto(tripId: string, itemId: string, url: string) {
+export type AddItemPhotoResult =
+  | { ok: true; photo: { id: string; url: string } }
+  | { ok: false; error: string };
+
+export async function addItemPhoto(
+  tripId: string,
+  itemId: string,
+  url: string
+): Promise<AddItemPhotoResult> {
   await requireTripEditor(tripId);
+  // Only accept URLs from this project's own Blob store — the client
+  // normally passes back what /api/upload just returned, but nothing stops
+  // a direct POST with an arbitrary string, which would otherwise get
+  // rendered as an <img src> on the public journal page (hotlinking
+  // whatever host the caller chose).
+  if (!isOwnBlobUrl(url)) {
+    return { ok: false, error: "圖片來源不正確，請重新上傳" };
+  }
+
   // The item has no direct tripId column (only via day), so confirm
   // ownership with a scoped lookup before the create — ItemPhoto.create
   // has no `where` clause to scope through the way updateMany/deleteMany
@@ -517,23 +548,43 @@ export async function addItemPhoto(tripId: string, itemId: string, url: string) 
     where: { id: itemId, day: { tripId } },
     select: {
       id: true,
+      _count: { select: { photos: true } },
       photos: { select: { sortOrder: true }, orderBy: { sortOrder: "desc" }, take: 1 },
     },
   });
   if (!item) redirect("/");
 
+  // The just-uploaded blob is deliberately NOT cleaned up on this reject:
+  // deleting whatever URL a caller hands us on a failure path would let
+  // anyone with editor rights on their own trip delete arbitrary blobs
+  // they learned the URL of (e.g. another trip's photos) by intentionally
+  // triggering this branch. The UI prevents reaching here normally by
+  // disabling upload at the limit; a rare orphan beats a deletion oracle.
+  if (item._count.photos >= MAX_PHOTOS_PER_ITEM) {
+    return { ok: false, error: `一個項目最多 ${MAX_PHOTOS_PER_ITEM} 張照片` };
+  }
+
   const photo = await prisma.itemPhoto.create({
     data: { itemId, url, sortOrder: (item.photos[0]?.sortOrder ?? -1) + 1 },
   });
   revalidatePath(`/trips/${tripId}`);
-  return { id: photo.id, url: photo.url };
+  return { ok: true, photo: { id: photo.id, url: photo.url } };
 }
 
 export async function deleteItemPhoto(tripId: string, itemId: string, photoId: string) {
   await requireTripEditor(tripId);
+  // Fetched (with the same trip scoping as the delete) before deleting so
+  // the underlying blob file can be cleaned up too — DB rows cascade for
+  // free, but Blob storage otherwise accumulates orphaned files forever.
+  const photo = await prisma.itemPhoto.findFirst({
+    where: { id: photoId, itemId, item: { day: { tripId } } },
+    select: { url: true },
+  });
+  if (!photo) return;
   await prisma.itemPhoto.deleteMany({
     where: { id: photoId, itemId, item: { day: { tripId } } },
   });
+  await deleteBlobsQuietly([photo.url]);
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -551,17 +602,39 @@ export async function updateTripCoverImage(
   coverImage: string | null
 ) {
   await requireTripEditor(tripId);
+  const previous = await prisma.trip.findUnique({
+    where: { id: tripId },
+    select: { coverImage: true },
+  });
+  const next = coverImage?.trim() || null;
   await prisma.trip.update({
     where: { id: tripId },
-    data: { coverImage: coverImage?.trim() || null },
+    data: { coverImage: next },
   });
+  // A replaced uploaded cover is unreachable afterwards (nothing else
+  // stores its URL), so clean up the blob file; deleteBlobsQuietly ignores
+  // non-blob covers (place photos, pasted external URLs).
+  if (previous?.coverImage && previous.coverImage !== next) {
+    await deleteBlobsQuietly([previous.coverImage]);
+  }
   revalidatePath(`/trips/${tripId}`);
   revalidatePath("/");
 }
 
 export async function deleteTrip(tripId: string) {
   await requireTripOwner(tripId);
+  // Collected before the delete — the cascade wipes the ItemPhoto rows,
+  // after which there'd be no record of which blob files belonged to this
+  // trip and they'd leak in Blob storage forever.
+  const [trip, photos] = await Promise.all([
+    prisma.trip.findUnique({ where: { id: tripId }, select: { coverImage: true } }),
+    prisma.itemPhoto.findMany({
+      where: { item: { day: { tripId } } },
+      select: { url: true },
+    }),
+  ]);
   await prisma.trip.delete({ where: { id: tripId } });
+  await deleteBlobsQuietly([...photos.map((p) => p.url), trip?.coverImage]);
   revalidatePath("/");
   redirect("/");
 }

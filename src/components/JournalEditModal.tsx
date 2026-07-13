@@ -8,6 +8,7 @@ import {
   addItemPhoto,
   deleteItemPhoto,
 } from "@/app/trips/actions";
+import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { useToast } from "./Toast";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 
@@ -49,6 +50,13 @@ export default function JournalEditModal({
       return;
     }
 
+    // Checked before paying for the upload — the server enforces the same
+    // limit but only after the blob already landed in storage.
+    if (photos.length >= MAX_PHOTOS_PER_ITEM) {
+      setError(`一個項目最多 ${MAX_PHOTOS_PER_ITEM} 張照片`);
+      return;
+    }
+
     setError(null);
     setIsUploading(true);
     try {
@@ -56,8 +64,12 @@ export default function JournalEditModal({
         access: "public",
         handleUploadUrl: "/api/upload",
       });
-      const photo = await addItemPhoto(tripId, itemId, blob.url);
-      setPhotos((prev) => [...prev, photo]);
+      const result = await addItemPhoto(tripId, itemId, blob.url);
+      if (result.ok) {
+        setPhotos((prev) => [...prev, result.photo]);
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
       setError(err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次");
     } finally {
@@ -66,8 +78,17 @@ export default function JournalEditModal({
   }
 
   async function handleDeletePhoto(photoId: string) {
+    // Optimistic removal with rollback — without the catch, a failed
+    // delete left the photo gone from the UI but still saved (it came
+    // back on reload), plus an unhandled rejection.
+    const previous = photos;
     setPhotos((prev) => prev.filter((p) => p.id !== photoId));
-    await deleteItemPhoto(tripId, itemId, photoId);
+    try {
+      await deleteItemPhoto(tripId, itemId, photoId);
+    } catch {
+      setPhotos(previous);
+      setError("刪除照片失敗，請再試一次");
+    }
   }
 
   async function handleSave() {
@@ -115,6 +136,7 @@ export default function JournalEditModal({
             value={journalText}
             onChange={(e) => setJournalText(e.target.value)}
             rows={5}
+            maxLength={MAX_JOURNAL_TEXT_LENGTH}
             placeholder="寫下這裡的回憶……"
             className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
           />
@@ -140,11 +162,17 @@ export default function JournalEditModal({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              disabled={isUploading || photos.length >= MAX_PHOTOS_PER_ITEM}
               className="flex h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line text-ink-500 hover:border-brand-400 hover:text-brand-600 disabled:opacity-50"
             >
               <Camera className="h-5 w-5" />
-              <span className="text-xs">{isUploading ? "上傳中…" : "新增照片"}</span>
+              <span className="text-xs">
+                {isUploading
+                  ? "上傳中…"
+                  : photos.length >= MAX_PHOTOS_PER_ITEM
+                    ? `已達 ${MAX_PHOTOS_PER_ITEM} 張上限`
+                    : "新增照片"}
+              </span>
             </button>
           </div>
           <input
