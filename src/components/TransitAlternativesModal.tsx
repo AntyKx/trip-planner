@@ -1,9 +1,9 @@
 "use client";
 
-import { Footprints, X } from "lucide-react";
+import { Footprints } from "lucide-react";
 import type { TransitAlternative } from "@/lib/routeMode";
 import { VEHICLE_ICON, VEHICLE_LABEL } from "@/lib/labels";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton } from "./ModalOverlay";
 
 export default function TransitAlternativesModal({
   fromName,
@@ -32,14 +32,7 @@ export default function TransitAlternativesModal({
           <h2 id="transit-alternatives-modal-title" className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromName} → {toName}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="關閉"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <ModalCloseButton />
         </div>
 
         <div className="overflow-y-auto p-4">

@@ -13,6 +13,10 @@ import AppBadge from "@/components/AppBadge";
 import AppButton from "@/components/AppButton";
 import IconButton from "@/components/IconButton";
 import EmptyState from "@/components/EmptyState";
+import {
+  NoSearchResultsIllustration,
+  NoFavoritesIllustration,
+} from "@/components/EmptyStateIllustrations";
 import { SearchResultSkeleton } from "@/components/LoadingSkeleton";
 import { useToast } from "@/components/Toast";
 import { TYPE_LABEL } from "@/lib/labels";
@@ -489,7 +493,7 @@ export default function ExploreClient({
 
         {mode === "search" && !isSearching && results.length === 0 && !searchError && (
           <EmptyState
-            icon={Search}
+            illustration={<NoSearchResultsIllustration />}
             title={hasSearched ? "找不到符合的景點" : "輸入關鍵字開始搜尋"}
             description={hasSearched ? "試試其他關鍵字，或換一個地區看看。" : undefined}
           />
@@ -497,7 +501,7 @@ export default function ExploreClient({
 
         {mode === "favorites" && favorites.length === 0 && (
           <EmptyState
-            icon={Heart}
+            illustration={<NoFavoritesIllustration />}
             title="還沒有收藏的地點"
             description="搜尋時點 ♡ 就可以加入收藏。"
           />

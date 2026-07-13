@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect, type ReactNode } from "react";
-import { X, Star, MapPin, Phone, Globe, Clock, ExternalLink } from "lucide-react";
+import { Star, MapPin, Phone, Globe, Clock, ExternalLink } from "lucide-react";
 import { getPlaceDetails, type PlaceDetails } from "@/lib/places";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton } from "./ModalOverlay";
 import PlaceInsightSection from "./PlaceInsightSection";
 
 type Fallback = {
@@ -117,14 +117,7 @@ function PlaceDetailsModal({
           <h2 id="place-details-modal-title" className="text-lg font-bold text-ink-900">
             {displayName}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="關閉"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <ModalCloseButton />
         </div>
 
         {photoUrl && (

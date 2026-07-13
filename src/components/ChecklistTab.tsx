@@ -26,7 +26,6 @@ import {
   X,
   TriangleAlert,
   Check,
-  ClipboardList,
   GripVertical,
 } from "lucide-react";
 import {
@@ -48,6 +47,7 @@ import type { ChecklistCategoryValue } from "@/lib/checklistTemplates";
 import ProgressBar from "./ProgressBar";
 import { Avatar } from "./Avatar";
 import EmptyState from "./EmptyState";
+import { NoChecklistItemsIllustration } from "./EmptyStateIllustrations";
 import { useToast } from "./Toast";
 import { localTodayStr } from "@/lib/timeline";
 
@@ -533,7 +533,7 @@ export default function ChecklistTab({
       })}
 
       {total === 0 && (
-        <EmptyState icon={ClipboardList} title="還沒有清單項目" />
+        <EmptyState illustration={<NoChecklistItemsIllustration />} title="還沒有清單項目" />
       )}
 
       {canEdit && (

@@ -1,8 +1,8 @@
 "use client";
 
-import { ExternalLink, MapPin, X } from "lucide-react";
+import { ExternalLink, MapPin } from "lucide-react";
 import type { JapanTransitStationHint } from "@/app/trips/actions";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton } from "./ModalOverlay";
 
 const WALK_KMH = 4.5;
 
@@ -77,14 +77,7 @@ export default function JapanTransitHintModal({
           <h2 id="japan-transit-hint-modal-title" className="min-w-0 truncate text-base font-bold text-ink-900">
             {fromPlaceName} → {toPlaceName}
           </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="關閉"
-            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <ModalCloseButton />
         </div>
 
         <div className="overflow-y-auto p-4">

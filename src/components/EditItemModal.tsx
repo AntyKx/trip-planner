@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { TriangleAlert, X } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
+import { TriangleAlert } from "lucide-react";
 import {
   updateItem,
   addCustomItem,
@@ -9,7 +9,7 @@ import {
   type CostCategoryValue,
 } from "@/app/trips/actions";
 import { isTimeOutsideHours, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 
 const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
   { value: "PLACE", label: "景點" },
@@ -93,6 +93,7 @@ export default function EditItemModal({
   onClose: () => void;
   onSaved: (result: SavedItemResult) => void;
 }) {
+  const modalRef = useRef<ModalOverlayHandle>(null);
   const [type, setType] = useState<ItemTypeValue>(
     (item?.type as ItemTypeValue) ?? "CUSTOM"
   );
@@ -212,7 +213,7 @@ export default function EditItemModal({
           costCategory: costValue != null ? costCategory : null,
         });
       }
-      onClose();
+      modalRef.current?.requestClose();
     } catch {
       setError("儲存失敗，請再試一次");
     } finally {
@@ -222,6 +223,7 @@ export default function EditItemModal({
 
   return (
     <ModalOverlay
+      ref={modalRef}
       onClose={onClose}
       titleId="edit-item-modal-title"
       panelClassName="w-full max-w-md p-5"
@@ -230,14 +232,7 @@ export default function EditItemModal({
         <h2 id="edit-item-modal-title" className="text-lg font-bold text-ink-900">
           {item ? (item.placeName ?? "編輯項目") : "新增自訂項目"}
         </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="關閉"
-          className="flex min-h-11 min-w-11 items-center justify-center text-ink-400 hover:text-ink-700"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <ModalCloseButton />
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">

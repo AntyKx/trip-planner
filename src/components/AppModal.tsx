@@ -1,8 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { X } from "lucide-react";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton } from "./ModalOverlay";
 
 // Consistent modal chrome (title bar + close button + scrollable body +
 // optional footer) built on top of ModalOverlay, which already handles the
@@ -34,14 +33,7 @@ export default function AppModal({
         <h2 id={titleId} className="min-w-0 truncate text-base font-bold text-ink-900">
           {title}
         </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="關閉"
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center text-ink-400 hover:text-ink-700"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <ModalCloseButton />
       </div>
       <div className="overflow-y-auto p-4">{children}</div>
       {footer && <div className="border-t border-line p-4">{footer}</div>}

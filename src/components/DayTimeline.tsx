@@ -21,7 +21,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   BookOpen,
-  Compass,
   ExternalLink,
   GripVertical,
   MapPin,
@@ -68,6 +67,7 @@ import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
 import EmptyState from "./EmptyState";
+import { NoItemsTodayIllustration } from "./EmptyStateIllustrations";
 import ActionMenu, { type ActionMenuItem } from "./ActionMenu";
 
 export type TimelineItem = {
@@ -939,7 +939,7 @@ export default function DayTimeline({
 
       {items.length === 0 ? (
         <EmptyState
-          icon={Compass}
+          illustration={<NoItemsTodayIllustration />}
           title="今天還沒有行程"
           description={canEdit ? "先搜尋景點或新增自訂項目吧" : undefined}
           action={

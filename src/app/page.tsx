@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Luggage, MapPinned, ChevronRight } from "lucide-react";
+import { Plus, Luggage, ChevronRight } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatRelativeTime } from "@/lib/labels";
@@ -7,6 +7,7 @@ import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
 import SectionHeader from "@/components/SectionHeader";
 import EmptyState from "@/components/EmptyState";
+import { NoTripsIllustration } from "@/components/EmptyStateIllustrations";
 import GreetingHero from "@/components/GreetingHero";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -195,7 +196,7 @@ export default async function TripsPage() {
 
         {trips.length === 0 && (
           <EmptyState
-            icon={MapPinned}
+            illustration={<NoTripsIllustration />}
             title="尚無旅程"
             description="建立第一趟旅程，開始規劃你的下一次旅行"
             className="mt-4"

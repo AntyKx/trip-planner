@@ -2,14 +2,14 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { upload } from "@vercel/blob/client";
-import { BookOpen, Camera, Trash2, X } from "lucide-react";
+import { BookOpen, Camera, Trash2 } from "lucide-react";
 import {
   updateItemJournalText,
   addItemPhoto,
   deleteItemPhoto,
 } from "@/app/trips/actions";
 import { useToast } from "./Toast";
-import ModalOverlay from "./ModalOverlay";
+import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 
 export type JournalPhoto = { id: string; url: string };
 
@@ -31,6 +31,7 @@ export default function JournalEditModal({
   onSaved: (result: { journalText: string | null; photos: JournalPhoto[] }) => void;
 }) {
   const toast = useToast();
+  const modalRef = useRef<ModalOverlayHandle>(null);
   const [journalText, setJournalText] = useState(initialJournalText ?? "");
   const [photos, setPhotos] = useState(initialPhotos);
   const [isUploading, setIsUploading] = useState(false);
@@ -75,7 +76,7 @@ export default function JournalEditModal({
       await updateItemJournalText(tripId, itemId, journalText);
       toast.success("已儲存遊記");
       onSaved({ journalText: journalText.trim() || null, photos });
-      onClose();
+      modalRef.current?.requestClose();
     } catch {
       setError("儲存失敗，請再試一次");
     } finally {
@@ -85,6 +86,7 @@ export default function JournalEditModal({
 
   return (
     <ModalOverlay
+      ref={modalRef}
       onClose={onClose}
       titleId="journal-edit-modal-title"
       panelClassName="w-full max-w-md p-5 max-h-[85vh] overflow-y-auto"
@@ -97,14 +99,7 @@ export default function JournalEditModal({
           <BookOpen className="h-5 w-5 text-rose-600" />
           {itemTitle}
         </h2>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="關閉"
-          className="flex min-h-11 min-w-11 items-center justify-center text-ink-400 hover:text-ink-700"
-        >
-          <X className="h-5 w-5" />
-        </button>
+        <ModalCloseButton />
       </div>
 
       <div className="mt-4 space-y-4">
