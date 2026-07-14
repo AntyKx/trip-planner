@@ -138,14 +138,14 @@ export default function EditItemModal({
     e.target.value = "";
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setScanError("請選擇圖片檔案");
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") {
+      setScanError("請選擇圖片或 PDF 檔案");
       return;
     }
     // Raw-file cap, well under the ~6MB base64 body-size limit configured
     // in next.config.ts (base64 inflates size by ~4/3).
     if (file.size > 4 * 1024 * 1024) {
-      setScanError("圖片太大，建議截圖而非直接拍照，或裁切後再試");
+      setScanError("檔案太大，建議截圖而非直接拍照，或裁切/縮小後再試");
       return;
     }
 
@@ -304,7 +304,8 @@ export default function EditItemModal({
         <input
           ref={scanInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,application/pdf"
+          capture="environment"
           className="hidden"
           onChange={handleScanFile}
         />
@@ -315,7 +316,7 @@ export default function EditItemModal({
           className="flex w-full items-center justify-center gap-1.5 rounded-md border border-line px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper disabled:opacity-50"
         >
           <ScanText className="h-4 w-4" />
-          {isScanning ? "辨識中…" : "上傳訂房/票券截圖自動帶入"}
+          {isScanning ? "辨識中…" : "拍照/上傳訂房票券自動帶入"}
         </button>
         {scanError && <p className="mt-2 text-xs text-red-500">{scanError}</p>}
       </div>

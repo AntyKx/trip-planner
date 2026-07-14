@@ -11,9 +11,17 @@ import { requireTripEditor } from "@/lib/auth";
 // budget with place-insight generation rather than getting its own 30/day.
 const AI_CALLS_PER_DAY = 30;
 
-const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+// PDF included because booking confirmations are often emailed as PDF
+// attachments rather than screenshotted — Claude accepts PDF documents as
+// input the same way it accepts images.
+const ALLOWED_MEDIA_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+]);
 
-// ~6MB of raw image data as base64 (base64 inflates size by ~4/3). Guards
+// ~6MB of raw file data as base64 (base64 inflates size by ~4/3). Guards
 // the action directly since the client-side size check (EditItemModal) can
 // be bypassed by anyone calling this action directly with arbitrary input.
 const MAX_BASE64_LENGTH = 8_000_000;
@@ -98,16 +106,16 @@ export async function extractConfirmationFromImage(
     const { output } = await generateText({
       model: "anthropic/claude-haiku-4.5",
       instructions:
-        "你是旅遊行程規劃助手。使用者會提供一張旅遊訂房、機票或票券的確認截圖，" +
+        "你是旅遊行程規劃助手。使用者會提供一張旅遊訂房、機票或票券的確認截圖或 PDF，" +
         `這是 ${day.date.toISOString().slice(0, 10)} 這天的行程。` +
-        "從截圖中盡量抓出訂位/訂房/票券編號、總金額、幣別、開始時間（入住/起飛等）、" +
-        "結束時間（退房/抵達等），以及一句話說明這是什麼預訂。只根據截圖實際看得到的" +
+        "從中盡量抓出訂位/訂房/票券編號、總金額、幣別、開始時間（入住/起飛等）、" +
+        "結束時間（退房/抵達等），以及一句話說明這是什麼預訂。只根據實際看得到的" +
         "內容填寫，看不出來的欄位直接省略，不要編造。",
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: "請辨識這張截圖的訂房/票券資訊。" },
+            { type: "text", text: "請辨識這份訂房/票券資訊。" },
             { type: "file", data: imageBase64, mediaType },
           ],
         },
