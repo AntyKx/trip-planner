@@ -5,11 +5,13 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export type JournalPhoto = { id: string; url: string };
 
-// First photo runs full-width (the "cover shot" for this stop); the rest
-// sit below as small rotated polaroid-style thumbnails, matching the
-// mini-collage treatment already established on the login/welcome hero.
-// Any photo opens a full-screen lightbox with prev/next.
+// Hero image + thumbnail strip, like a product-gallery/social-post photo
+// viewer — clicking a thumbnail swaps which photo shows big above (not an
+// immediate lightbox open), and the active thumbnail gets a highlighted
+// ring so it's clear which one is currently featured. Clicking the big
+// photo itself opens a full-screen lightbox with prev/next.
 export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] }) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   useEffect(() => {
@@ -19,10 +21,18 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setLightboxIndex(null);
       if (e.key === "ArrowLeft") {
-        setLightboxIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
+        setLightboxIndex((i) => {
+          const next = i === null ? null : (i - 1 + photos.length) % photos.length;
+          if (next !== null) setSelectedIndex(next);
+          return next;
+        });
       }
       if (e.key === "ArrowRight") {
-        setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
+        setLightboxIndex((i) => {
+          const next = i === null ? null : (i + 1) % photos.length;
+          if (next !== null) setSelectedIndex(next);
+          return next;
+        });
       }
     }
     document.addEventListener("keydown", handleKeyDown);
@@ -33,33 +43,34 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
   }, [lightboxIndex, photos.length]);
 
   if (photos.length === 0) return null;
-  const [first, ...rest] = photos;
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setLightboxIndex(0)}
+        onClick={() => setLightboxIndex(selectedIndex)}
         className="mt-3 block w-full overflow-hidden rounded-xl"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={first.url}
+          src={photos[selectedIndex].url}
           alt=""
           className="aspect-[4/3] w-full object-cover transition hover:brightness-95"
         />
       </button>
 
-      {rest.length > 0 && (
+      {photos.length > 1 && (
         <div className="mt-3 flex flex-wrap gap-3 pt-1">
-          {rest.map((photo, i) => (
+          {photos.map((photo, i) => (
             <button
               key={photo.id}
               type="button"
-              onClick={() => setLightboxIndex(i + 1)}
-              className={`w-16 shrink-0 rounded bg-white p-1 shadow-md ring-1 ring-black/5 transition hover:z-10 hover:scale-105 ${
-                i % 2 === 0 ? "-rotate-3" : "rotate-2"
-              }`}
+              onClick={() => setSelectedIndex(i)}
+              aria-label={`顯示第 ${i + 1} 張照片`}
+              aria-current={i === selectedIndex}
+              className={`w-16 shrink-0 rounded bg-white p-1 shadow-md transition hover:z-10 hover:scale-105 ${
+                i === selectedIndex ? "ring-2 ring-brand-500" : "ring-1 ring-black/5"
+              } ${i % 2 === 0 ? "-rotate-3" : "rotate-2"}`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={photo.url} alt="" className="aspect-square w-full rounded-sm object-cover" />
@@ -90,7 +101,9 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightboxIndex((i) => (i === null ? null : (i - 1 + photos.length) % photos.length));
+                  const next = (selectedIndex - 1 + photos.length) % photos.length;
+                  setSelectedIndex(next);
+                  setLightboxIndex(next);
                 }}
                 aria-label="上一張"
                 className="absolute left-1 flex h-11 w-11 items-center justify-center text-white/80 hover:text-white sm:left-4"
@@ -101,7 +114,9 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
+                  const next = (selectedIndex + 1) % photos.length;
+                  setSelectedIndex(next);
+                  setLightboxIndex(next);
                 }}
                 aria-label="下一張"
                 className="absolute right-1 flex h-11 w-11 items-center justify-center text-white/80 hover:text-white sm:right-4"
