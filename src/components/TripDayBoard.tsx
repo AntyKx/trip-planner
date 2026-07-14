@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Plus } from "lucide-react";
+import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Stethoscope, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
@@ -12,6 +12,8 @@ import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
 import ChecklistTab, { type ChecklistItemView } from "./ChecklistTab";
+import TripDoctorTab from "./TripDoctorTab";
+import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";
 import { fetchDayWeather } from "@/app/trips/actions";
 import {
   weatherLabel,
@@ -65,7 +67,7 @@ export default function TripDayBoard({
   checklistItems: ChecklistItemView[];
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
-  const [mode, setMode] = useState<"edit" | "travel" | "checklist">("edit");
+  const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">("edit");
   const shouldReduceMotion = useReducedMotion();
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant
@@ -97,6 +99,31 @@ export default function TripDayBoard({
     weather: weatherByDay[day.id] ?? day.weather,
   }));
 
+  // Pure/synchronous — every field here is already loaded client-side, so
+  // this can just be recomputed on render instead of needing its own
+  // effect/loading state.
+  const doctorFindings = runTripDoctor(
+    daysWithWeather.map(
+      (day): DoctorDay => ({
+        id: day.id,
+        dayIndex: day.dayIndex,
+        date: day.date,
+        weather: day.weather,
+        items: day.timelineItems.map((item) => ({
+          id: item.id,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          place: item.place ? { name: item.place.name, openHours: item.place.openHours } : null,
+        })),
+        routes: day.timelineRoutes.map((route) => ({
+          fromItemId: route.fromItemId,
+          toItemId: route.toItemId,
+          durationMin: route.durationMin,
+        })),
+      })
+    )
+  );
+
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
   const todayStr = localTodayStr();
@@ -125,6 +152,12 @@ export default function TripDayBoard({
       label: "檢查清單",
       icon: ClipboardCheck,
       onSelect: () => setMode("checklist"),
+    },
+    {
+      key: "doctor" as const,
+      label: "行程健檢",
+      icon: Stethoscope,
+      onSelect: () => setMode("doctor"),
     },
   ];
 
@@ -210,6 +243,8 @@ export default function TripDayBoard({
           }))}
           canEdit={canEdit}
         />
+      ) : mode === "doctor" ? (
+        <TripDoctorTab findings={doctorFindings} />
       ) : mode === "travel" ? (
         selectedDay ? (
           <TravelModeView day={selectedDay} />
