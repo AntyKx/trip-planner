@@ -138,3 +138,78 @@ export async function extractConfirmationFromImage(
     return { ok: false, error: "AI 辨識失敗，請稍後再試" };
   }
 }
+
+const MAX_FINDINGS = 60;
+const MAX_MESSAGE_LENGTH = 200;
+
+const doctorSummarySchema = z.object({
+  overview: z
+    .string()
+    .describe("一到兩句話總結這趟行程健檢的整體狀況，口語、友善，繁體中文"),
+  priorities: z
+    .array(z.string())
+    .max(4)
+    .describe("依重要性排序、最多 4 條具體建議，每條一句話講清楚該怎麼調整，繁體中文"),
+});
+
+export type DoctorSummaryResult =
+  | { ok: true; overview: string; priorities: string[] }
+  | { ok: false; error: string };
+
+// Findings themselves are computed entirely client-side by src/lib/tripDoctor.ts
+// (pure logic, no DB lookup involved) — this action doesn't re-derive them,
+// it just takes what the client already has and asks the model to turn a
+// flat list of rule-engine findings into a friendly, prioritized summary.
+// Since the findings text is client-supplied and not re-verified against
+// trip data, it's bounded defensively below the same way other free-text
+// AI inputs in this file are (see extractConfirmationFromImage).
+export async function summarizeTripDoctorFindings(
+  tripId: string,
+  findings: { dayIndex: number; severity: "issue" | "notice"; message: string }[]
+): Promise<DoctorSummaryResult> {
+  const user = await requireTripEditor(tripId);
+
+  if (findings.length === 0) {
+    return { ok: false, error: "目前沒有健檢結果可以總結" };
+  }
+  if (findings.length > MAX_FINDINGS) {
+    return { ok: false, error: "健檢結果太多，請稍後再試" };
+  }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentCalls = await prisma.aiUsageLog.count({
+    where: { userId: user.id, createdAt: { gte: since } },
+  });
+  if (recentCalls >= AI_CALLS_PER_DAY) {
+    return { ok: false, error: "今天的 AI 分析次數已達上限，請明天再試" };
+  }
+
+  await prisma.aiUsageLog.create({ data: { userId: user.id } });
+
+  const findingsBlock = findings
+    .map(
+      (f) =>
+        `Day ${f.dayIndex}｜${f.severity === "issue" ? "問題" : "提醒"}｜${f.message.slice(0, MAX_MESSAGE_LENGTH)}`
+    )
+    .join("\n");
+
+  try {
+    const { output } = await generateText({
+      model: "anthropic/claude-haiku-4.5",
+      instructions:
+        "你是旅遊行程規劃助手。使用者的行程健檢工具已經抓出一份問題/提醒清單，" +
+        "每一條都是規則檢查算出來的真實事實（打烊衝突、交通時間不夠、行程過滿、天氣提醒）。" +
+        "請把這份清單統整成給使用者看的摘要：先一到兩句話講整體狀況，再列出最多 4 條" +
+        "依重要性排序的具體建議（例如哪個問題最該優先處理、怎麼調整）。只根據清單裡" +
+        "實際列出的內容統整，不要編造清單以外的問題。",
+      prompt: `健檢結果：\n${findingsBlock}`,
+      output: Output.object({ schema: doctorSummarySchema }),
+    });
+
+    if (!output) return { ok: false, error: "AI 沒有回傳內容，請再試一次" };
+
+    return { ok: true, overview: output.overview, priorities: output.priorities };
+  } catch {
+    return { ok: false, error: "AI 統整失敗，請稍後再試" };
+  }
+}

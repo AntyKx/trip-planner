@@ -244,7 +244,7 @@ export default function TripDayBoard({
           canEdit={canEdit}
         />
       ) : mode === "doctor" ? (
-        <TripDoctorTab findings={doctorFindings} />
+        <TripDoctorTab tripId={tripId} findings={doctorFindings} />
       ) : mode === "travel" ? (
         selectedDay ? (
           <TravelModeView day={selectedDay} />

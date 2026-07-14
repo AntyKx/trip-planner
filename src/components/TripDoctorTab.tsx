@@ -1,8 +1,12 @@
 "use client";
 
-import { CheckCircle2, TriangleAlert, Info } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, TriangleAlert, Info, Sparkles } from "lucide-react";
 import type { DoctorFinding } from "@/lib/tripDoctor";
+import { summarizeTripDoctorFindings, type DoctorSummaryResult } from "@/app/trips/aiActions";
 import EmptyState from "./EmptyState";
+
+type LoadedSummary = Extract<DoctorSummaryResult, { ok: true }>;
 
 // Groups by dayIndex (findings arrive already ordered day-by-day, check-
 // by-check within a day — Object.entries preserves insertion order for
@@ -18,7 +22,33 @@ function groupByDay(findings: DoctorFinding[]): Map<number, DoctorFinding[]> {
   return map;
 }
 
-export default function TripDoctorTab({ findings }: { findings: DoctorFinding[] }) {
+export default function TripDoctorTab({
+  tripId,
+  findings,
+}: {
+  tripId: string;
+  findings: DoctorFinding[];
+}) {
+  const [summary, setSummary] = useState<LoadedSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  async function handleSummarize() {
+    setIsSummarizing(true);
+    setSummaryError(null);
+    const res = await summarizeTripDoctorFindings(
+      tripId,
+      findings.map((f) => ({
+        dayIndex: f.dayIndex,
+        severity: f.severity,
+        message: f.message,
+      }))
+    );
+    setIsSummarizing(false);
+    if (res.ok) setSummary(res);
+    else setSummaryError(res.error);
+  }
+
   if (findings.length === 0) {
     return (
       <EmptyState
@@ -34,6 +64,36 @@ export default function TripDoctorTab({ findings }: { findings: DoctorFinding[] 
 
   return (
     <div className="space-y-4">
+      {!summary ? (
+        <div>
+          <button
+            type="button"
+            onClick={handleSummarize}
+            disabled={isSummarizing}
+            className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
+          >
+            <Sparkles className={`h-3.5 w-3.5 ${isSummarizing ? "animate-pulse" : ""}`} />
+            {isSummarizing ? "AI 統整中…" : "✨ AI 幫我總結，排出優先順序"}
+          </button>
+          {summaryError && <p className="mt-1.5 text-xs text-red-500">{summaryError}</p>}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-accent-100 bg-accent-50 p-3 text-sm">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-700">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI 總結建議
+          </p>
+          <p className="mt-1.5 text-ink-700">{summary.overview}</p>
+          {summary.priorities.length > 0 && (
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-ink-700">
+              {summary.priorities.map((p, i) => (
+                <li key={i}>{p}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
       {dayIndexes.map((dayIndex) => (
         <div
           key={dayIndex}
