@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { TriangleAlert } from "lucide-react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { ScanText, TriangleAlert } from "lucide-react";
 import {
   updateItem,
   addCustomItem,
   type ItemTypeValue,
   type CostCategoryValue,
 } from "@/app/trips/actions";
+import { extractConfirmationFromImage } from "@/app/trips/aiActions";
 import { isTimeOutsideHours, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
+import { useToast } from "./Toast";
 
 const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
   { value: "PLACE", label: "景點" },
@@ -93,7 +95,9 @@ export default function EditItemModal({
   onClose: () => void;
   onSaved: (result: SavedItemResult) => void;
 }) {
+  const toast = useToast();
   const modalRef = useRef<ModalOverlayHandle>(null);
+  const scanInputRef = useRef<HTMLInputElement>(null);
   const [type, setType] = useState<ItemTypeValue>(
     (item?.type as ItemTypeValue) ?? "CUSTOM"
   );
@@ -111,6 +115,67 @@ export default function EditItemModal({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  // Reads a File as a data URL and strips the "data:<mime>;base64," prefix
+  // so the server action gets a plain base64 string, not a data URI.
+  function readFileAsBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const commaIndex = result.indexOf(",");
+        resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleScanFile(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setScanError("請選擇圖片檔案");
+      return;
+    }
+    // Raw-file cap, well under the ~6MB base64 body-size limit configured
+    // in next.config.ts (base64 inflates size by ~4/3).
+    if (file.size > 4 * 1024 * 1024) {
+      setScanError("圖片太大，建議截圖而非直接拍照，或裁切後再試");
+      return;
+    }
+
+    setScanError(null);
+    setIsScanning(true);
+    try {
+      const base64 = await readFileAsBase64(file);
+      const result = await extractConfirmationFromImage(
+        tripId,
+        dayId,
+        base64,
+        file.type
+      );
+      if (!result.ok) {
+        setScanError(result.error);
+        return;
+      }
+      if (result.confirmationNumber) setConfirmationNumber(result.confirmationNumber);
+      if (result.cost != null) setCost(String(result.cost));
+      if (result.currency) setCurrency(result.currency);
+      if (result.startTime) setStartTime(result.startTime);
+      if (result.endTime) setEndTime(result.endTime);
+      if (result.note && !note.trim()) setNote(result.note);
+      toast.success("已自動帶入辨識結果，請確認後再儲存");
+    } catch {
+      setScanError("辨識失敗，請稍後再試");
+    } finally {
+      setIsScanning(false);
+    }
+  }
 
   // Non-blocking hints, not validation — the user can save regardless.
   const openPeriods: OpeningPeriod[] | null = (() => {
@@ -233,6 +298,26 @@ export default function EditItemModal({
           {item ? (item.placeName ?? "編輯項目") : "新增自訂項目"}
         </h2>
         <ModalCloseButton />
+      </div>
+
+      <div className="mt-4 rounded-lg border border-dashed border-line p-3">
+        <input
+          ref={scanInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleScanFile}
+        />
+        <button
+          type="button"
+          onClick={() => scanInputRef.current?.click()}
+          disabled={isScanning}
+          className="flex w-full items-center justify-center gap-1.5 rounded-md border border-line px-3 py-2 text-sm font-medium text-ink-700 hover:bg-paper disabled:opacity-50"
+        >
+          <ScanText className="h-4 w-4" />
+          {isScanning ? "辨識中…" : "上傳訂房/票券截圖自動帶入"}
+        </button>
+        {scanError && <p className="mt-2 text-xs text-red-500">{scanError}</p>}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">

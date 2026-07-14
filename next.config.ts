@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BUILD_ID: buildStamp(),
   },
+  // Default is 1MB. Raised for the booking-confirmation screenshot
+  // recognition action (src/app/trips/aiActions.ts), which passes a
+  // base64-encoded image straight through as a Server Action argument
+  // instead of uploading to Blob first.
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
 };
 
 export default nextConfig;
