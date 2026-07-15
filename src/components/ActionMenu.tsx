@@ -59,7 +59,7 @@ export default function ActionMenu({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
+        className="flex min-h-10 min-w-10 items-center justify-center text-ink-500 hover:text-brand-600"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

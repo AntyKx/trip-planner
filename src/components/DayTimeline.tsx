@@ -277,14 +277,18 @@ function SortableItemCard({
                   </span>
                 ))}
             </div>
-            <div className="flex shrink-0 items-center gap-1">
+            {/* 40px targets with zero gap — slightly under the 44px
+                guideline as a deliberate density trade-off the user chose
+                (狀態徽章 keep full visibility; only the action buttons
+                tighten up). */}
+            <div className="flex shrink-0 items-center">
               {canEdit && (
                 <button
                   type="button"
                   onClick={onOpenJournal}
                   aria-label="編輯遊記"
                   title="遊記與照片"
-                  className={`flex min-h-11 min-w-11 items-center justify-center hover:text-rose-600 ${
+                  className={`flex min-h-10 min-w-10 items-center justify-center hover:text-rose-600 ${
                     item.journalText || item.photos.length > 0
                       ? "text-rose-600"
                       : "text-ink-500"
@@ -298,7 +302,7 @@ function SortableItemCard({
                   type="button"
                   onClick={onEdit}
                   aria-label="編輯項目"
-                  className="flex min-h-11 min-w-11 items-center justify-center text-ink-500 hover:text-brand-600"
+                  className="flex min-h-10 min-w-10 items-center justify-center text-ink-500 hover:text-brand-600"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
