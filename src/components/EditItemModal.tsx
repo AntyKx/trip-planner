@@ -409,8 +409,14 @@ export default function EditItemModal({
           </select>
         </div>
 
-        <div className="flex gap-3">
-          <div className="flex-1">
+        {/* grid (not flex) so the two columns are exact halves: time
+            inputs have an intrinsic min-width (inflated further by the
+            global 16px input font-size rule in globals.css), and flex
+            items refuse to shrink below it — the two fields ended up
+            overlapping on narrow screens. min-w-0 lets the inputs shrink
+            inside their track instead. */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="min-w-0">
             <label htmlFor="edit-item-start" className="block text-xs font-medium text-ink-700">
               開始時間
             </label>
@@ -419,7 +425,7 @@ export default function EditItemModal({
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
+              className="mt-1 w-full min-w-0 rounded-md border border-line px-2 py-2 text-sm"
             />
             {startTimeWarning && (
               <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
@@ -428,7 +434,7 @@ export default function EditItemModal({
               </p>
             )}
           </div>
-          <div className="flex-1">
+          <div className="min-w-0">
             <label htmlFor="edit-item-end" className="block text-xs font-medium text-ink-700">
               結束時間
             </label>
@@ -437,7 +443,7 @@ export default function EditItemModal({
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
+              className="mt-1 w-full min-w-0 rounded-md border border-line px-2 py-2 text-sm"
             />
             {endTimeWarning && (
               <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
