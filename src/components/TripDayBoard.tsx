@@ -13,6 +13,7 @@ import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
 import ChecklistTab, { type ChecklistItemView } from "./ChecklistTab";
 import TripDoctorTab from "./TripDoctorTab";
+import SmartBanner from "./SmartBanner";
 import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";
 import { fetchDayWeather } from "@/app/trips/actions";
 import {
@@ -278,6 +279,51 @@ export default function TripDayBoard({
           </button>
         ))}
       </nav>
+
+      {/* At most ONE proactive banner at a time (UI v3 §六), all backed by
+          real data: doctor issues take priority over weather reminders.
+          Hidden inside the doctor tab itself (pointing at where you
+          already are is noise). Dismiss keys carry the salient state so a
+          changed situation resurfaces after an earlier dismissal. */}
+      {(() => {
+        const issueCount = doctorFindings.filter((f) => f.severity === "issue").length;
+        if (issueCount > 0 && mode !== "doctor") {
+          return (
+            <div className="mb-4">
+              <SmartBanner
+                dismissKey={`doctor:${tripId}:${issueCount}`}
+                variant="warning"
+                title={`行程健檢發現 ${issueCount} 個需要調整的項目`}
+                description="時間、交通或營業時間可能有衝突"
+                action={
+                  <button
+                    type="button"
+                    onClick={() => setMode("doctor")}
+                    className="text-xs font-semibold underline underline-offset-2 hover:opacity-80"
+                  >
+                    查看健檢結果
+                  </button>
+                }
+              />
+            </div>
+          );
+        }
+        const weatherReminder = selectedDay?.weather
+          ? getWeatherReminders(selectedDay.weather)[0]
+          : undefined;
+        if (weatherReminder && selectedDay && mode === "edit") {
+          return (
+            <div className="mb-4">
+              <SmartBanner
+                dismissKey={`weather:${selectedDay.id}:${selectedDay.weather!.weatherCode}`}
+                variant="info"
+                title={`Day ${selectedDay.dayIndex}：${weatherReminder}`}
+              />
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       <div key={mode} className="animate-fade-in">
       {mode === "checklist" ? (
