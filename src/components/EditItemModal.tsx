@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Plus, ScanText, TriangleAlert, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, ScanText, TriangleAlert, X } from "lucide-react";
 import {
   updateItem,
   addCustomItem,
@@ -134,6 +134,10 @@ export default function EditItemModal({
       category: (c.category as CostCategoryValue) ?? "OTHER",
     }))
   );
+  // Accordion: rows render as one-line summaries so a long cost list stays
+  // short; only the row being edited is expanded (newly added rows expand
+  // automatically). null = everything collapsed.
+  const [expandedCostKey, setExpandedCostKey] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -190,16 +194,18 @@ export default function EditItemModal({
       if (result.cost != null) {
         const amount = result.cost;
         const rowCurrency = result.currency ?? "TWD";
+        const key = nextCostKey.current++;
         setCosts((prev) => [
           ...prev,
           {
-            key: nextCostKey.current++,
+            key,
             label: "",
             amount: String(amount),
             currency: CURRENCY_OPTIONS.includes(rowCurrency) ? rowCurrency : "TWD",
             category: DEFAULT_COST_CATEGORY[type],
           },
         ]);
+        setExpandedCostKey(key);
       }
       if (result.startTime) setStartTime(result.startTime);
       if (result.endTime) setEndTime(result.endTime);
@@ -247,10 +253,11 @@ export default function EditItemModal({
   }
 
   function addCostRow() {
+    const key = nextCostKey.current++;
     setCosts((prev) => [
       ...prev,
       {
-        key: nextCostKey.current++,
+        key,
         label: "",
         amount: "",
         // New rows follow the currently selected item type; existing rows
@@ -259,6 +266,7 @@ export default function EditItemModal({
         category: DEFAULT_COST_CATEGORY[type],
       },
     ]);
+    setExpandedCostKey(key);
   }
 
   function updateCostRow(key: number, patch: Partial<Omit<CostRow, "key">>) {
@@ -269,6 +277,7 @@ export default function EditItemModal({
 
   function removeCostRow(key: number) {
     setCosts((prev) => prev.filter((row) => row.key !== key));
+    setExpandedCostKey((current) => (current === key ? null : current));
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -441,77 +450,124 @@ export default function EditItemModal({
 
         <div>
           <span className="block text-xs font-medium text-ink-700">花費</span>
-          <div className="mt-1 space-y-2">
-            {costs.map((row) => (
-              <div key={row.key} className="rounded-lg border border-line p-2.5">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={row.label}
-                    onChange={(e) =>
-                      updateCostRow(row.key, { label: e.target.value })
-                    }
-                    maxLength={30}
-                    placeholder="名稱（選填），例如 午餐"
-                    aria-label="花費名稱"
-                    className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeCostRow(row.key)}
-                    aria-label="刪除這筆花費"
-                    className="shrink-0 rounded-md p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+          <div className="mt-1 space-y-1.5">
+            {costs.map((row) => {
+              const isExpanded = expandedCostKey === row.key;
+              const categoryLabel =
+                COST_CATEGORY_OPTIONS.find((o) => o.value === row.category)?.label ??
+                row.category;
+              if (!isExpanded) {
+                return (
+                  <div
+                    key={row.key}
+                    className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5"
                   >
-                    <X className="h-4 w-4" />
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCostKey(row.key)}
+                      aria-label="展開編輯這筆花費"
+                      className="flex min-w-0 flex-1 items-center gap-1.5 text-left text-xs text-ink-700"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                      <span className="truncate">
+                        {row.label.trim() || categoryLabel}
+                      </span>
+                      <span className="ml-auto shrink-0 font-medium text-amber-700">
+                        {row.amount.trim()
+                          ? `${row.currency} ${Number(row.amount).toLocaleString()}`
+                          : "未填金額"}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeCostRow(row.key)}
+                      aria-label="刪除這筆花費"
+                      className="shrink-0 rounded-md p-1 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <div key={row.key} className="rounded-lg border border-brand-200 p-2.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedCostKey(null)}
+                      aria-label="收合這筆花費"
+                      className="shrink-0 rounded-md p-1 text-ink-500 hover:bg-paper-alt"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <input
+                      type="text"
+                      value={row.label}
+                      onChange={(e) =>
+                        updateCostRow(row.key, { label: e.target.value })
+                      }
+                      maxLength={30}
+                      placeholder="名稱（選填），例如 午餐"
+                      aria-label="花費名稱"
+                      className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCostRow(row.key)}
+                      aria-label="刪除這筆花費"
+                      className="shrink-0 rounded-md p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={row.amount}
+                      onChange={(e) =>
+                        updateCostRow(row.key, { amount: e.target.value })
+                      }
+                      placeholder="金額"
+                      aria-label="金額"
+                      className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                    />
+                    <select
+                      value={row.currency}
+                      onChange={(e) =>
+                        updateCostRow(row.key, { currency: e.target.value })
+                      }
+                      aria-label="幣別"
+                      className="w-20 rounded-md border border-line px-2 py-1.5 text-sm"
+                    >
+                      {CURRENCY_OPTIONS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={row.category}
+                      onChange={(e) =>
+                        updateCostRow(row.key, {
+                          category: e.target.value as CostCategoryValue,
+                        })
+                      }
+                      aria-label="費用類型"
+                      className="w-24 rounded-md border border-line px-2 py-1.5 text-sm"
+                    >
+                      {COST_CATEGORY_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.01"
-                    value={row.amount}
-                    onChange={(e) =>
-                      updateCostRow(row.key, { amount: e.target.value })
-                    }
-                    placeholder="金額"
-                    aria-label="金額"
-                    className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
-                  />
-                  <select
-                    value={row.currency}
-                    onChange={(e) =>
-                      updateCostRow(row.key, { currency: e.target.value })
-                    }
-                    aria-label="幣別"
-                    className="w-20 rounded-md border border-line px-2 py-1.5 text-sm"
-                  >
-                    {CURRENCY_OPTIONS.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    value={row.category}
-                    onChange={(e) =>
-                      updateCostRow(row.key, {
-                        category: e.target.value as CostCategoryValue,
-                      })
-                    }
-                    aria-label="費用類型"
-                    className="w-24 rounded-md border border-line px-2 py-1.5 text-sm"
-                  >
-                    {COST_CATEGORY_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {costs.length < 20 && (
               <button
                 type="button"
