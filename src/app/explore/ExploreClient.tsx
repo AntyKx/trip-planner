@@ -102,6 +102,11 @@ export default function ExploreClient({
   // picker's「・N 個」updates immediately after each add without refetching.
   const [dayCountBump, setDayCountBump] = useState<Record<string, number>>({});
   const [isAdding, startAdding] = useTransition();
+  // Bumped on every favorite toggle (add or remove) — used as the heart
+  // icon's `key` so it remounts and replays the pop-in animation on each
+  // click, without also playing it on the initial list render (where the
+  // key would just be its unchanged default).
+  const [favoritePulse, setFavoritePulse] = useState<Record<string, number>>({});
   // "This day might be closed" warning per place, shown on the search
   // result card right after adding — not shown *before* adding since we
   // don't want to block the add flow on it, just flag it.
@@ -211,6 +216,10 @@ export default function ExploreClient({
 
   function handleToggleFavorite(place: PlaceResult) {
     const isFavorited = favoritedIds.has(place.externalId);
+    setFavoritePulse((prev) => ({
+      ...prev,
+      [place.externalId]: (prev[place.externalId] ?? 0) + 1,
+    }));
     startTogglingFavorite(async () => {
       if (isFavorited) {
         await removeFavorite("google", place.externalId);
@@ -361,7 +370,8 @@ export default function ExploreClient({
               aria-pressed={isFavorited}
               icon={
                 <Heart
-                  className={`h-5 w-5 ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
+                  key={favoritePulse[place.externalId] ?? 0}
+                  className={`h-5 w-5 animate-pop-in ${isFavorited ? "fill-red-500 text-red-500" : ""}`}
                 />
               }
             />
