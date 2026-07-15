@@ -89,7 +89,7 @@ describe("buildDaySchedule - opening hours", () => {
     expect(proposals[0].warning).toContain("公休");
   });
 
-  it("warns when the stay runs past closing", () => {
+  it("caps the stay at closing time instead of overrunning it", () => {
     const openHours = periodsJson([{ day: 1, openMinutes: 540, closeMinutes: 1080 }]); // 09:00-18:00
     const proposals = buildDaySchedule(
       [placeItem("快打烊", {}, openHours)],
@@ -99,6 +99,39 @@ describe("buildDaySchedule - opening hours", () => {
     );
 
     expect(proposals[0].newStart).toBe("17:30");
+    expect(proposals[0].newEnd).toBe("18:00"); // capped, not 19:00 (17:30 + 90min default)
+    expect(proposals[0].warning).toContain("打烊");
+  });
+
+  it("skips a lunch-break gap instead of treating the first opening as open all day", () => {
+    // Open 09:00-12:00 and 14:00-18:00 — arriving at 12:30 used to be
+    // treated as "open" because it's after the day's earliest opening.
+    const openHours = periodsJson([
+      { day: 1, openMinutes: 540, closeMinutes: 720 },
+      { day: 1, openMinutes: 840, closeMinutes: 1080 },
+    ]);
+    const proposals = buildDaySchedule(
+      [placeItem("午休店家", {}, openHours)],
+      [],
+      MONDAY,
+      "12:30"
+    );
+
+    expect(proposals[0].newStart).toBe("14:00");
+    expect(proposals[0].newEnd).toBe("15:30"); // 90min default, well within 14:00-18:00
+    expect(proposals[0].warning).toBeNull();
+  });
+
+  it("warns without capping when arrival is after all of today's hours", () => {
+    const openHours = periodsJson([{ day: 1, openMinutes: 540, closeMinutes: 1080 }]); // 09:00-18:00
+    const proposals = buildDaySchedule(
+      [placeItem("已打烊", {}, openHours)],
+      [],
+      MONDAY,
+      "19:00"
+    );
+
+    expect(proposals[0].newStart).toBe("19:00");
     expect(proposals[0].warning).toContain("打烊");
   });
 });

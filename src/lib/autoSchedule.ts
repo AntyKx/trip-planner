@@ -1,9 +1,4 @@
-import {
-  isClosedAllDay,
-  isTimeOutsideHours,
-  weekdayLabel,
-  type OpeningPeriod,
-} from "./businessHours";
+import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "./businessHours";
 
 export type ScheduleItem = {
   id: string;
@@ -81,14 +76,41 @@ function parsePeriods(openHours: string | null | undefined): OpeningPeriod[] | n
   }
 }
 
-// Earliest opening minute on `date`'s weekday, or null when there's no
-// period that starts on that weekday (closed, or only spillover coverage
-// from the previous day — good enough for "wait until it opens").
-function earliestOpenMinutes(periods: OpeningPeriod[], date: Date): number | null {
+type HoursStatus =
+  | { kind: "open"; closesAt: number }
+  | { kind: "waiting"; opensAt: number; closesAt: number }
+  | { kind: "no-more-hours" };
+
+// Where `cursor` (minutes since midnight of `date`) sits relative to the
+// day's real opening windows — not just "is it after the first opening",
+// which mistook a lunch-break gap (e.g. 09:00–12:00, 14:00–18:00) for open
+// as long as the cursor was anywhere past 09:00. Builds same-day windows
+// from both today's own periods and yesterday's spillover past midnight
+// (mirrors isTimeOutsideHours' day/prevDay handling), then finds whether
+// the cursor falls inside one, before the next one, or after the last one
+// for today.
+function resolveHours(periods: OpeningPeriod[], date: Date, cursor: number): HoursStatus {
   const day = date.getDay();
-  const todays = periods.filter((p) => p.day === day);
-  if (todays.length === 0) return null;
-  return Math.min(...todays.map((p) => p.openMinutes));
+  const prevDay = (day + 6) % 7;
+
+  const windows = periods
+    .filter(
+      (p) =>
+        p.day === day || (p.day === prevDay && p.closeMinutes !== null && p.closeMinutes > 1440)
+    )
+    .map((p) =>
+      p.day === day
+        ? { open: p.openMinutes, close: p.closeMinutes as number }
+        : { open: 0, close: (p.closeMinutes as number) - 1440 }
+    )
+    .sort((a, b) => a.open - b.open);
+
+  for (const w of windows) {
+    if (cursor >= w.open && cursor <= w.close) return { kind: "open", closesAt: w.close };
+  }
+  const next = windows.find((w) => w.open > cursor);
+  if (next) return { kind: "waiting", opensAt: next.open, closesAt: next.close };
+  return { kind: "no-more-hours" };
 }
 
 function displayName(item: ScheduleItem): string {
@@ -156,13 +178,24 @@ export function buildDaySchedule(
     }
 
     const periods = parsePeriods(item.place?.openHours);
-    if (periods && periods.length > 0) {
+    let closesAt: number | null = null;
+
+    // closeMinutes === null on any period means "open-ended" (24hr) — same
+    // convention isClosedAllDay/isTimeOutsideHours use to skip hours logic
+    // entirely, so this never waits for or caps against a place that never
+    // actually closes.
+    if (periods && periods.length > 0 && !periods.some((p) => p.closeMinutes === null)) {
       if (isClosedAllDay(periods, dateObj)) {
         warnings.push(`${weekdayLabel(dateObj)}公休`);
       } else {
-        const opensAt = earliestOpenMinutes(periods, dateObj);
-        if (opensAt != null && cursor < opensAt) {
-          cursor = opensAt; // wait for opening
+        const status = resolveHours(periods, dateObj, cursor);
+        if (status.kind === "waiting") {
+          cursor = status.opensAt; // wait for opening (or reopening, e.g. after a lunch break)
+          closesAt = status.closesAt;
+        } else if (status.kind === "open") {
+          closesAt = status.closesAt;
+        } else {
+          warnings.push("這個時間已經打烊，可能要調整順序");
         }
       }
     }
@@ -172,15 +205,14 @@ export function buildDaySchedule(
     }
 
     const start = Math.min(cursor, LAST_MINUTE_OF_DAY);
-    const end = Math.min(start + durationFor(item), LAST_MINUTE_OF_DAY);
+    let end = Math.min(start + durationFor(item), LAST_MINUTE_OF_DAY);
 
-    if (
-      periods &&
-      periods.length > 0 &&
-      !isClosedAllDay(periods, dateObj) &&
-      isTimeOutsideHours(periods, dateObj, minutesToHHMM(end))
-    ) {
-      warnings.push("停留到打烊之後，可能得提早離開");
+    // Cap the stay at closing instead of just warning about an overrun —
+    // resolveHours guarantees start <= closesAt in both the "open" and
+    // "waiting" cases, so this can never push end before start.
+    if (closesAt != null && end > closesAt) {
+      end = Math.max(start, closesAt);
+      warnings.push("已縮短停留時間配合打烊");
     }
 
     proposals.push({
