@@ -195,7 +195,12 @@ export function buildDaySchedule(
         } else if (status.kind === "open") {
           closesAt = status.closesAt;
         } else {
-          warnings.push("這個時間已經打烊，可能要調整順序");
+          // No window left today (typically the day's last stop, arriving
+          // after closing) — there's nowhere later to wait for, so this
+          // zeroes the stay out below instead of quietly handing it the
+          // default visit duration as if the place were still open.
+          warnings.push("今天已經打烊，建議調整順序或排到別天");
+          closesAt = cursor;
         }
       }
     }
@@ -209,10 +214,11 @@ export function buildDaySchedule(
 
     // Cap the stay at closing instead of just warning about an overrun —
     // resolveHours guarantees start <= closesAt in both the "open" and
-    // "waiting" cases, so this can never push end before start.
+    // "waiting" cases (and the no-more-hours branch above sets closesAt to
+    // the arrival time itself), so this can never push end before start.
     if (closesAt != null && end > closesAt) {
       end = Math.max(start, closesAt);
-      warnings.push("已縮短停留時間配合打烊");
+      if (end > start) warnings.push("已縮短停留時間配合打烊");
     }
 
     proposals.push({

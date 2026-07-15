@@ -122,7 +122,7 @@ describe("buildDaySchedule - opening hours", () => {
     expect(proposals[0].warning).toBeNull();
   });
 
-  it("warns without capping when arrival is after all of today's hours", () => {
+  it("zeroes out the stay instead of granting a full visit after all of today's hours", () => {
     const openHours = periodsJson([{ day: 1, openMinutes: 540, closeMinutes: 1080 }]); // 09:00-18:00
     const proposals = buildDaySchedule(
       [placeItem("已打烊", {}, openHours)],
@@ -132,6 +132,7 @@ describe("buildDaySchedule - opening hours", () => {
     );
 
     expect(proposals[0].newStart).toBe("19:00");
+    expect(proposals[0].newEnd).toBe("19:00"); // no default duration granted — it's already closed
     expect(proposals[0].warning).toContain("打烊");
   });
 });
