@@ -38,7 +38,7 @@ export default function InstallPrompt() {
 
   return (
     <div
-      className={`fixed inset-x-0 z-40 mx-auto w-full max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
+      className={`fixed inset-x-0 z-[var(--z-bottom-bar)] mx-auto w-full max-w-md p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] ${
         // Flat "4rem" alone underestimates on devices with a tall
         // safe-area-inset-bottom (e.g. ~34px Home Indicator) — the tab
         // bar's own height already includes that inset (see

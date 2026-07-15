@@ -13,6 +13,7 @@ import { requireUser } from "@/lib/auth";
 import { formatRelativeTime } from "@/lib/labels";
 import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
+import ImgWithFallback from "@/components/ImgWithFallback";
 import SectionHeader from "@/components/SectionHeader";
 import EmptyState from "@/components/EmptyState";
 import { NoTripsIllustration } from "@/components/EmptyStateIllustrations";
@@ -151,20 +152,18 @@ export default async function TripsPage() {
         style={{ animationDelay: `${Math.min(index, 6) * 40}ms` }}
         className="group relative block aspect-[16/9] w-full animate-fade-up overflow-hidden rounded-card-lg opacity-0 shadow-soft transition [animation-fill-mode:forwards] hover:-translate-y-0.5 hover:shadow-lg sm:aspect-[21/9]"
       >
-        {coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverImage}
-            alt={trip.title}
-            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${gradient}`}
-          >
-            <Luggage className="h-16 w-16 text-white/25" />
-          </div>
-        )}
+        <ImgWithFallback
+          src={coverImage}
+          alt={trip.title}
+          className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          fallback={
+            <div
+              className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${gradient}`}
+            >
+              <Luggage className="h-16 w-16 text-white/25" />
+            </div>
+          }
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
 
         <div className="absolute left-3 top-3">
@@ -255,18 +254,16 @@ export default async function TripsPage() {
           href={`/trips/${trip.id}`}
           className="group relative block h-44 sm:h-52"
         >
-          {coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coverImage}
-              alt={trip.title}
-              className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-800 via-brand-500 to-brand-300">
-              <Luggage className="h-16 w-16 text-white/25" />
-            </div>
-          )}
+          <ImgWithFallback
+            src={coverImage}
+            alt={trip.title}
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            fallback={
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-800 via-brand-500 to-brand-300">
+                <Luggage className="h-16 w-16 text-white/25" />
+              </div>
+            }
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
           <span className="absolute left-4 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur">
             {countdown}
@@ -348,18 +345,16 @@ export default async function TripsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <div className="flex items-center justify-end gap-3 text-sm text-ink-700">
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatarUrl}
-            alt={user.name}
-            className="h-7 w-7 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
-            {user.name.slice(0, 1)}
-          </div>
-        )}
+        <ImgWithFallback
+          src={user.avatarUrl}
+          alt={user.name}
+          className="h-7 w-7 rounded-full object-cover"
+          fallback={
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-medium text-brand-700">
+              {user.name.slice(0, 1)}
+            </div>
+          }
+        />
         <span className="max-w-[8rem] truncate">{user.name}</span>
         <SignOutButton />
       </div>

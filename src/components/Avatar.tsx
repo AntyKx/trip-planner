@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 export type AvatarPerson = { name: string; avatarUrl?: string | null };
 
 const SIZE_CLASSES = {
@@ -11,12 +15,16 @@ export function Avatar({
   size = "sm",
 }: AvatarPerson & { size?: keyof typeof SIZE_CLASSES }) {
   const sizeClass = SIZE_CLASSES[size];
-  if (avatarUrl) {
+  // Google avatar URLs can 404 (token expiry, photo removed) — falls back
+  // to the initial-letter circle instead of showing a broken-image icon.
+  const [broken, setBroken] = useState(false);
+  if (avatarUrl && !broken) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={avatarUrl}
         alt={name}
+        onError={() => setBroken(true)}
         className={`shrink-0 rounded-full object-cover ring-2 ring-white ${sizeClass}`}
       />
     );

@@ -86,7 +86,7 @@ export default function RootLayout({
             strip ends. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[env(safe-area-inset-top)] bg-brand-800"
+          className="pointer-events-none fixed inset-x-0 top-0 z-[var(--z-chrome)] h-[env(safe-area-inset-top)] bg-brand-800"
         />
         <ServiceWorkerCleanup />
         <ToastProvider>

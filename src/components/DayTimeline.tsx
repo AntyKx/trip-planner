@@ -65,6 +65,7 @@ import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import JournalEditModal, { type JournalPhoto } from "./JournalEditModal";
 import AutoScheduleModal, { type AppliedTimeUpdate } from "./AutoScheduleModal";
+import ImgWithFallback from "./ImgWithFallback";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
@@ -213,21 +214,19 @@ function SortableItemCard({
             <GripVertical className="h-4 w-4" />
           </span>
         )}
-        {item.place?.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+        {item.place && (
+          <ImgWithFallback
             src={item.place.photoUrl}
             alt={item.place.name}
             className="w-20 shrink-0 rounded-l-xl object-cover sm:w-28"
+            fallback={
+              <div
+                className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
+              >
+                <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
+              </div>
+            }
           />
-        ) : (
-          item.place && (
-            <div
-              className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
-            >
-              <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
-            </div>
-          )
         )}
 
         <div className="min-w-0 flex-1 p-3">

@@ -68,7 +68,7 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
               onClick={() => setSelectedIndex(i)}
               aria-label={`顯示第 ${i + 1} 張照片`}
               aria-current={i === selectedIndex}
-              className={`w-16 shrink-0 rounded bg-white p-1 shadow-md transition hover:z-10 hover:scale-105 ${
+              className={`w-16 shrink-0 rounded bg-white p-1 shadow-md transition hover:z-[var(--z-dropdown)] hover:scale-105 ${
                 i === selectedIndex ? "ring-2 ring-brand-500" : "ring-1 ring-black/5"
               } ${i % 2 === 0 ? "-rotate-3" : "rotate-2"}`}
             >
@@ -83,7 +83,7 @@ export default function JournalPhotoGrid({ photos }: { photos: JournalPhoto[] })
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
+          className="fixed inset-0 z-[var(--z-chrome)] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setLightboxIndex(null)}
         >
           <button

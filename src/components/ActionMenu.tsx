@@ -66,7 +66,7 @@ export default function ActionMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-1 w-36 overflow-hidden rounded-lg border border-line bg-surface py-1 text-sm shadow-lg"
+          className="absolute right-0 top-full z-[var(--z-menu)] mt-1 w-36 overflow-hidden rounded-lg border border-line bg-surface py-1 text-sm shadow-lg"
         >
           {items.map(({ key, label: itemLabel, icon: Icon, onClick, href, external, variant }) => {
             const itemClassName = `flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-paper-alt ${

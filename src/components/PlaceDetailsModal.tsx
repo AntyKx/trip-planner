@@ -5,6 +5,7 @@ import { Star, MapPin, Phone, Globe, Clock, ExternalLink } from "lucide-react";
 import { getPlaceDetails, type PlaceDetails } from "@/lib/places";
 import ModalOverlay, { ModalCloseButton } from "./ModalOverlay";
 import PlaceInsightSection from "./PlaceInsightSection";
+import ImgWithFallback from "./ImgWithFallback";
 
 type Fallback = {
   name: string;
@@ -120,14 +121,12 @@ function PlaceDetailsModal({
           <ModalCloseButton />
         </div>
 
-        {photoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={photoUrl}
-            alt={displayName}
-            className="mt-3 h-40 w-full rounded-xl object-cover"
-          />
-        )}
+        <ImgWithFallback
+          src={photoUrl}
+          alt={displayName}
+          className="mt-3 h-40 w-full rounded-xl object-cover"
+          fallback={null}
+        />
 
         {isLoading && (
           <p className="mt-4 text-sm text-ink-500">載入中…</p>

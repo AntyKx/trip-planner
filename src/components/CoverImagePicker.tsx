@@ -139,7 +139,7 @@ export default function CoverImagePicker({
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 top-full z-10 mt-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
+            <div className="absolute right-0 top-full z-[var(--z-dropdown)] mt-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
               <input
                 ref={fileInputRef}
                 type="file"

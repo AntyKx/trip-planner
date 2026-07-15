@@ -2,6 +2,31 @@
 
 :root {
   color-scheme: light;
+
+  /* Stacking order, named instead of scattered magic numbers — values are
+     unchanged from what was already in use across the app (audited
+     2026-07-15), this just centralizes the source of truth. Low → high:
+     in-page dropdowns/menus, the mobile bottom action bar, modals, chrome
+     that must sit above a modal (status-bar strip, fullscreen lightbox),
+     toasts, and the update-available banner (must be visible above
+     literally everything, including a toast mid-animation). */
+  --z-dropdown: 10;
+  --z-menu: 20;
+  --z-bottom-bar: 40;
+  --z-modal: 50;
+  --z-chrome: 60;
+  --z-toast: 100;
+  --z-critical: 9999;
+}
+
+/* Keyboard-focus ring — previously relied entirely on each browser's own
+   default outline (Safari/Firefox/Chrome all differ, and some are easy to
+   miss against this app's warm-white surfaces). :focus-visible (not
+   :focus) so mouse/touch clicks don't get an outline, only real keyboard
+   navigation does. */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
 }
 
 /* iOS Safari auto-zooms the page when a focused form field's computed

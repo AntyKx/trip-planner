@@ -175,7 +175,7 @@ const ModalOverlay = forwardRef<
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/50 transition-opacity motion-reduce:transition-none sm:items-center sm:p-4 ${
+      className={`fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-black/50 transition-opacity motion-reduce:transition-none sm:items-center sm:p-4 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
       style={{ transitionDuration: `${CLOSE_DURATION_MS}ms` }}

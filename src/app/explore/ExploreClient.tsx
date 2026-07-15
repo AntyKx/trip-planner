@@ -13,6 +13,7 @@ import AppBadge from "@/components/AppBadge";
 import AppButton from "@/components/AppButton";
 import IconButton from "@/components/IconButton";
 import EmptyState from "@/components/EmptyState";
+import ImgWithFallback from "@/components/ImgWithFallback";
 import {
   NoSearchResultsIllustration,
   NoFavoritesIllustration,
@@ -276,18 +277,16 @@ export default function ExploreClient({
     return (
       <AppCard key={place.externalId} variant="interactive" padding="sm">
         <div className="flex gap-3">
-          {place.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={place.photoUrl}
-              alt={place.name}
-              className="h-18 w-18 shrink-0 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-lg bg-paper-alt">
-              <MapPin className="h-5 w-5 text-ink-400" />
-            </div>
-          )}
+          <ImgWithFallback
+            src={place.photoUrl}
+            alt={place.name}
+            className="h-18 w-18 shrink-0 rounded-lg object-cover"
+            fallback={
+              <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-lg bg-paper-alt">
+                <MapPin className="h-5 w-5 text-ink-400" />
+              </div>
+            }
+          />
           <div className="min-w-0 flex-1">
             {/* Trigger wraps name + address (not just name) — the whole
                 info block is the "view details" affordance, so there's no
@@ -416,7 +415,7 @@ export default function ExploreClient({
           再來加點。
         </p>
       ) : (
-        <div className="sticky top-0 z-10 -mx-4 mt-4 space-y-3 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+        <div className="sticky top-0 z-[var(--z-dropdown)] -mx-4 mt-4 space-y-3 border-b border-line bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
           {mode === "search" && (
             <>
               {/* Region comes before the search box — it narrows/biases

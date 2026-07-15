@@ -71,7 +71,7 @@ export default function UpdateChecker() {
   if (!updating) return null;
 
   return (
-    <div className="fixed inset-x-0 top-0 z-[9999] flex flex-col gap-1.5 bg-brand-600 px-4 py-2.5 text-white shadow-md">
+    <div className="fixed inset-x-0 top-0 z-[var(--z-critical)] flex flex-col gap-1.5 bg-brand-600 px-4 py-2.5 text-white shadow-md">
       <div className="flex items-center gap-2 text-sm">
         <RefreshCw className="h-4 w-4 animate-spin" />
         <span className="font-medium">偵測到新版本，正在自動更新…</span>
