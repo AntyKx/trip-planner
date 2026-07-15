@@ -62,8 +62,36 @@ export default function TripDoctorTab({
   const byDay = groupByDay(findings);
   const dayIndexes = [...byDay.keys()].sort((a, b) => a - b);
 
+  // Counts drive the overall verdict — derived, never an invented score
+  // (the spec itself warns against fabricated percentages).
+  const issueCount = findings.filter((f) => f.severity === "issue").length;
+  const noticeCount = findings.length - issueCount;
+  const verdict =
+    issueCount > 0
+      ? {
+          icon: TriangleAlert,
+          title: `有 ${issueCount} 個項目需要調整`,
+          className: "border-red-100 bg-red-50 text-red-700",
+        }
+      : {
+          icon: Info,
+          title: `整體狀況良好，${noticeCount} 個提醒留意一下`,
+          className: "border-amber-100 bg-amber-50 text-amber-700",
+        };
+  const VerdictIcon = verdict.icon;
+
   return (
     <div className="space-y-4">
+      <div className={`rounded-card-lg border p-4 ${verdict.className}`}>
+        <p className="flex items-center gap-2 text-sm font-bold">
+          <VerdictIcon className="h-5 w-5 shrink-0" />
+          {verdict.title}
+        </p>
+        <p className="mt-1 text-xs opacity-80">
+          需要調整 {issueCount} 項・建議注意 {noticeCount} 項
+        </p>
+      </div>
+
       {!summary ? (
         <div>
           <button
@@ -94,31 +122,48 @@ export default function TripDoctorTab({
         </div>
       )}
 
-      {dayIndexes.map((dayIndex) => (
-        <div
-          key={dayIndex}
-          className="rounded-card-lg border border-line bg-surface p-4 shadow-sm"
-        >
-          <h3 className="text-sm font-bold text-ink-900">Day {dayIndex}</h3>
-          <ul className="mt-2 space-y-2">
-            {byDay.get(dayIndex)!.map((finding, i) => (
-              <li
-                key={i}
-                className={`flex items-start gap-2 text-sm ${
-                  finding.severity === "issue" ? "text-red-600" : "text-amber-700"
+      {dayIndexes.map((dayIndex) => {
+        const dayFindings = byDay.get(dayIndex)!;
+        const dayHasIssue = dayFindings.some((f) => f.severity === "issue");
+        return (
+          <div
+            key={dayIndex}
+            className="rounded-card-lg border border-line bg-surface p-4 shadow-sm"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-bold text-ink-900">Day {dayIndex}</h3>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                  dayHasIssue
+                    ? "bg-red-50 text-red-600"
+                    : "bg-amber-50 text-amber-700"
                 }`}
               >
-                {finding.severity === "issue" ? (
-                  <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                ) : (
-                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                )}
-                <span>{finding.message}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
+                {dayHasIssue ? "需要調整" : "建議注意"}
+              </span>
+            </div>
+            <ul className="mt-2.5 space-y-1.5">
+              {dayFindings.map((finding, i) => (
+                <li
+                  key={i}
+                  className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-sm ${
+                    finding.severity === "issue"
+                      ? "bg-red-50 text-red-700"
+                      : "bg-amber-50 text-amber-700"
+                  }`}
+                >
+                  {finding.severity === "issue" ? (
+                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                  ) : (
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  )}
+                  <span>{finding.message}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }
