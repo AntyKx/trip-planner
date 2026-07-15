@@ -79,9 +79,12 @@ export type TimelineItem = {
   endTime: string | Date | null;
   note: string | null;
   confirmationNumber: string | null;
-  cost: number | null;
-  currency: string | null;
-  costCategory: string | null;
+  costs: {
+    label: string | null;
+    amount: number;
+    currency: string;
+    category: string;
+  }[];
   journalText: string | null;
   photos: JournalPhoto[];
   place: {
@@ -246,11 +249,23 @@ function SortableItemCard({
                   遊記{item.photos.length > 0 && ` · ${item.photos.length}張照片`}
                 </span>
               )}
-              {item.cost != null && (
-                <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                  {item.currency} {item.cost.toLocaleString()}
-                </span>
-              )}
+              {/* One pill per currency (usually just one) summing that
+                  currency's entries — mixing currencies into one number
+                  would be meaningless. */}
+              {item.costs.length > 0 &&
+                [...item.costs
+                  .reduce((totals, c) => {
+                    totals.set(c.currency, (totals.get(c.currency) ?? 0) + c.amount);
+                    return totals;
+                  }, new Map<string, number>())
+                  .entries()].map(([currency, total]) => (
+                  <span
+                    key={currency}
+                    className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700"
+                  >
+                    {currency} {total.toLocaleString()}
+                  </span>
+                ))}
             </div>
             <div className="flex shrink-0 items-center gap-1">
               {canEdit && (
@@ -772,9 +787,7 @@ export default function DayTimeline({
                 endTime: result.endTime,
                 note: result.note,
                 confirmationNumber: result.confirmationNumber,
-                cost: result.cost,
-                currency: result.currency,
-                costCategory: result.costCategory,
+                costs: result.costs,
               }
             : i
         );
@@ -788,9 +801,7 @@ export default function DayTimeline({
           endTime: result.endTime,
           note: result.note,
           confirmationNumber: result.confirmationNumber,
-          cost: result.cost,
-          currency: result.currency,
-          costCategory: result.costCategory,
+          costs: result.costs,
           journalText: null,
           photos: [],
           place: null,
@@ -850,9 +861,7 @@ export default function DayTimeline({
           endTime: null,
           note: null,
           confirmationNumber: null,
-          cost: null,
-          currency: null,
-          costCategory: null,
+          costs: [],
           journalText: null,
           photos: [],
           place,
@@ -877,9 +886,7 @@ export default function DayTimeline({
           endTime: editingItem.endTime,
           note: editingItem.note,
           confirmationNumber: editingItem.confirmationNumber,
-          cost: editingItem.cost,
-          currency: editingItem.currency,
-          costCategory: editingItem.costCategory,
+          costs: editingItem.costs,
           placeName: editingItem.place?.name ?? null,
           placeOpenHours: editingItem.place?.openHours ?? null,
         }

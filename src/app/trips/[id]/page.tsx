@@ -42,6 +42,7 @@ export default async function TripDetailPage({
               include: {
                 place: true,
                 photos: { orderBy: { sortOrder: "asc" } },
+                costs: { orderBy: { sortOrder: "asc" } },
               },
             },
             routes: true,
@@ -244,9 +245,12 @@ export default async function TripDetailPage({
                 endTime: item.endTime,
                 note: item.note,
                 confirmationNumber: item.confirmationNumber,
-                cost: item.cost,
-                currency: item.currency,
-                costCategory: item.costCategory,
+                costs: item.costs.map((c) => ({
+                  label: c.label,
+                  amount: c.amount,
+                  currency: c.currency,
+                  category: c.category,
+                })),
                 journalText: item.journalText,
                 photos: item.photos.map((photo) => ({ id: photo.id, url: photo.url })),
                 place: item.place

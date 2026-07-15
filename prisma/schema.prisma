@@ -200,9 +200,16 @@ model Item {
   sortOrder          Int
   note               String?
   confirmationNumber String? // hotel booking ref, flight PNR, ticket number, ...
+  // DEPRECATED (2026-07-15): single-cost fields superseded by the ItemCost
+  // relation below (one item can carry ticket + meal + shopping entries).
+  // Kept in the schema so `prisma db push` never drops the columns while
+  // any pre-backfill data might still live only here — remove in a later
+  // cleanup pass once ItemCost has been stable in prod. No code reads or
+  // writes these anymore.
   cost               Float?
   currency           String? // "TWD" | "JPY" | "USD" | ...
   costCategory       CostCategory?
+  costs              ItemCost[]
   // Longer-form story text for the "旅遊書" travel-book page — deliberately
   // separate from `note` above, which is short logistics scribbles written
   // while planning (gate codes, "arrive early"), not something meant to be
@@ -219,6 +226,25 @@ model Item {
   routesTo   Route[] @relation("RouteTo")
 
   anchorForDay TripDay? @relation("TripDayAnchorItem")
+}
+
+// One expense line on an itinerary item — an item usually has more than
+// one (entrance ticket + lunch + souvenirs at the same stop), which is why
+// this replaced Item's deprecated single cost/currency/costCategory
+// columns. `label` is optional free text ("午餐", "特展門票") so two
+// entries of the same category stay distinguishable.
+model ItemCost {
+  id        String       @id @default(cuid())
+  item      Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId    String
+  label     String?
+  amount    Float
+  currency  String // "TWD" | "JPY" | ...
+  category  CostCategory
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  @@index([itemId])
 }
 
 // User's own trip photos attached to a stop, for the "旅遊書" page — distinct

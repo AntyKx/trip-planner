@@ -1,12 +1,13 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { ScanText, TriangleAlert } from "lucide-react";
+import { Plus, ScanText, TriangleAlert, X } from "lucide-react";
 import {
   updateItem,
   addCustomItem,
   type ItemTypeValue,
   type CostCategoryValue,
+  type ItemCostInput,
 } from "@/app/trips/actions";
 import { extractConfirmationFromImage } from "@/app/trips/aiActions";
 import { isTimeOutsideHours, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
@@ -40,6 +41,13 @@ const DEFAULT_COST_CATEGORY: Record<ItemTypeValue, CostCategoryValue> = {
   CUSTOM: "OTHER",
 };
 
+export type EditableCost = {
+  label: string | null;
+  amount: number;
+  currency: string;
+  category: string;
+};
+
 export type EditableItem = {
   id: string;
   type: string;
@@ -47,9 +55,7 @@ export type EditableItem = {
   endTime: string | Date | null;
   note: string | null;
   confirmationNumber: string | null;
-  cost: number | null;
-  currency: string | null;
-  costCategory: string | null;
+  costs: EditableCost[];
   placeName: string | null;
   placeOpenHours: string | null;
 };
@@ -61,9 +67,18 @@ export type SavedItemResult = {
   endTime: string | null;
   note: string | null;
   confirmationNumber: string | null;
-  cost: number | null;
-  currency: string | null;
-  costCategory: CostCategoryValue | null;
+  costs: ItemCostInput[];
+};
+
+// Local editing row — `amount` stays a string so the input can hold
+// intermediate states ("", "12.") without fighting the user; converted on
+// submit. `key` is only for React list identity (rows are added/removed).
+type CostRow = {
+  key: number;
+  label: string;
+  amount: string;
+  currency: string;
+  category: CostCategoryValue;
 };
 
 const CONFIRMATION_LABEL: Record<ItemTypeValue, string> = {
@@ -107,11 +122,17 @@ export default function EditItemModal({
   const [confirmationNumber, setConfirmationNumber] = useState(
     item?.confirmationNumber ?? ""
   );
-  const [cost, setCost] = useState(item?.cost != null ? String(item.cost) : "");
-  const [currency, setCurrency] = useState(item?.currency ?? "TWD");
-  const [costCategory, setCostCategory] = useState<CostCategoryValue>(
-    (item?.costCategory as CostCategoryValue) ??
-      DEFAULT_COST_CATEGORY[(item?.type as ItemTypeValue) ?? "CUSTOM"]
+  // Initial rows are keyed by index; the ref continues the sequence for
+  // rows added later (only ever bumped inside event handlers).
+  const nextCostKey = useRef((item?.costs ?? []).length);
+  const [costs, setCosts] = useState<CostRow[]>(() =>
+    (item?.costs ?? []).map((c, index) => ({
+      key: index,
+      label: c.label ?? "",
+      amount: String(c.amount),
+      currency: c.currency,
+      category: (c.category as CostCategoryValue) ?? "OTHER",
+    }))
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,8 +185,22 @@ export default function EditItemModal({
         return;
       }
       if (result.confirmationNumber) setConfirmationNumber(result.confirmationNumber);
-      if (result.cost != null) setCost(String(result.cost));
-      if (result.currency) setCurrency(result.currency);
+      // Appended as a new entry rather than overwriting — the item may
+      // already carry other costs the screenshot knows nothing about.
+      if (result.cost != null) {
+        const amount = result.cost;
+        const rowCurrency = result.currency ?? "TWD";
+        setCosts((prev) => [
+          ...prev,
+          {
+            key: nextCostKey.current++,
+            label: "",
+            amount: String(amount),
+            currency: CURRENCY_OPTIONS.includes(rowCurrency) ? rowCurrency : "TWD",
+            category: DEFAULT_COST_CATEGORY[type],
+          },
+        ]);
+      }
       if (result.startTime) setStartTime(result.startTime);
       if (result.endTime) setEndTime(result.endTime);
       if (result.note && !note.trim()) setNote(result.note);
@@ -211,6 +246,31 @@ export default function EditItemModal({
     return `${dayDate}T${hhmm}:00Z`;
   }
 
+  function addCostRow() {
+    setCosts((prev) => [
+      ...prev,
+      {
+        key: nextCostKey.current++,
+        label: "",
+        amount: "",
+        // New rows follow the currently selected item type; existing rows
+        // keep whatever the user picked even if the type changes later.
+        currency: prev[prev.length - 1]?.currency ?? "TWD",
+        category: DEFAULT_COST_CATEGORY[type],
+      },
+    ]);
+  }
+
+  function updateCostRow(key: number, patch: Partial<Omit<CostRow, "key">>) {
+    setCosts((prev) =>
+      prev.map((row) => (row.key === key ? { ...row, ...patch } : row))
+    );
+  }
+
+  function removeCostRow(key: number) {
+    setCosts((prev) => prev.filter((row) => row.key !== key));
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -225,13 +285,21 @@ export default function EditItemModal({
       const startIso = toIso(startTime);
       const endIso = toIso(endTime);
       // Number("1e") is NaN and type=number inputs still allow "-" and
-      // "e" to be typed — treat anything unparseable or negative as "no
-      // cost entered" instead of persisting garbage.
-      const parsedCost = Number(cost);
-      const costValue =
-        cost.trim() && Number.isFinite(parsedCost) && parsedCost >= 0
-          ? parsedCost
-          : null;
+      // "e" to be typed — rows whose amount is unparseable or negative are
+      // dropped instead of persisting garbage (same rule the old
+      // single-cost field applied).
+      const costsPayload: ItemCostInput[] = costs
+        .map((row) => ({ row, amount: Number(row.amount) }))
+        .filter(
+          ({ row, amount }) =>
+            row.amount.trim() && Number.isFinite(amount) && amount >= 0
+        )
+        .map(({ row, amount }) => ({
+          label: row.label.trim() || null,
+          amount,
+          currency: row.currency,
+          category: row.category,
+        }));
 
       if (item) {
         await updateItem(tripId, item.id, {
@@ -240,9 +308,7 @@ export default function EditItemModal({
           endTime: endIso,
           note,
           confirmationNumber,
-          cost: costValue,
-          currency,
-          costCategory,
+          costs: costsPayload,
         });
         onSaved({
           id: item.id,
@@ -251,9 +317,7 @@ export default function EditItemModal({
           endTime: endIso,
           note: note.trim() || null,
           confirmationNumber: confirmationNumber.trim() || null,
-          cost: costValue,
-          currency: costValue != null ? currency : null,
-          costCategory: costValue != null ? costCategory : null,
+          costs: costsPayload,
         });
       } else {
         const created = await addCustomItem(tripId, dayId, {
@@ -262,9 +326,7 @@ export default function EditItemModal({
           startTime: startIso,
           endTime: endIso,
           confirmationNumber,
-          cost: costValue,
-          currency,
-          costCategory,
+          costs: costsPayload,
         });
         onSaved({
           id: created.id,
@@ -273,9 +335,7 @@ export default function EditItemModal({
           endTime: endIso,
           note: note.trim() || null,
           confirmationNumber: confirmationNumber.trim() || null,
-          cost: costValue,
-          currency: costValue != null ? currency : null,
-          costCategory: costValue != null ? costCategory : null,
+          costs: costsPayload,
         });
       }
       modalRef.current?.requestClose();
@@ -379,58 +439,89 @@ export default function EditItemModal({
           </div>
         </div>
 
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label htmlFor="edit-item-cost" className="block text-xs font-medium text-ink-700">
-              費用
-            </label>
-            <input
-              id="edit-item-cost"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
-              placeholder="選填"
-              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
-            />
-          </div>
-          <div className="w-20">
-            <label htmlFor="edit-item-currency" className="block text-xs font-medium text-ink-700">
-              幣別
-            </label>
-            <select
-              id="edit-item-currency"
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
-            >
-              {CURRENCY_OPTIONS.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex-1">
-            <label htmlFor="edit-item-cost-category" className="block text-xs font-medium text-ink-700">
-              費用類型
-            </label>
-            <select
-              id="edit-item-cost-category"
-              value={costCategory}
-              onChange={(e) =>
-                setCostCategory(e.target.value as CostCategoryValue)
-              }
-              className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
-            >
-              {COST_CATEGORY_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+        <div>
+          <span className="block text-xs font-medium text-ink-700">花費</span>
+          <div className="mt-1 space-y-2">
+            {costs.map((row) => (
+              <div key={row.key} className="rounded-lg border border-line p-2.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={row.label}
+                    onChange={(e) =>
+                      updateCostRow(row.key, { label: e.target.value })
+                    }
+                    maxLength={30}
+                    placeholder="名稱（選填），例如 午餐"
+                    aria-label="花費名稱"
+                    className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCostRow(row.key)}
+                    aria-label="刪除這筆花費"
+                    className="shrink-0 rounded-md p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={row.amount}
+                    onChange={(e) =>
+                      updateCostRow(row.key, { amount: e.target.value })
+                    }
+                    placeholder="金額"
+                    aria-label="金額"
+                    className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                  />
+                  <select
+                    value={row.currency}
+                    onChange={(e) =>
+                      updateCostRow(row.key, { currency: e.target.value })
+                    }
+                    aria-label="幣別"
+                    className="w-20 rounded-md border border-line px-2 py-1.5 text-sm"
+                  >
+                    {CURRENCY_OPTIONS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={row.category}
+                    onChange={(e) =>
+                      updateCostRow(row.key, {
+                        category: e.target.value as CostCategoryValue,
+                      })
+                    }
+                    aria-label="費用類型"
+                    className="w-24 rounded-md border border-line px-2 py-1.5 text-sm"
+                  >
+                    {COST_CATEGORY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            ))}
+            {costs.length < 20 && (
+              <button
+                type="button"
+                onClick={addCostRow}
+                className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                新增一筆花費
+              </button>
+            )}
           </div>
         </div>
 

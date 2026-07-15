@@ -13,9 +13,9 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export default function BudgetSummary({ days }: { days: BoardDay[] }) {
-  const items = days.flatMap((d) => d.timelineItems).filter((i) => i.cost != null);
+  const costs = days.flatMap((d) => d.timelineItems).flatMap((i) => i.costs);
 
-  if (items.length === 0) {
+  if (costs.length === 0) {
     return (
       <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
         <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
@@ -32,16 +32,18 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
   const totalsByCurrency = new Map<string, number>();
   const totalsByCategory = new Map<string, Map<string, number>>();
 
-  for (const item of items) {
-    const currency = item.currency ?? "TWD";
-    const category = item.costCategory ?? "OTHER";
-    const cost = item.cost as number;
+  for (const cost of costs) {
+    const currency = cost.currency || "TWD";
+    const category = cost.category || "OTHER";
 
-    totalsByCurrency.set(currency, (totalsByCurrency.get(currency) ?? 0) + cost);
+    totalsByCurrency.set(
+      currency,
+      (totalsByCurrency.get(currency) ?? 0) + cost.amount
+    );
 
     if (!totalsByCategory.has(currency)) totalsByCategory.set(currency, new Map());
     const categoryMap = totalsByCategory.get(currency)!;
-    categoryMap.set(category, (categoryMap.get(category) ?? 0) + cost);
+    categoryMap.set(category, (categoryMap.get(category) ?? 0) + cost.amount);
   }
 
   return (

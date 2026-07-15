@@ -462,6 +462,64 @@ export type CostCategoryValue =
   | "SHOPPING"
   | "OTHER";
 
+export type ItemCostInput = {
+  label: string | null;
+  amount: number;
+  currency: string;
+  category: CostCategoryValue;
+};
+
+const COST_CATEGORY_VALUES = new Set<string>([
+  "TRANSPORT",
+  "FOOD",
+  "LODGING",
+  "TICKET",
+  "SHOPPING",
+  "OTHER",
+]);
+const MAX_COSTS_PER_ITEM = 20;
+const MAX_COST_LABEL_LENGTH = 30;
+
+// Server-side bounds regardless of what the modal enforces — every action
+// here is reachable by direct POST. Invalid rows are dropped rather than
+// failing the whole save (mirrors how the old single-cost path treated an
+// unparseable amount as "no cost entered").
+function sanitizeCosts(costs: ItemCostInput[]): ItemCostInput[] {
+  return costs
+    .filter(
+      (c) =>
+        Number.isFinite(c.amount) &&
+        c.amount >= 0 &&
+        COST_CATEGORY_VALUES.has(c.category)
+    )
+    .slice(0, MAX_COSTS_PER_ITEM)
+    .map((c) => ({
+      label: c.label?.trim().slice(0, MAX_COST_LABEL_LENGTH) || null,
+      amount: c.amount,
+      currency: c.currency.trim().slice(0, 8) || "TWD",
+      category: c.category,
+    }));
+}
+
+// Replace-all write for an item's cost entries (same pattern as
+// saveRoutes): the modal always submits the full list, so diffing
+// individual rows buys nothing.
+function replaceCostsOps(itemId: string, costs: ItemCostInput[]) {
+  return [
+    prisma.itemCost.deleteMany({ where: { itemId } }),
+    prisma.itemCost.createMany({
+      data: costs.map((c, index) => ({
+        itemId,
+        label: c.label,
+        amount: c.amount,
+        currency: c.currency,
+        category: c.category,
+        sortOrder: index,
+      })),
+    }),
+  ];
+}
+
 export async function updateItem(
   tripId: string,
   itemId: string,
@@ -471,27 +529,33 @@ export async function updateItem(
     endTime: string | null;
     note: string | null;
     confirmationNumber: string | null;
-    cost: number | null;
-    currency: string | null;
-    costCategory: CostCategoryValue | null;
+    costs: ItemCostInput[];
   }
 ) {
   await requireTripEditor(tripId);
-  // updateMany (not update) so this scopes to tripId via the day relation —
-  // an itemId belonging to another trip just updates zero rows.
-  await prisma.item.updateMany({
+  // The costs writes below are keyed by itemId alone, so the item's
+  // membership in this trip has to be proven first — updateMany's scoped
+  // where can't protect them. Zero rows updated means the id isn't ours.
+  const owned = await prisma.item.findFirst({
     where: { id: itemId, day: { tripId } },
-    data: {
-      type: data.type,
-      startTime: data.startTime ? new Date(data.startTime) : null,
-      endTime: data.endTime ? new Date(data.endTime) : null,
-      note: data.note?.trim() || null,
-      confirmationNumber: data.confirmationNumber?.trim() || null,
-      cost: data.cost,
-      currency: data.cost != null ? data.currency : null,
-      costCategory: data.cost != null ? data.costCategory : null,
-    },
+    select: { id: true },
   });
+  if (!owned) redirect("/");
+
+  const costs = sanitizeCosts(data.costs);
+  await prisma.$transaction([
+    prisma.item.update({
+      where: { id: itemId },
+      data: {
+        type: data.type,
+        startTime: data.startTime ? new Date(data.startTime) : null,
+        endTime: data.endTime ? new Date(data.endTime) : null,
+        note: data.note?.trim() || null,
+        confirmationNumber: data.confirmationNumber?.trim() || null,
+      },
+    }),
+    ...replaceCostsOps(itemId, costs),
+  ]);
   revalidatePath(`/trips/${tripId}`);
 }
 
@@ -504,9 +568,7 @@ export async function addCustomItem(
     startTime: string | null;
     endTime: string | null;
     confirmationNumber: string | null;
-    cost: number | null;
-    currency: string | null;
-    costCategory: CostCategoryValue | null;
+    costs: ItemCostInput[];
   }
 ) {
   await requireTripEditor(tripId);
@@ -516,6 +578,7 @@ export async function addCustomItem(
     orderBy: { sortOrder: "desc" },
   });
 
+  const costs = sanitizeCosts(data.costs);
   const item = await prisma.item.create({
     data: {
       dayId,
@@ -524,10 +587,16 @@ export async function addCustomItem(
       startTime: data.startTime ? new Date(data.startTime) : null,
       endTime: data.endTime ? new Date(data.endTime) : null,
       confirmationNumber: data.confirmationNumber?.trim() || null,
-      cost: data.cost,
-      currency: data.cost != null ? data.currency : null,
-      costCategory: data.cost != null ? data.costCategory : null,
       sortOrder: (lastItem?.sortOrder ?? 0) + 1,
+      costs: {
+        create: costs.map((c, index) => ({
+          label: c.label,
+          amount: c.amount,
+          currency: c.currency,
+          category: c.category,
+          sortOrder: index,
+        })),
+      },
     },
   });
 
