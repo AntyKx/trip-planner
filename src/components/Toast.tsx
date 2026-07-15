@@ -76,14 +76,18 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role="status"
-              className={`pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-full border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink-900 shadow-soft transition-all duration-200 ${
+              className={`pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink-900 shadow-soft transition-all duration-200 ${
                 t.leaving
                   ? "translate-y-2 opacity-0"
                   : "translate-y-0 opacity-100 animate-toast-in"
               }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${className}`} />
-              <span className="min-w-0 flex-1 truncate">{t.message}</span>
+              {/* Two lines, not truncate — messages now carry real payload
+                  (e.g. which day a place landed on) that was getting cut
+                  off on phone widths. rounded-2xl (not -full) so the
+                  wrapped shape still looks intentional. */}
+              <span className="min-w-0 flex-1 line-clamp-2">{t.message}</span>
               <button
                 type="button"
                 onClick={() => dismiss(t.id)}

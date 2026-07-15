@@ -199,9 +199,11 @@ export default function ExploreClient({
         // Storage unavailable (private mode quirks) — highlight is a
         // nice-to-have, never block the add itself.
       }
+      // Day first — it's the part that must survive if a long place name
+      // pushes the message to the toast's two-line clamp.
       toast.success(
         targetDay
-          ? `已加入「${place.name}」→ Day ${targetDay.dayIndex}（${targetDay.date.slice(5).replace("-", "/")}）`
+          ? `已加入 Day ${targetDay.dayIndex}（${targetDay.date.slice(5).replace("-", "/")}）：${place.name}`
           : `已加入「${place.name}」`
       );
     });
