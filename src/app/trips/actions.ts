@@ -67,6 +67,38 @@ export async function reorderItems(
   );
 }
 
+// Batch write for the auto-schedule feature (AutoScheduleModal) — one
+// transaction for the whole day instead of N updateItem round trips. Same
+// no-revalidatePath reasoning as reorderItems above: the client updates
+// its items state optimistically after this resolves.
+export async function updateItemTimes(
+  tripId: string,
+  dayId: string,
+  updates: { itemId: string; startTime: string; endTime: string }[]
+) {
+  await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, dayId);
+
+  // A day realistically holds a handful of items — anything bigger is not
+  // a real client, so cap it rather than build an unbounded transaction.
+  const bounded = updates.slice(0, 50).filter((u) => {
+    const start = new Date(u.startTime);
+    const end = new Date(u.endTime);
+    return !Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime());
+  });
+
+  await prisma.$transaction(
+    bounded.map((u) =>
+      // updateMany + dayId scope, same reasoning as reorderItems: an
+      // itemId from another trip just updates zero rows.
+      prisma.item.updateMany({
+        where: { id: u.itemId, dayId },
+        data: { startTime: new Date(u.startTime), endTime: new Date(u.endTime) },
+      })
+    )
+  );
+}
+
 export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
 
 export type RouteInput = {

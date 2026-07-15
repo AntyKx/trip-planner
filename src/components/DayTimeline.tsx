@@ -21,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   BookOpen,
+  CalendarClock,
   ExternalLink,
   GripVertical,
   MapPin,
@@ -63,6 +64,7 @@ import {
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
 import EditItemModal, { type EditableItem, type SavedItemResult } from "./EditItemModal";
 import JournalEditModal, { type JournalPhoto } from "./JournalEditModal";
+import AutoScheduleModal, { type AppliedTimeUpdate } from "./AutoScheduleModal";
 import TransitAlternativesModal from "./TransitAlternativesModal";
 import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
@@ -457,6 +459,7 @@ export default function DayTimeline({
     null
   );
   const [journalItem, setJournalItem] = useState<TimelineItem | null>(null);
+  const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const sensors = useSensors(
     // Mouse: quick distance-based activation (no scroll to conflict with).
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -796,6 +799,21 @@ export default function DayTimeline({
     });
   }
 
+  // Batch variant of handleItemSaved's time fields — the server write
+  // already happened inside AutoScheduleModal, this just mirrors it into
+  // local state (raw "…Z" strings, same convention as SavedItemResult).
+  function handleScheduleApplied(updates: AppliedTimeUpdate[]) {
+    const byId = new Map(updates.map((u) => [u.itemId, u]));
+    setItems((prev) =>
+      prev.map((i) => {
+        const update = byId.get(i.id);
+        return update
+          ? { ...i, startTime: update.startTime, endTime: update.endTime }
+          : i;
+      })
+    );
+  }
+
   function handleJournalSaved(
     itemId: string,
     result: { journalText: string | null; photos: JournalPhoto[] }
@@ -892,6 +910,16 @@ export default function DayTimeline({
               <Waypoints className="h-3.5 w-3.5" />
               自動安排最順路線
             </button>
+            <button
+              type="button"
+              onClick={() => setIsAutoScheduling(true)}
+              disabled={items.length < 2}
+              title={items.length < 2 ? "需要至少 2 個項目才能排時間" : undefined}
+              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
+              自動排時間
+            </button>
           </div>
 
           <div className="mb-3">
@@ -912,6 +940,31 @@ export default function DayTimeline({
         <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
           {routeError}
         </p>
+      )}
+
+      {isAutoScheduling && (
+        <AutoScheduleModal
+          tripId={tripId}
+          dayId={dayId}
+          dayDate={dayDate}
+          items={items.map((i) => ({
+            id: i.id,
+            type: i.type,
+            startTime: i.startTime,
+            endTime: i.endTime,
+            place: i.place
+              ? { name: i.place.name, openHours: i.place.openHours }
+              : null,
+            note: i.note,
+          }))}
+          routes={routes.map((r) => ({
+            fromItemId: r.fromItemId,
+            toItemId: r.toItemId,
+            durationMin: r.durationMin,
+          }))}
+          onClose={() => setIsAutoScheduling(false)}
+          onApplied={handleScheduleApplied}
+        />
       )}
 
       {(editingItem === "new" || editingAsEditable) && (
