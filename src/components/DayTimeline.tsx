@@ -889,14 +889,18 @@ export default function DayTimeline({
     <div>
       {canEdit && (
         <>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          {/* Mobile: three equal-width buttons with shortened labels so
+              the row never wraps (full labels overflow ~375px screens);
+              desktop keeps natural widths + full labels. */}
+          <div className="mb-3 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setEditingItem("new")}
-              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt sm:flex-initial sm:px-3"
             >
-              <Plus className="h-3.5 w-3.5" />
-              新增自訂項目
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">新增項目</span>
+              <span className="hidden sm:inline">新增自訂項目</span>
             </button>
             <button
               type="button"
@@ -905,19 +909,20 @@ export default function DayTimeline({
               title={
                 !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
               }
-              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:px-3"
             >
-              <Waypoints className="h-3.5 w-3.5" />
-              自動安排最順路線
+              <Waypoints className="h-3.5 w-3.5 shrink-0" />
+              <span className="sm:hidden">最順路線</span>
+              <span className="hidden sm:inline">自動安排最順路線</span>
             </button>
             <button
               type="button"
               onClick={() => setIsAutoScheduling(true)}
               disabled={items.length < 2}
               title={items.length < 2 ? "需要至少 2 個項目才能排時間" : undefined}
-              className="flex items-center gap-1.5 rounded-md border border-line px-3 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:px-3"
             >
-              <CalendarClock className="h-3.5 w-3.5" />
+              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
               自動排時間
             </button>
           </div>
