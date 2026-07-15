@@ -104,6 +104,11 @@ export default function TripDayBoard({
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedDayId(parsed.dayId);
         setHighlightItemId(parsed.itemId ?? null);
+        // Cleared once the 2s wash has played — DayTimeline remounts on
+        // every day switch (key={selectedDay.id}), so leaving this set
+        // made each later visit to that day re-scroll and re-highlight.
+        const timer = setTimeout(() => setHighlightItemId(null), 2500);
+        return () => clearTimeout(timer);
       }
     } catch {
       // Broken/unavailable storage — skip the highlight, nothing else
