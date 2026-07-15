@@ -891,12 +891,19 @@ export default function DayTimeline({
         <>
           {/* Mobile: three equal-width buttons with shortened labels so
               the row never wraps (full labels overflow ~375px screens);
-              desktop keeps natural widths + full labels. */}
+              desktop keeps natural widths + full labels. Styling mirrors
+              AppButton's visual language (rounded-xl, active scale press
+              feedback) hand-rolled here because the shared primitive's
+              shrink-0/whitespace-nowrap fights the responsive flex-1 +
+              dual-label layout this row needs. 新增項目 is tinted as the
+              primary-of-the-row; the two auto tools stay secondary with
+              brand-colored icons (not gold — accent gold is reserved as
+              the AI signal, these are pure logic). */}
           <div className="mb-3 flex items-center gap-2">
             <button
               type="button"
               onClick={() => setEditingItem("new")}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand-50 px-2 py-2 text-xs font-medium text-brand-700 transition hover:bg-brand-100 active:scale-[0.97] sm:flex-initial sm:px-3"
             >
               <Plus className="h-3.5 w-3.5 shrink-0" />
               <span className="sm:hidden">新增項目</span>
@@ -909,9 +916,9 @@ export default function DayTimeline({
               title={
                 !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
               }
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
             >
-              <Waypoints className="h-3.5 w-3.5 shrink-0" />
+              <Waypoints className="h-3.5 w-3.5 shrink-0 text-brand-600" />
               <span className="sm:hidden">最順路線</span>
               <span className="hidden sm:inline">自動安排最順路線</span>
             </button>
@@ -920,9 +927,9 @@ export default function DayTimeline({
               onClick={() => setIsAutoScheduling(true)}
               disabled={items.length < 2}
               title={items.length < 2 ? "需要至少 2 個項目才能排時間" : undefined}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-line px-2 py-2 text-xs text-ink-700 hover:bg-paper-alt disabled:cursor-not-allowed disabled:opacity-50 sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
             >
-              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
+              <CalendarClock className="h-3.5 w-3.5 shrink-0 text-brand-600" />
               自動排時間
             </button>
           </div>
