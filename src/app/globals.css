@@ -124,6 +124,11 @@ input[type="radio"] {
   --animate-fade-up: fade-up 0.2s ease-out;
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-toast-in: toast-in 0.2s ease-out;
+  /* One-shot scale-in for state flips (e.g. the 已加入 badge). */
+  --animate-pop-in: pop-in 0.18s ease-out;
+  /* One-shot amber wash for a timeline card that was just added from the
+     explore page — tells the user exactly where their place landed. */
+  --animate-added-highlight: added-highlight 2s ease-out;
 }
 
 @keyframes fade-up {
@@ -146,6 +151,26 @@ input[type="radio"] {
   }
 }
 
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes added-highlight {
+  from {
+    background-color: var(--color-accent-100);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
 @keyframes toast-in {
   from {
     opacity: 0;
@@ -160,7 +185,9 @@ input[type="radio"] {
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
-  .animate-toast-in {
+  .animate-toast-in,
+  .animate-pop-in,
+  .animate-added-highlight {
     animation: none;
   }
 }

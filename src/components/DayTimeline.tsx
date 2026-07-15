@@ -124,6 +124,7 @@ function SortableItemCard({
   route,
   hasNextStop,
   isAnchor,
+  isHighlighted,
   canEdit,
   isRecomputing,
   isAutoFilling,
@@ -141,6 +142,9 @@ function SortableItemCard({
   route?: TimelineRoute;
   hasNextStop: boolean;
   isAnchor: boolean;
+  // Just added from the explore page — plays a one-shot amber wash so the
+  // user sees where their place landed.
+  isHighlighted: boolean;
   canEdit: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
@@ -186,7 +190,7 @@ function SortableItemCard({
   const stayDuration = formatStayDuration(item.startTime, item.endTime);
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-3">
+    <div ref={setNodeRef} style={style} className="mb-3" id={`timeline-item-${item.id}`}>
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
@@ -194,6 +198,12 @@ function SortableItemCard({
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
         } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"}`}
       >
+        {isHighlighted && (
+          <div
+            aria-hidden="true"
+            className="animate-added-highlight pointer-events-none absolute inset-0 rounded-xl"
+          />
+        )}
         {/* Visual-only drag affordance — the whole card is already the drag
             handle (better for touch than a tiny target), this just shows
             intent on hover for mouse users. Hidden for VIEWER since
@@ -428,6 +438,7 @@ export default function DayTimeline({
   defaultCountry,
   otherDays,
   canEdit,
+  highlightItemId,
 }: {
   tripId: string;
   dayId: string;
@@ -438,9 +449,22 @@ export default function DayTimeline({
   defaultCountry: string;
   otherDays: DaySummary[];
   canEdit: boolean;
+  // Item just added from the explore page (see TripDayBoard's
+  // sessionStorage handshake) — scrolled into view + one-shot highlight.
+  highlightItemId?: string | null;
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
+
+  // Bring the just-added card into view once — the wash animation alone is
+  // pointless if the card sits below the fold.
+  useEffect(() => {
+    if (!highlightItemId) return;
+    const el = document.getElementById(`timeline-item-${highlightItemId}`);
+    if (!el) return;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
+  }, [highlightItemId]);
   // The item (if any) that represents this day's "start from" point (e.g.
   // the hotel) — a real card like any other, just always kept first by
   // handleOrganizeRoute instead of being reordered away. See
@@ -1063,6 +1087,7 @@ export default function DayTimeline({
                   route={route}
                   hasNextStop={nextId != null}
                   isAnchor={item.id === anchorItemId}
+                  isHighlighted={item.id === highlightItemId}
                   canEdit={canEdit}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}

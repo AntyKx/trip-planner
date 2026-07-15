@@ -26,11 +26,18 @@ export default async function ExplorePage({
 
   // Both independent of each other once we have the user, so run them
   // concurrently.
+  const dayInclude = {
+    days: {
+      orderBy: { dayIndex: "asc" as const },
+      include: { _count: { select: { items: true } } },
+    },
+  };
+
   const [trips, favorites] = await Promise.all([
     prisma.trip.findMany({
       where: { AND: [editableBy, { endDate: { gte: todayStart } }] },
       orderBy: { startDate: "asc" },
-      include: { days: { orderBy: { dayIndex: "asc" } } },
+      include: dayInclude,
     }),
     getFavorites(),
   ]);
@@ -41,7 +48,7 @@ export default async function ExplorePage({
   if (tripId && !trips.some((t) => t.id === tripId)) {
     const linkedTrip = await prisma.trip.findFirst({
       where: { AND: [editableBy, { id: tripId }] },
-      include: { days: { orderBy: { dayIndex: "asc" } } },
+      include: dayInclude,
     });
     if (linkedTrip) trips.push(linkedTrip);
   }
@@ -55,6 +62,7 @@ export default async function ExplorePage({
           id: d.id,
           dayIndex: d.dayIndex,
           date: d.date.toISOString().slice(0, 10),
+          itemCount: d._count.items,
         })),
       }))}
       initialTripId={tripId}

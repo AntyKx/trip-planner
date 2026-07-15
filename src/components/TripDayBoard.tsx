@@ -81,6 +81,36 @@ export default function TripDayBoard({
   const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">(
     initialMode ?? "edit"
   );
+  // One-shot highlight for an item just added from the explore page (see
+  // the sessionStorage handshake in ExploreClient's handleAdd) — jump to
+  // that day and let DayTimeline wash the new card so the user sees where
+  // their place landed. Consumed (removed) immediately so it fires once.
+  const [highlightItemId, setHighlightItemId] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("trip-planner:last-added");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        tripId?: string;
+        dayId?: string;
+        itemId?: string;
+      };
+      if (parsed.tripId !== tripId) return;
+      sessionStorage.removeItem("trip-planner:last-added");
+      if (parsed.dayId && days.some((d) => d.id === parsed.dayId)) {
+        // Same pattern as GreetingHero: sessionStorage only exists in the
+        // browser, so this must run post-mount (a useState initializer
+        // would desync server and client HTML and break hydration).
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedDayId(parsed.dayId);
+        setHighlightItemId(parsed.itemId ?? null);
+      }
+    } catch {
+      // Broken/unavailable storage — skip the highlight, nothing else
+      // depends on it.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const shouldReduceMotion = useReducedMotion();
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant
@@ -388,6 +418,7 @@ export default function TripDayBoard({
                   .filter((d) => d.id !== selectedDay.id)
                   .map((d) => ({ id: d.id, dayIndex: d.dayIndex, date: d.date }))}
                 canEdit={canEdit}
+                highlightItemId={highlightItemId}
               />
             </div>
           </section>

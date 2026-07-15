@@ -25,7 +25,7 @@ import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/business
 export type TripOption = {
   id: string;
   title: string;
-  days: { id: string; dayIndex: number; date: string }[];
+  days: { id: string; dayIndex: number; date: string; itemCount: number }[];
 };
 
 const WEEKDAY_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
@@ -33,11 +33,14 @@ const WEEKDAY_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
 // date is a "YYYY-MM-DD" string (see ExplorePage) — parsed and read back via
 // UTC getters so the displayed day/weekday can't drift a day off depending
 // on the viewer's local timezone offset.
-function formatDayOption(dayIndex: number, date: string): string {
+function formatDayOption(dayIndex: number, date: string, itemCount: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
   const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `Day ${dayIndex} · ${mm}/${dd}（${WEEKDAY_LABEL[d.getUTCDay()]}）`;
+  // Count kept terse（「・3 個」）— the select renders at a forced 16px
+  // (see the globals.css iOS-zoom rule), so long option labels overflow
+  // the narrow control.
+  return `Day ${dayIndex} · ${mm}/${dd}（${WEEKDAY_LABEL[d.getUTCDay()]}）・${itemCount} 個`;
 }
 
 export default function ExploreClient({
@@ -95,6 +98,9 @@ export default function ExploreClient({
   // same place can legitimately get added to several different days (e.g.
   // a hotel across a multi-night stay), so this has to track per-day state.
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+  // Local +1s on top of the server-loaded per-day item counts, so the day
+  // picker's「・N 個」updates immediately after each add without refetching.
+  const [dayCountBump, setDayCountBump] = useState<Record<string, number>>({});
   const [isAdding, startAdding] = useTransition();
   // "This day might be closed" warning per place, shown on the search
   // result card right after adding — not shown *before* adding since we
@@ -157,7 +163,7 @@ export default function ExploreClient({
         return next;
       });
 
-      await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
+      const added = await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
         name: place.name,
         category: place.category || place.suggestedType,
         country: place.country,
@@ -173,7 +179,31 @@ export default function ExploreClient({
         suggestedType: place.suggestedType,
       });
       setAddedIds((prev) => new Set(prev).add(dayPlaceKey(selectedDayId, place.externalId)));
-      toast.success(`已加入「${place.name}」`);
+      setDayCountBump((prev) => ({
+        ...prev,
+        [selectedDayId]: (prev[selectedDayId] ?? 0) + 1,
+      }));
+      // Handshake with TripDayBoard: on the next visit to this trip's page
+      // it selects this day and plays a one-shot highlight on the new card,
+      // so the user sees exactly where the place landed.
+      try {
+        sessionStorage.setItem(
+          "trip-planner:last-added",
+          JSON.stringify({
+            tripId: selectedTripId,
+            dayId: selectedDayId,
+            itemId: added.itemId,
+          })
+        );
+      } catch {
+        // Storage unavailable (private mode quirks) — highlight is a
+        // nice-to-have, never block the add itself.
+      }
+      toast.success(
+        targetDay
+          ? `已加入「${place.name}」→ Day ${targetDay.dayIndex}（${targetDay.date.slice(5).replace("-", "/")}）`
+          : `已加入「${place.name}」`
+      );
     });
   }
 
@@ -212,7 +242,7 @@ export default function ExploreClient({
     const isAdded = addedIds.has(dayPlaceKey(selectedDayId, place.externalId));
     if (isAdded) {
       return (
-        <AppBadge variant="success">
+        <AppBadge variant="success" className="animate-pop-in">
           <Check className="h-3.5 w-3.5" />
           已加入
         </AppBadge>
@@ -447,7 +477,11 @@ export default function ExploreClient({
             >
               {selectedTrip?.days.map((d) => (
                 <option key={d.id} value={d.id}>
-                  {formatDayOption(d.dayIndex, d.date)}
+                  {formatDayOption(
+                    d.dayIndex,
+                    d.date,
+                    d.itemCount + (dayCountBump[d.id] ?? 0)
+                  )}
                 </option>
               ))}
             </select>

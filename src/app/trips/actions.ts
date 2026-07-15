@@ -203,7 +203,7 @@ export async function addPlaceToDay(
     orderBy: { sortOrder: "desc" },
   });
 
-  await prisma.item.create({
+  const item = await prisma.item.create({
     data: {
       dayId,
       type: itemType,
@@ -213,6 +213,9 @@ export async function addPlaceToDay(
   });
 
   revalidatePath(`/trips/${tripId}`);
+  // Lets ExploreClient record what was just added (sessionStorage) so the
+  // trip page can highlight the new card on the next visit.
+  return { itemId: item.id };
 }
 
 export type AnchorItemResult = {
