@@ -17,6 +17,20 @@ textarea {
   font-size: 16px;
 }
 
+/* Site-wide background: warm paper base with two very faint brand glows
+   pinned to the top corners of the document (they scroll away with the
+   page — deliberately a page-top treatment, not a fixed overlay). Applied
+   on <body> in layout.tsx in place of bg-paper; pages that paint their own
+   full-bleed background (login, journal) simply cover it. Opacities are
+   the "加強版" the user picked from the Artifact preview (the spec's 8%
+   was too faint to notice). */
+.app-glow-bg {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(68, 123, 168, 0.14), transparent 34%),
+    radial-gradient(circle at 95% 15%, rgba(216, 138, 36, 0.12), transparent 30%),
+    var(--color-paper);
+}
+
 /* Removes the ~300ms double-tap-to-zoom delay/gesture on interactive
    controls specifically (buttons, links, checkboxes/radios), without
    disabling pinch-zoom on the page's actual content. */

@@ -72,7 +72,7 @@ export default function RootLayout({
       lang="zh-TW"
       className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-paper pt-[env(safe-area-inset-top)] text-ink-900">
+      <body className="min-h-full flex flex-col app-glow-bg pt-[env(safe-area-inset-top)] text-ink-900">
         {/* Solid strip behind the notch/status bar — with statusBarStyle
             "black-translucent" the webview draws full-bleed under it, so
             without this the status bar icons (always white/light) would

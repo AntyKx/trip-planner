@@ -13,10 +13,16 @@ export default async function TripDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ share?: string }>;
+  searchParams: Promise<{ share?: string; mode?: string }>;
 }) {
   const { id } = await params;
-  const { share: shareToken } = await searchParams;
+  const { share: shareToken, mode: modeParam } = await searchParams;
+  // Deep-link into a specific board mode (home's 行程健檢 hero button uses
+  // ?mode=doctor) — whitelist because this feeds a client component prop.
+  const initialMode =
+    modeParam === "travel" || modeParam === "checklist" || modeParam === "doctor"
+      ? modeParam
+      : undefined;
 
   // getCurrentUser() (not requireUser()) and the trip query are independent
   // (both keyed off the request, not each other), so run them concurrently
@@ -207,6 +213,7 @@ export default async function TripDetailPage({
           <TripDayBoard
             tripId={trip.id}
             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
+            initialMode={initialMode}
             collaborators={collaborators}
             emergencyInfo={trip.emergencyInfo}
             canEdit={canEdit}

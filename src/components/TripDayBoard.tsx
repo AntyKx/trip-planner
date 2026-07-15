@@ -40,6 +40,7 @@ export type BoardDay = {
 export default function TripDayBoard({
   tripId,
   apiKey,
+  initialMode,
   days,
   collaborators,
   emergencyInfo,
@@ -54,6 +55,9 @@ export default function TripDayBoard({
 }: {
   tripId: string;
   apiKey?: string;
+  // Deep-link entry (?mode=doctor from the home hero's 行程健檢 button);
+  // already whitelisted server-side in trips/[id]/page.tsx.
+  initialMode?: "travel" | "checklist" | "doctor";
   days: BoardDay[];
   collaborators: Collaborator[];
   emergencyInfo: string | null;
@@ -66,8 +70,17 @@ export default function TripDayBoard({
   journalShareToken: string | null;
   checklistItems: ChecklistItemView[];
 }) {
-  const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
-  const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">("edit");
+  const localToday = localTodayStr();
+  const [selectedDayId, setSelectedDayId] = useState(
+    // Entering travel mode via deep link mirrors switchToTravelMode below:
+    // jump straight to today's day when the trip is in progress.
+    (initialMode === "travel"
+      ? days.find((d) => d.date === localToday)?.id
+      : undefined) ?? days[0]?.id
+  );
+  const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">(
+    initialMode ?? "edit"
+  );
   const shouldReduceMotion = useReducedMotion();
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant

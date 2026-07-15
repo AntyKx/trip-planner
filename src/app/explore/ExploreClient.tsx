@@ -45,11 +45,15 @@ export default function ExploreClient({
   initialTripId,
   initialDayId,
   initialFavorites,
+  initialView,
 }: {
   trips: TripOption[];
   initialTripId?: string;
   initialDayId?: string;
   initialFavorites: PlaceResult[];
+  // Deep-link entry (home page's 我的收藏 quick entry uses
+  // /explore?view=favorites) — the tab itself is client state.
+  initialView?: "search" | "favorites";
 }) {
   const defaultTripId = initialTripId ?? trips[0]?.id ?? "";
   const defaultTrip = trips.find((t) => t.id === defaultTripId);
@@ -70,7 +74,9 @@ export default function ExploreClient({
   // both used to show the same generic prompt.
   const [hasSearched, setHasSearched] = useState(false);
 
-  const [mode, setMode] = useState<"search" | "favorites">("search");
+  const [mode, setMode] = useState<"search" | "favorites">(
+    initialView ?? "search"
+  );
   const [favorites, setFavorites] = useState<PlaceResult[]>(initialFavorites);
   const [isTogglingFavorite, startTogglingFavorite] = useTransition();
   const favoritedIds = new Set(favorites.map((f) => f.externalId));

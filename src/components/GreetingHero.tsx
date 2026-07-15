@@ -24,8 +24,11 @@ export default function GreetingHero({ name }: { name: string }) {
   }, []);
 
   return (
-    <p className="text-sm text-ink-500">
-      {greeting ?? "哈囉"}，{name}
-    </p>
+    <div>
+      <h1 className="text-3xl font-bold text-ink-900 sm:text-4xl">
+        {greeting ?? "哈囉"}，{name}
+      </h1>
+      <p className="mt-1 text-sm text-ink-500">下一段旅程，從這裡開始</p>
+    </div>
   );
 }

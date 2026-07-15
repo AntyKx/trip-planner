@@ -6,9 +6,9 @@ import { getFavorites } from "./actions";
 export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tripId?: string; dayId?: string }>;
+  searchParams: Promise<{ tripId?: string; dayId?: string; view?: string }>;
 }) {
-  const { tripId, dayId } = await searchParams;
+  const { tripId, dayId, view } = await searchParams;
   const user = await requireUser();
 
   // Both independent of each other once we have the user, so run them
@@ -41,6 +41,7 @@ export default async function ExplorePage({
       initialTripId={tripId}
       initialDayId={dayId}
       initialFavorites={favorites}
+      initialView={view === "favorites" ? "favorites" : undefined}
     />
   );
 }
