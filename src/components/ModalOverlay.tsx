@@ -115,12 +115,63 @@ const ModalOverlay = forwardRef<
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") requestClose();
+      if (e.key === "Escape") {
+        requestClose();
+        return;
+      }
+      // Focus trap: Tab cycles within the dialog instead of escaping into
+      // the (visually hidden but still tabbable) page behind it.
+      if (e.key === "Tab" && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        const inside = panelRef.current.contains(active);
+        if (e.shiftKey && (!inside || active === first || active === panelRef.current)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (!inside || active === last)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Drag-to-close, mobile bottom-sheet style — listeners live on the grab
+  // handle only (not the whole panel) so they can never fight the panel's
+  // own scrolling content. Direct style writes (not state) so the panel
+  // follows the finger without re-rendering every move.
+  const dragStartYRef = useRef<number | null>(null);
+  const dragOffsetRef = useRef(0);
+
+  function handleDragStart(e: React.TouchEvent) {
+    dragStartYRef.current = e.touches[0].clientY;
+    dragOffsetRef.current = 0;
+    if (panelRef.current) panelRef.current.style.transitionDuration = "0ms";
+  }
+
+  function handleDragMove(e: React.TouchEvent) {
+    if (dragStartYRef.current == null || !panelRef.current) return;
+    const dy = Math.max(0, e.touches[0].clientY - dragStartYRef.current);
+    dragOffsetRef.current = dy;
+    panelRef.current.style.transform = `translateY(${dy}px)`;
+  }
+
+  function handleDragEnd() {
+    if (dragStartYRef.current == null || !panelRef.current) return;
+    const dy = dragOffsetRef.current;
+    dragStartYRef.current = null;
+    panelRef.current.style.transitionDuration = "";
+    panelRef.current.style.transform = "";
+    if (dy > 80) requestClose();
+  }
 
   return (
     <div
@@ -137,16 +188,31 @@ const ModalOverlay = forwardRef<
         aria-labelledby={titleId}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={`rounded-t-2xl bg-surface outline-none transition-[opacity,transform] motion-reduce:transition-none sm:rounded-2xl ${
+        className={`max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-t-2xl bg-surface outline-none transition-[opacity,transform] motion-reduce:transition-none sm:max-h-[85vh] sm:rounded-2xl ${
           visible
             ? "translate-y-0 opacity-100 sm:scale-100"
             : "translate-y-8 opacity-0 sm:translate-y-0 sm:scale-95"
         } ${panelClassName}`}
         style={{ transitionDuration: `${CLOSE_DURATION_MS}ms` }}
       >
+        {/* Mobile-only grab handle: visual bottom-sheet affordance + the
+            drag-to-close touch target. Generous hit area (py) around the
+            thin bar; desktop hides it entirely (centered dialogs don't
+            drag). */}
+        <div
+          className="-mt-2 flex justify-center pb-1 pt-2 sm:hidden"
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+        >
+          <div className="h-1 w-9 rounded-full bg-line-strong" aria-hidden="true" />
+        </div>
         <ModalCloseContext.Provider value={requestClose}>
           {children}
         </ModalCloseContext.Provider>
+        {/* Bottom sheets sit flush with the screen edge on mobile — keep
+            content clear of the iPhone home indicator. */}
+        <div className="h-[env(safe-area-inset-bottom)] sm:hidden" aria-hidden="true" />
       </div>
     </div>
   );
