@@ -5,6 +5,7 @@ import { CheckCircle2, TriangleAlert, Info, Sparkles } from "lucide-react";
 import type { DoctorFinding } from "@/lib/tripDoctor";
 import { summarizeTripDoctorFindings, type DoctorSummaryResult } from "@/app/trips/aiActions";
 import EmptyState from "./EmptyState";
+import { Skeleton } from "./LoadingSkeleton";
 
 type LoadedSummary = Extract<DoctorSummaryResult, { ok: true }>;
 
@@ -103,6 +104,15 @@ export default function TripDoctorTab({
             <Sparkles className={`h-3.5 w-3.5 ${isSummarizing ? "animate-pulse" : ""}`} />
             {isSummarizing ? "AI 統整中…" : "✨ AI 幫我總結，排出優先順序"}
           </button>
+          {/* Previews the shape of the summary card about to replace this
+              button, instead of a blank gap while the request is in flight. */}
+          {isSummarizing && (
+            <div className="mt-1.5 space-y-2 rounded-lg border border-accent-100 bg-accent-50 p-3">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          )}
           {summaryError && <p className="mt-1.5 text-xs text-red-500">{summaryError}</p>}
         </div>
       ) : (

@@ -5,6 +5,7 @@ import { Sparkles, TriangleAlert, ChevronDown, ChevronUp, RefreshCw } from "luci
 import { getPlaceInsight, type ReviewInput, type PlaceInsightResult } from "@/app/explore/aiActions";
 import { getPlaceDetails } from "@/lib/places";
 import { useToast } from "./Toast";
+import { Skeleton } from "./LoadingSkeleton";
 
 type LoadedInsight = Extract<PlaceInsightResult, { ok: true }>;
 
@@ -113,6 +114,19 @@ export default function PlaceInsightSection({
           <Sparkles className={`h-3.5 w-3.5 ${isLoading ? "animate-pulse" : ""}`} />
           {isLoading ? "AI 分析中…" : compact ? "✨ AI 分析" : "✨ AI 看看適不適合"}
         </button>
+        {/* Previews the shape of the result card that's about to replace
+            this button (score badge + two text lines) instead of leaving a
+            blank gap while the request is in flight. */}
+        {isLoading && (
+          <div className="mt-1.5 w-full space-y-2 rounded-lg border border-accent-100 bg-accent-50 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-4 w-10" />
+            </div>
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-2/3" />
+          </div>
+        )}
         {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
       </div>
     );

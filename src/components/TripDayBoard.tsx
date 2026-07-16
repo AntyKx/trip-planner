@@ -14,6 +14,7 @@ import TravelModeView from "./TravelModeView";
 import ChecklistTab, { type ChecklistItemView } from "./ChecklistTab";
 import TripDoctorTab from "./TripDoctorTab";
 import SmartBanner from "./SmartBanner";
+import { Skeleton } from "./LoadingSkeleton";
 import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";
 import { fetchDayWeather } from "@/app/trips/actions";
 import {
@@ -146,6 +147,14 @@ export default function TripDayBoard({
   const daysWithWeather = days.map((day) => ({
     ...day,
     weather: weatherByDay[day.id] ?? day.weather,
+    // Distinguishes "still fetching" from "fetched, genuinely unavailable"
+    // (e.g. the trip is outside Open-Meteo's ~16-day forecast window,
+    // which legitimately resolves to null forever) — only the former
+    // should show a loading skeleton. Days with no place item at all never
+    // get a weather fetch triggered (see the effect above), so they're
+    // never "loading" either.
+    isWeatherLoading:
+      day.timelineItems.some((i) => i.place) && !(day.id in weatherByDay),
   }));
 
   // Pure/synchronous — every field here is already loaded client-side, so
@@ -410,7 +419,7 @@ export default function TripDayBoard({
                 <span>
                   Day {selectedDay.dayIndex} · {selectedDay.date}
                 </span>
-                {selectedDay.weather && SelectedWeatherIcon && (
+                {selectedDay.weather && SelectedWeatherIcon ? (
                   <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
                     <SelectedWeatherIcon className="h-4 w-4" />
                     <span>
@@ -418,6 +427,10 @@ export default function TripDayBoard({
                       {Math.round(selectedDay.weather.minTemp)}°
                     </span>
                   </span>
+                ) : (
+                  selectedDay.isWeatherLoading && (
+                    <Skeleton className="h-[22px] w-16 rounded-full" />
+                  )
                 )}
               </h2>
               <span className="text-sm text-ink-500">

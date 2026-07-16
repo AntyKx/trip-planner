@@ -2,7 +2,15 @@
 // skeletons (a few common ones are provided below) instead of every page
 // hand-rolling its own animate-pulse divs.
 export function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-line/70 ${className ?? ""}`} />;
+  // motion-reduce:animate-none (not the global keyframe media-query block
+  // in globals.css — that's for the app's own custom --animate-* entries,
+  // this is Tailwind's built-in animate-pulse) leaves a static warm-gray
+  // block instead of a shimmer when the OS setting is on.
+  return (
+    <div
+      className={`animate-pulse rounded-md bg-line/70 motion-reduce:animate-none ${className ?? ""}`}
+    />
+  );
 }
 
 export function TripCardSkeleton() {
