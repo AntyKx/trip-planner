@@ -292,6 +292,8 @@ export default async function TripDetailPage({
                   lng: item.place!.lng,
                   type: item.type,
                   country: item.place!.country,
+                  photoUrl: item.place!.photoUrl,
+                  startTime: item.startTime,
                 })),
               mapRoutes: day.routes.map((route) => ({
                 fromItemId: route.fromItemId,

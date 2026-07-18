@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Map, Marker, useMap } from "@vis.gl/react-google-maps";
-import { TYPE_COLOR } from "@/lib/labels";
+import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { TYPE_COLOR, formatTime } from "@/lib/labels";
 
 const START_MARKER_COLOR = "#b45309";
 
@@ -10,13 +10,20 @@ const START_MARKER_COLOR = "#b45309";
 // default red pin. Uses plain objects (not `new google.maps.Size/Point`) so
 // this can run during React's render phase before the Maps script has
 // necessarily finished loading — the Icon type is only used for annotation.
-function buildMarkerIcon(label: string, hexColor: string): google.maps.Icon {
-  const size = 30;
+// `highlighted` bumps the size and stroke so the currently-selected item
+// (clicked on the map or "located" from a timeline card) stands out.
+function buildMarkerIcon(
+  label: string,
+  hexColor: string,
+  highlighted = false
+): google.maps.Icon {
+  const size = highlighted ? 38 : 30;
+  const strokeWidth = highlighted ? 3 : 2;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${
     size / 2
   }" cy="${size / 2}" r="${
     size / 2 - 1.5
-  }" fill="${hexColor}" stroke="white" stroke-width="2"/><text x="${size / 2}" y="${
+  }" fill="${hexColor}" stroke="white" stroke-width="${strokeWidth}"/><text x="${size / 2}" y="${
     size / 2 + 4
   }" font-family="sans-serif" font-size="12" font-weight="700" fill="white" text-anchor="middle">${label}</text></svg>`;
   return {
@@ -33,6 +40,11 @@ export type MapItem = {
   lng: number;
   type: string;
   country?: string;
+  // For the InfoWindow shown when this item is selected (map marker click
+  // or the timeline card's "locate" button) — optional since not every
+  // caller needs to thread these through.
+  photoUrl?: string | null;
+  startTime?: string | Date | null;
 };
 
 export type MapRoute = {
@@ -96,6 +108,36 @@ function RouteSegment({
   return null;
 }
 
+// Replaces the old "pick a center/zoom once on mount" behavior, which left
+// the viewport stuck wherever it happened to be after switching days or
+// when a day's stops are spread out — some markers ended up off-screen,
+// looking like they "weren't nearby" even though they were part of the
+// same day. Keyed on the item-id list (not the array reference, which is
+// rebuilt every render) so this only re-fits when the actual set of stops
+// changes, not on every unrelated re-render.
+function FitBounds({ items }: { items: MapItem[] }) {
+  const map = useMap();
+  const itemsKey = items.map((i) => i.id).join(",");
+
+  useEffect(() => {
+    if (!map || items.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    items.forEach((i) => bounds.extend({ lat: i.lat, lng: i.lng }));
+    map.fitBounds(bounds, 48);
+
+    // A single stop (or a tight cluster) makes fitBounds zoom all the way
+    // in — capping it once the viewport settles avoids a separate branch
+    // for "only one item".
+    const listener = google.maps.event.addListenerOnce(map, "idle", () => {
+      if ((map.getZoom() ?? 0) > 16) map.setZoom(16);
+    });
+    return () => google.maps.event.removeListener(listener);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, itemsKey]);
+
+  return null;
+}
+
 function MissingKeyNotice() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-1 rounded-lg bg-paper-alt px-4 text-center text-xs text-ink-500">
@@ -108,9 +150,16 @@ function MissingKeyNotice() {
 export default function TripMap({
   apiKey,
   days,
+  selectedItemId,
+  onSelectItem,
 }: {
   apiKey?: string;
   days: MapDay[];
+  // "Currently selected" item — set by clicking a marker, or by the
+  // timeline card's "定位" button (see TripDayBoard). Drives both the
+  // highlighted marker style and the InfoWindow.
+  selectedItemId: string | null;
+  onSelectItem: (id: string | null) => void;
 }) {
   const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const day = days.find((d) => d.id === selectedDayId) ?? days[0];
@@ -128,6 +177,10 @@ export default function TripMap({
   }
 
   const center = { lat: day.items[0].lat, lng: day.items[0].lng };
+  // Only ever non-null when the selection belongs to the day actually
+  // being shown — switching days makes this (and the InfoWindow/marker
+  // highlight below) fall away on its own, no explicit reset needed.
+  const selectedItem = day.items.find((i) => i.id === selectedItemId);
 
   return (
     <div className="flex h-full flex-col">
@@ -153,6 +206,8 @@ export default function TripMap({
         gestureHandling="greedy"
         disableDefaultUI={false}
       >
+        <FitBounds items={day.items} />
+
         {day.items.map((item, index) => {
           const isStart = index === 0;
           const color = isStart
@@ -163,7 +218,12 @@ export default function TripMap({
               key={item.id}
               position={{ lat: item.lat, lng: item.lng }}
               title={item.name}
-              icon={buildMarkerIcon(isStart ? "S" : String(index + 1), color)}
+              icon={buildMarkerIcon(
+                isStart ? "S" : String(index + 1),
+                color,
+                item.id === selectedItemId
+              )}
+              onClick={() => onSelectItem(item.id)}
             />
           );
         })}
@@ -181,6 +241,34 @@ export default function TripMap({
             />
           );
         })}
+
+        {selectedItem && (
+          <InfoWindow
+            position={{ lat: selectedItem.lat, lng: selectedItem.lng }}
+            onCloseClick={() => onSelectItem(null)}
+          >
+            <div className="max-w-[200px] p-1">
+              {selectedItem.photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={selectedItem.photoUrl}
+                  alt={selectedItem.name}
+                  className="mb-1.5 h-20 w-full rounded object-cover"
+                />
+              )}
+              <p
+                className={`text-sm font-semibold ${
+                  TYPE_COLOR[selectedItem.type]?.text ?? TYPE_COLOR.PLACE.text
+                }`}
+              >
+                {selectedItem.name}
+              </p>
+              {selectedItem.startTime && (
+                <p className="text-xs text-ink-500">{formatTime(selectedItem.startTime)}</p>
+              )}
+            </div>
+          </InfoWindow>
+        )}
       </Map>
       </div>
     </div>

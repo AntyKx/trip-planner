@@ -25,6 +25,7 @@ import {
   ExternalLink,
   GripVertical,
   MapPin,
+  MapPinned,
   Navigation,
   Pencil,
   Plus,
@@ -126,6 +127,7 @@ function SortableItemCard({
   hasNextStop,
   isAnchor,
   isHighlighted,
+  isSelected,
   canEdit,
   isRecomputing,
   isAutoFilling,
@@ -136,6 +138,7 @@ function SortableItemCard({
   onModeChange,
   onViewAlternatives,
   onOpenJapanHint,
+  onLocate,
 }: {
   tripId: string;
   dayId: string;
@@ -146,6 +149,10 @@ function SortableItemCard({
   // Just added from the explore page — plays a one-shot amber wash so the
   // user sees where their place landed.
   isHighlighted: boolean;
+  // Currently selected on the map (marker click or this card's own
+  // "定位" button) — a standing ring, not a one-shot animation like
+  // isHighlighted above.
+  isSelected: boolean;
   canEdit: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
@@ -156,6 +163,7 @@ function SortableItemCard({
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
   onOpenJapanHint: () => void;
+  onLocate: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id, disabled: !canEdit });
@@ -197,7 +205,9 @@ function SortableItemCard({
         {...(canEdit ? listeners : {})}
         className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
-        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"}`}
+        } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"} ${
+          isSelected ? "ring-2 ring-brand-400" : ""
+        }`}
       >
         {isHighlighted && (
           <div
@@ -281,6 +291,19 @@ function SortableItemCard({
                 (狀態徽章 keep full visibility; only the action buttons
                 tighten up). */}
             <div className="flex shrink-0 items-center">
+              {item.place && (
+                <button
+                  type="button"
+                  onClick={onLocate}
+                  aria-label="在地圖上定位"
+                  title="在地圖上定位"
+                  className={`flex min-h-10 min-w-10 items-center justify-center hover:text-brand-600 ${
+                    isSelected ? "text-brand-600" : "text-ink-500"
+                  }`}
+                >
+                  <MapPinned className="h-4 w-4" />
+                </button>
+              )}
               {canEdit && (
                 <button
                   type="button"
@@ -442,6 +465,8 @@ export default function DayTimeline({
   otherDays,
   canEdit,
   highlightItemId,
+  selectedItemId,
+  onLocateItem,
 }: {
   tripId: string;
   dayId: string;
@@ -455,6 +480,9 @@ export default function DayTimeline({
   // Item just added from the explore page (see TripDayBoard's
   // sessionStorage handshake) — scrolled into view + one-shot highlight.
   highlightItemId?: string | null;
+  // Currently selected on the map — see TripDayBoard, shared with TripMap.
+  selectedItemId?: string | null;
+  onLocateItem?: (itemId: string) => void;
 }) {
   const [items, setItems] = useState(initialItems);
   const [routes, setRoutes] = useState(initialRoutes);
@@ -1091,6 +1119,7 @@ export default function DayTimeline({
                   hasNextStop={nextId != null}
                   isAnchor={item.id === anchorItemId}
                   isHighlighted={item.id === highlightItemId}
+                  isSelected={item.id === selectedItemId}
                   canEdit={canEdit}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
@@ -1114,6 +1143,7 @@ export default function DayTimeline({
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) openJapanHint(item, to);
                   }}
+                  onLocate={() => onLocateItem?.(item.id)}
                 />
               );
             })}

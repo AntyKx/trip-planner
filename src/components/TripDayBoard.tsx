@@ -83,6 +83,22 @@ export default function TripDayBoard({
   const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">(
     initialMode ?? "edit"
   );
+  // Drives the highlighted marker + InfoWindow on the map, the matching
+  // ring on its timeline card, and the map-panel legend row — set by
+  // clicking any of those three. Falls away on its own when the day
+  // changes (see TripMap: only renders a match if the id belongs to the
+  // day currently shown).
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
+  function handleLocateItem(itemId: string) {
+    setSelectedItemId(itemId);
+    // The map panel sits below the timeline on mobile — without this,
+    // "定位" would select the item but the map itself stays off-screen.
+    // A no-op on desktop, where the map is already in view.
+    document
+      .getElementById("day-map-panel")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
   // One-shot highlight for an item just added from the explore page (see
   // the sessionStorage handshake in ExploreClient's handleAdd) — jump to
   // that day and let DayTimeline wash the new card so the user sees where
@@ -483,6 +499,8 @@ export default function TripDayBoard({
                   .map((d) => ({ id: d.id, dayIndex: d.dayIndex, date: d.date }))}
                 canEdit={canEdit}
                 highlightItemId={highlightItemId}
+                selectedItemId={selectedItemId}
+                onLocateItem={handleLocateItem}
               />
             </div>
           </section>
@@ -492,7 +510,7 @@ export default function TripDayBoard({
       </div>
 
       {/* Map panel — always scoped to the day selected above */}
-      <aside className="space-y-4 lg:sticky lg:top-10">
+      <aside id="day-map-panel" className="space-y-4 lg:sticky lg:top-10">
         <div className="h-fit rounded-xl border border-line bg-surface p-4 shadow-sm">
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <MapIcon className="h-4 w-4" />
@@ -501,6 +519,8 @@ export default function TripDayBoard({
           <div className="mt-3 h-[260px] lg:h-[480px]">
             <TripMap
               apiKey={apiKey}
+              selectedItemId={selectedItemId}
+              onSelectItem={setSelectedItemId}
               days={
                 selectedDay
                   ? [
@@ -517,15 +537,22 @@ export default function TripDayBoard({
           </div>
           <ul className="mt-4 space-y-2">
             {selectedDay?.mapItems.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-center gap-2 text-sm text-ink-700"
-              >
-                <MapPin className="h-4 w-4 shrink-0 text-ink-500" />
-                <span className="flex-1">{item.name}</span>
-                <span className="text-xs text-ink-500">
-                  {item.lat.toFixed(3)}, {item.lng.toFixed(3)}
-                </span>
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedItemId(item.id)}
+                  className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm transition ${
+                    item.id === selectedItemId
+                      ? "bg-brand-50 text-brand-700"
+                      : "text-ink-700 hover:bg-paper-alt"
+                  }`}
+                >
+                  <MapPin className="h-4 w-4 shrink-0 text-ink-500" />
+                  <span className="flex-1">{item.name}</span>
+                  <span className="text-xs text-ink-500">
+                    {item.lat.toFixed(3)}, {item.lng.toFixed(3)}
+                  </span>
+                </button>
               </li>
             ))}
             {selectedDay?.mapItems.length === 0 && (
