@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Skeleton } from "./LoadingSkeleton";
 
 // Unifies two cases call sites used to handle separately (or not handle at
@@ -24,12 +24,33 @@ export default function ImgWithFallback({
 }) {
   const [broken, setBroken] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // A browser-cached image can finish loading before React ever attaches
+  // the onLoad listener (a well-known React/DOM race) — that left the
+  // skeleton stuck forever for any photo already cached from an earlier
+  // page visit (e.g. seen once inside a trip, then never showing on the
+  // home page afterward). `.complete` catches that case right after mount;
+  // `naturalWidth > 0` distinguishes an already-succeeded load from an
+  // already-failed one (both make `.complete` true).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoaded(false);
+    setBroken(false);
+    const img = imgRef.current;
+    if (img?.complete) {
+      if (img.naturalWidth > 0) setLoaded(true);
+      else setBroken(true);
+    }
+  }, [src]);
+
   if (!src || broken) return <>{fallback}</>;
   return (
     <>
       {!loaded && <Skeleton className={className} />}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
+        ref={imgRef}
         src={src}
         alt={alt}
         onError={() => setBroken(true)}
