@@ -191,8 +191,10 @@ export async function assignChecklistItem(itemId: string, userId: string | null)
 // optimistically, and this is called on every drag.
 export async function reorderChecklistItems(tripId: string, orderedItemIds: string[]) {
   await requireTripEditor(tripId);
+  // Bounded regardless of what the drag-and-drop UI could ever actually
+  // produce — reachable by direct POST with an arbitrarily large array.
   await prisma.$transaction(
-    orderedItemIds.map((id, index) =>
+    orderedItemIds.slice(0, 200).map((id, index) =>
       prisma.checklistItem.updateMany({
         where: { id, tripId },
         data: { sortOrder: index + 1 },

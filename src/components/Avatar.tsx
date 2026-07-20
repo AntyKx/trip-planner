@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type AvatarPerson = { name: string; avatarUrl?: string | null };
 
@@ -18,10 +18,24 @@ export function Avatar({
   // Google avatar URLs can 404 (token expiry, photo removed) — falls back
   // to the initial-letter circle instead of showing a broken-image icon.
   const [broken, setBroken] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // A browser-cached failed image can be `.complete` before React attaches
+  // the onError listener (same race fixed in ImgWithFallback.tsx) — without
+  // this, a previously-404'd avatar silently shows the browser's broken-
+  // image icon instead of falling back to the initial-letter circle.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBroken(false);
+    const img = imgRef.current;
+    if (img?.complete && img.naturalWidth === 0) setBroken(true);
+  }, [avatarUrl]);
+
   if (avatarUrl && !broken) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
+        ref={imgRef}
         src={avatarUrl}
         alt={name}
         onError={() => setBroken(true)}

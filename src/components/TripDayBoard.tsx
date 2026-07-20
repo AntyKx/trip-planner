@@ -72,17 +72,34 @@ export default function TripDayBoard({
   journalShareToken: string | null;
   checklistItems: ChecklistItemView[];
 }) {
-  const localToday = localTodayStr();
-  const [selectedDayId, setSelectedDayId] = useState(
-    // Entering travel mode via deep link mirrors switchToTravelMode below:
-    // jump straight to today's day when the trip is in progress.
-    (initialMode === "travel"
-      ? days.find((d) => d.date === localToday)?.id
-      : undefined) ?? days[0]?.id
-  );
+  // Starts at days[0] even for a ?mode=travel deep link — localTodayStr()
+  // reads the viewer's local calendar day, which can disagree with the
+  // server's UTC "today" during the viewer's early morning in any UTC+
+  // timezone (see localTodayStr's own comment). Computing it in this
+  // initializer would make the SSR HTML and the first client render pick
+  // different days, a hydration mismatch. The effect below corrects the
+  // selection client-side once mounted, same deferred pattern as
+  // GreetingHero uses for the same class of problem.
+  const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const [mode, setMode] = useState<"edit" | "travel" | "checklist" | "doctor">(
     initialMode ?? "edit"
   );
+  useEffect(() => {
+    if (initialMode !== "travel") return;
+    const today = localTodayStr();
+    const todayDay = days.find((d) => d.date === today);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (todayDay) setSelectedDayId(todayDay.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // Same deferred-to-client reasoning as selectedDayId above — starts null
+  // (SSR and first client paint agree: nothing is marked "today" yet) and
+  // resolves once mounted.
+  const [todayStr, setTodayStr] = useState<string | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTodayStr(localTodayStr());
+  }, []);
   // Drives the highlighted marker + InfoWindow on the map, the matching
   // ring on its timeline card, and the map-panel legend row — set by
   // clicking any of those three. Falls away on its own when the day
@@ -200,7 +217,6 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
-  const todayStr = localTodayStr();
   // Mirrors what page.tsx's Trip Hero used to compute from "today's real
   // date" — moved here so it follows whichever Day Tab is selected instead
   // (client state the server-rendered hero can't see).

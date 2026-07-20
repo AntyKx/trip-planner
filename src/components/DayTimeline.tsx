@@ -506,6 +506,15 @@ export default function DayTimeline({
   const toast = useToast();
   const [routeError, setRouteError] = useState<string | null>(null);
   const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
+  // Request-token guards for the three async handlers below (mode change,
+  // Japan transit hint, transit alternatives) — each only has one active
+  // target at a time, so a fresh call bumps its token and a resolving
+  // callback whose token has since been superseded (e.g. the user picked a
+  // different leg, or re-triggered the same one, before the first request
+  // finished) just discards its result instead of overwriting newer state.
+  const legModeRequestIdRef = useRef<Record<string, number>>({});
+  const japanHintRequestIdRef = useRef(0);
+  const alternativesRequestIdRef = useRef(0);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [viewingLeg, setViewingLeg] = useState<{
     from: TimelineItem;
@@ -667,6 +676,10 @@ export default function DayTimeline({
       return;
     }
     const key = `${from.id}->${to.id}`;
+    const requestId = (legModeRequestIdRef.current[key] ?? 0) + 1;
+    legModeRequestIdRef.current[key] = requestId;
+    const isCurrent = () => legModeRequestIdRef.current[key] === requestId;
+
     setRecomputingKey(key);
     setRouteError(null);
     try {
@@ -681,6 +694,7 @@ export default function DayTimeline({
           ? { transitOptions: { departureTime: new Date() } }
           : {}),
       });
+      if (!isCurrent()) return; // superseded by a later mode change on this leg
       const leg = result.routes[0]?.legs?.[0];
       upsertRoute({
         fromItemId: from.id,
@@ -693,9 +707,9 @@ export default function DayTimeline({
         provider: "google",
       });
     } catch {
-      setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
+      if (isCurrent()) setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
     } finally {
-      setRecomputingKey(null);
+      if (isCurrent()) setRecomputingKey(null);
     }
   }
 
@@ -742,6 +756,7 @@ export default function DayTimeline({
     setJapanHintLeg({ from, to });
     setJapanHint(null);
     setIsLoadingJapanHint(true);
+    const requestId = ++japanHintRequestIdRef.current;
     (async () => {
       const result = await getJapanTransitHint(
         from.place!.lat,
@@ -749,6 +764,9 @@ export default function DayTimeline({
         to.place!.lat,
         to.place!.lng
       );
+      // Superseded — the user opened a different leg (or re-opened this
+      // one) before this request finished; don't clobber the newer state.
+      if (japanHintRequestIdRef.current !== requestId) return;
       setJapanHint(result);
       setIsLoadingJapanHint(false);
     })();
@@ -760,6 +778,7 @@ export default function DayTimeline({
     setAlternatives([]);
     setAlternativesError(null);
     setIsLoadingAlternatives(true);
+    const requestId = ++alternativesRequestIdRef.current;
     (async () => {
       const directionsService = new routesLibrary.DirectionsService();
       const alts = await fetchTransitAlternatives(
@@ -768,6 +787,7 @@ export default function DayTimeline({
         { lat: to.place!.lat, lng: to.place!.lng },
         from.place!.country.toLowerCase()
       );
+      if (alternativesRequestIdRef.current !== requestId) return;
       setAlternatives(alts);
       if (alts.length === 0) {
         setAlternativesError("找不到大眾運輸路線建議");

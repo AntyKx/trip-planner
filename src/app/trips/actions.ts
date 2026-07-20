@@ -54,8 +54,11 @@ export async function reorderItems(
 ) {
   await requireTripEditor(tripId);
   await requireDayInTrip(tripId, dayId);
+  // Bounded regardless of what the drag-and-drop UI could ever actually
+  // produce — this is reachable by direct POST with an arbitrarily large
+  // array, which would otherwise build one $transaction op per element.
   await prisma.$transaction(
-    orderedItemIds.map((id, index) =>
+    orderedItemIds.slice(0, 200).map((id, index) =>
       // updateMany (not update) so this scopes to dayId too — an id that
       // isn't actually one of this day's items just updates zero rows
       // instead of silently reaching into another trip's data.
@@ -996,6 +999,13 @@ export type JapanTransitHint =
 // each of those stations sits on. That's the most we can show in-app
 // without sending the user to the external results page — actual
 // timetables/fares still require that external link.
+// Each call fans out into up to 5 Ekispert requests (2 nearby-station
+// lookups + one line lookup per station found + the course search) — same
+// AiUsageLog bucket already shared across the AI actions (see
+// src/app/explore/aiActions.ts), just guarding against burning this
+// project's Ekispert quota instead of AI Gateway spend.
+const JAPAN_TRANSIT_CALLS_PER_DAY = 30;
+
 export async function getJapanTransitHint(
   originLat: number,
   originLng: number,
@@ -1004,12 +1014,21 @@ export async function getJapanTransitHint(
 ): Promise<JapanTransitHint> {
   // Unlike every other action here, this had no auth check at all — callable
   // anonymously to burn this project's Ekispert API quota.
-  await requireUser();
+  const user = await requireUser();
 
   const key = process.env.EKISPERT_ACCESS_KEY;
   if (!key) {
     return { ok: false, error: "尚未設定 EKISPERT_ACCESS_KEY" };
   }
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentCalls = await prisma.aiUsageLog.count({
+    where: { userId: user.id, createdAt: { gte: since } },
+  });
+  if (recentCalls >= JAPAN_TRANSIT_CALLS_PER_DAY) {
+    return { ok: false, error: "今天的查詢次數已達上限，請明天再試" };
+  }
+  await prisma.aiUsageLog.create({ data: { userId: user.id } });
 
   try {
     const [fromStations, toStations] = await Promise.all([

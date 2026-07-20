@@ -112,12 +112,14 @@ function RouteSegment({
 // the viewport stuck wherever it happened to be after switching days or
 // when a day's stops are spread out — some markers ended up off-screen,
 // looking like they "weren't nearby" even though they were part of the
-// same day. Keyed on the item-id list (not the array reference, which is
-// rebuilt every render) so this only re-fits when the actual set of stops
-// changes, not on every unrelated re-render.
+// same day. Keyed on id+coordinates (not the array reference, which is
+// rebuilt every render) so this re-fits both when the set of stops changes
+// AND when an existing stop's position changes (e.g. swapping today's
+// anchor hotel to a different address keeps the same item id) — an id-only
+// key missed that second case and left the map pointed at the old spot.
 function FitBounds({ items }: { items: MapItem[] }) {
   const map = useMap();
-  const itemsKey = items.map((i) => i.id).join(",");
+  const itemsKey = items.map((i) => `${i.id}:${i.lat},${i.lng}`).join(",");
 
   useEffect(() => {
     if (!map || items.length === 0) return;
