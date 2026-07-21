@@ -19,14 +19,20 @@ import { Skeleton } from "./LoadingSkeleton";
 // rendered once the user actually switches to that mode (default mode is
 // "edit"/timeline), yet were previously a static import each, shipping
 // ~770 combined lines plus dnd-kit (via ChecklistTab's drag-to-reorder) to
-// every visitor who never opens either tab. `ssr: false` is fine — this
-// whole component tree is already client-only.
+// every visitor who never opens either tab. Deliberately NOT `ssr: false`:
+// the home page's 行程健檢 hero button deep-links straight to
+// `?mode=doctor` (and there's an equivalent checklist link), where `mode`
+// is "doctor"/"checklist" from the very first render — ssr:false would
+// have server-rendered nothing for that case and shown the loading
+// fallback first, undermining the whole point of a "jump straight to the
+// result" deep link. Leaving ssr at its default (true) still skips
+// downloading either chunk for the common case (mode starts "edit", so
+// neither is rendered at all on first paint) while still letting the
+// deep-link case be server-rendered like before.
 const ChecklistTab = dynamic(() => import("./ChecklistTab"), {
-  ssr: false,
   loading: () => <div className="py-10 text-center text-sm text-ink-500">載入中…</div>,
 });
 const TripDoctorTab = dynamic(() => import("./TripDoctorTab"), {
-  ssr: false,
   loading: () => <div className="py-10 text-center text-sm text-ink-500">載入中…</div>,
 });
 import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";

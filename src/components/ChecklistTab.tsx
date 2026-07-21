@@ -341,12 +341,18 @@ export default function ChecklistTab({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
-  // Re-syncs whenever fresh data actually arrives from the server (add/
-  // delete/generate below still call router.refresh(); toggle and
-  // drag-reorder skip it on purpose and update `items` optimistically
-  // instead, matching reorderItems in DayTimeline.tsx) — initialItems only
-  // gets a new reference when page.tsx actually re-runs, not on every local
-  // re-render, so this doesn't fight the optimistic updates below.
+  // Re-syncs whenever fresh data actually arrives from the server. Every
+  // mutation here updates `items` optimistically for instant feedback;
+  // add/delete/generate/toggle additionally revalidate server-side (so the
+  // page's props stay correct even if this component unmounts/remounts,
+  // e.g. switching away from the checklist mode tab and back) via
+  // router.refresh() or the action's own revalidatePath. Drag-reorder is
+  // the one deliberate exception — no revalidate at all, matching
+  // reorderItems in DayTimeline.tsx, since reordering doesn't need to
+  // survive a remount as urgently and the local order is already correct.
+  // initialItems only gets a new reference when fresh data actually
+  // arrives, not on every local re-render, so none of this fights the
+  // optimistic updates below.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(initialItems);

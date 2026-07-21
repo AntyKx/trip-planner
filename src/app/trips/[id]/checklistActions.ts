@@ -135,10 +135,15 @@ export async function updateChecklistItem(
   revalidatePath(`/trips/${tripId}`);
 }
 
-// No revalidatePath — this is the highest-frequency checklist mutation
-// (packing-list style rapid toggling), and ChecklistTab already keeps its
-// own `items` state up to date optimistically. Same reasoning as
-// reorderItems in trips/actions.ts.
+// DOES call revalidatePath, despite ChecklistTab already updating its own
+// `items` state optimistically — ChecklistTab is only rendered inside a
+// mode==="checklist" branch in TripDayBoard, so switching to another mode
+// tab and back unmounts/remounts it, resetting `items` back to whatever
+// the page's server-rendered `checklistItems` prop says. Without
+// revalidating, that prop is stale, so a toggle looked correct until the
+// user switched tabs away and back (same bug class as updateItemTimes in
+// trips/actions.ts — see that comment for the full story). Affordable now
+// per the join/index fixes landed alongside this.
 export async function toggleChecklistItem(itemId: string, isDone: boolean) {
   const tripId = await getChecklistItemTripId(itemId);
   const { id: userId } = await requireTripEditor(tripId);
@@ -151,6 +156,7 @@ export async function toggleChecklistItem(itemId: string, isDone: boolean) {
       doneById: isDone ? userId : null,
     },
   });
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function deleteChecklistItem(itemId: string) {
