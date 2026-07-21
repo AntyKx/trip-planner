@@ -156,6 +156,8 @@ model Trip {
   journalShareToken   String? @unique
 
   checklistItems ChecklistItem[]
+
+  @@index([ownerId])
 }
 
 model Collaborator {
@@ -186,6 +188,8 @@ model TripDay {
   // instead of reordering it away, and so the anchor UI can find/update it.
   anchorItem   Item?   @relation("TripDayAnchorItem", fields: [anchorItemId], references: [id])
   anchorItemId String? @unique
+
+  @@index([tripId])
 }
 
 model Item {
@@ -226,6 +230,8 @@ model Item {
   routesTo   Route[] @relation("RouteTo")
 
   anchorForDay TripDay? @relation("TripDayAnchorItem")
+
+  @@index([dayId])
 }
 
 // One expense line on an itinerary item — an item usually has more than

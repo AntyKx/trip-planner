@@ -36,6 +36,11 @@ export async function requireTripRole(
     prisma.user.findUnique({ where: { id: session.userId }, select: { id: true } }),
     prisma.trip.findUnique({
       where: { id: tripId },
+      // This runs on every single trip mutation (every action calls
+      // requireTripRole via requireTripEditor/requireTripOwner) — "join"
+      // avoids Prisma's default one-query-per-relation-level strategy for
+      // this nested select, same reasoning as the page-level queries.
+      relationLoadStrategy: "join",
       select: {
         ownerId: true,
         collaborators: {

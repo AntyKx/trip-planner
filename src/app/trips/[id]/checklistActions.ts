@@ -135,6 +135,10 @@ export async function updateChecklistItem(
   revalidatePath(`/trips/${tripId}`);
 }
 
+// No revalidatePath — this is the highest-frequency checklist mutation
+// (packing-list style rapid toggling), and ChecklistTab already keeps its
+// own `items` state up to date optimistically. Same reasoning as
+// reorderItems in trips/actions.ts.
 export async function toggleChecklistItem(itemId: string, isDone: boolean) {
   const tripId = await getChecklistItemTripId(itemId);
   const { id: userId } = await requireTripEditor(tripId);
@@ -147,7 +151,6 @@ export async function toggleChecklistItem(itemId: string, isDone: boolean) {
       doneById: isDone ? userId : null,
     },
   });
-  revalidatePath(`/trips/${tripId}`);
 }
 
 export async function deleteChecklistItem(itemId: string) {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
+import dynamic from "next/dynamic";
 import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Stethoscope, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
@@ -11,10 +11,24 @@ import JournalSharePanel from "./JournalSharePanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
-import ChecklistTab, { type ChecklistItemView } from "./ChecklistTab";
-import TripDoctorTab from "./TripDoctorTab";
+import type { ChecklistItemView } from "./ChecklistTab";
 import SmartBanner from "./SmartBanner";
 import { Skeleton } from "./LoadingSkeleton";
+
+// Code-split out of the trip page's initial bundle — both are only
+// rendered once the user actually switches to that mode (default mode is
+// "edit"/timeline), yet were previously a static import each, shipping
+// ~770 combined lines plus dnd-kit (via ChecklistTab's drag-to-reorder) to
+// every visitor who never opens either tab. `ssr: false` is fine — this
+// whole component tree is already client-only.
+const ChecklistTab = dynamic(() => import("./ChecklistTab"), {
+  ssr: false,
+  loading: () => <div className="py-10 text-center text-sm text-ink-500">載入中…</div>,
+});
+const TripDoctorTab = dynamic(() => import("./TripDoctorTab"), {
+  ssr: false,
+  loading: () => <div className="py-10 text-center text-sm text-ink-500">載入中…</div>,
+});
 import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";
 import { fetchDayWeather } from "@/app/trips/actions";
 import {
@@ -151,7 +165,6 @@ export default function TripDayBoard({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const shouldReduceMotion = useReducedMotion();
   // Weather is fetched client-side, after this page has already rendered —
   // open-meteo has no SLA, and fetching it during SSR for every day meant
   // the whole trip page waited on the slowest of N external calls.
@@ -217,6 +230,27 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
+
+  // Day Tabs' sliding underline — was the app's one and only framer-motion
+  // usage (a `layoutId`-based shared-element transition), replaced with a
+  // plain measured-position + CSS-transition approach so the trip page no
+  // longer ships that dependency for a single decorative indicator.
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const [underlineStyle, setUnderlineStyle] = useState<{
+    left: number;
+    width: number;
+  } | null>(null);
+  useEffect(() => {
+    const activeButton = tabListRef.current?.querySelector<HTMLElement>(
+      '[aria-selected="true"]'
+    );
+    setUnderlineStyle(
+      activeButton
+        ? { left: activeButton.offsetLeft, width: activeButton.offsetWidth }
+        : null
+    );
+  }, [selectedDay?.id]);
+
   // Mirrors what page.tsx's Trip Hero used to compute from "today's real
   // date" — moved here so it follows whichever Day Tab is selected instead
   // (client state the server-rendered hero can't see).
@@ -391,9 +425,10 @@ export default function TripDayBoard({
       {/* Day timeline */}
       <div>
         <div
+          ref={tabListRef}
           role="tablist"
           aria-label="選擇日期"
-          className="flex gap-1 overflow-x-auto border-b border-line pb-0 snap-x snap-mandatory"
+          className="relative flex gap-1 overflow-x-auto border-b border-line pb-0 snap-x snap-mandatory"
         >
           {daysWithWeather.map((day) => {
             const isActive = day.id === selectedDay?.id;
@@ -429,19 +464,16 @@ export default function TripDayBoard({
                   {day.date.slice(5)}
                   {isToday && "・今天"}
                 </div>
-                {isActive && (
-                  <motion.div
-                    layoutId="day-tab-indicator"
-                    aria-hidden="true"
-                    className="absolute inset-x-0 bottom-0 h-0.5 bg-brand-600"
-                    transition={
-                      shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 500, damping: 35 }
-                    }
-                  />
-                )}
               </button>
             );
           })}
+          {underlineStyle && (
+            <div
+              aria-hidden="true"
+              className="absolute bottom-0 h-0.5 bg-brand-600 transition-[left,width] duration-200 ease-out motion-reduce:transition-none"
+              style={{ left: underlineStyle.left, width: underlineStyle.width }}
+            />
+          )}
         </div>
 
         {selectedDay ? (

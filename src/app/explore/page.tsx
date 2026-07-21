@@ -37,6 +37,9 @@ export default async function ExplorePage({
     prisma.trip.findMany({
       where: { AND: [editableBy, { endDate: { gte: todayStart } }] },
       orderBy: { startDate: "asc" },
+      // See src/app/trips/[id]/page.tsx — "join" avoids Prisma's default
+      // one-query-per-relation-level strategy for this 2-level include.
+      relationLoadStrategy: "join",
       include: dayInclude,
     }),
     getFavorites(),
@@ -48,6 +51,7 @@ export default async function ExplorePage({
   if (tripId && !trips.some((t) => t.id === tripId)) {
     const linkedTrip = await prisma.trip.findFirst({
       where: { AND: [editableBy, { id: tripId }] },
+      relationLoadStrategy: "join",
       include: dayInclude,
     });
     if (linkedTrip) trips.push(linkedTrip);

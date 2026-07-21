@@ -269,49 +269,58 @@ export async function setDayAnchor(
     create: place,
   });
 
-  const targetDayIds = [dayId, ...applyToDayIds];
+  // Bounded regardless of what the UI could ever actually produce (syncing
+  // one hotel across a multi-night stay) — reachable by direct POST.
+  const targetDayIds = [dayId, ...applyToDayIds.slice(0, 200)];
   const targetDays = await prisma.tripDay.findMany({
     where: { tripId, id: { in: targetDayIds } },
     select: { id: true, anchorItemId: true },
   });
 
+  // Split into "already has an anchor card" (just repoint its placeId) vs.
+  // "needs a new anchor card created" — batches each group into as few
+  // round trips as possible instead of a sequential per-day create+update
+  // loop, which used to do up to 2 awaited round trips per day even for
+  // the common case of re-applying an anchor that already exists.
+  const withAnchor = targetDays.filter(
+    (d): d is typeof d & { anchorItemId: string } => d.anchorItemId != null
+  );
+  const withoutAnchor = targetDays.filter((d) => d.anchorItemId == null);
+
   const results: Record<string, AnchorItemResult> = {};
 
   await prisma.$transaction(async (tx) => {
-    for (const day of targetDays) {
-      const itemId = day.anchorItemId
-        ? (
-            await tx.item.update({
-              where: { id: day.anchorItemId },
-              data: { placeId: dbPlace.id },
-            })
-          ).id
-        : await (async () => {
-            const created = await tx.item.create({
-              data: { dayId: day.id, type: "HOTEL", placeId: dbPlace.id, sortOrder: 0 },
-            });
-            await tx.tripDay.update({
-              where: { id: day.id },
-              data: { anchorItemId: created.id },
-            });
-            return created.id;
-          })();
+    if (withAnchor.length > 0) {
+      await tx.item.updateMany({
+        where: { id: { in: withAnchor.map((d) => d.anchorItemId) } },
+        data: { placeId: dbPlace.id },
+      });
+    }
+    for (const day of withAnchor) {
+      results[day.id] = { id: day.anchorItemId, type: "HOTEL", place: dbPlace };
+    }
 
-      results[day.id] = {
-        id: itemId,
-        type: "HOTEL",
-        place: {
-          name: dbPlace.name,
-          address: dbPlace.address,
-          rating: dbPlace.rating,
-          country: dbPlace.country,
-          provider: dbPlace.provider,
-          externalId: dbPlace.externalId,
-          photoUrl: dbPlace.photoUrl,
-          lat: dbPlace.lat,
-          lng: dbPlace.lng,
-        },
-      };
+    if (withoutAnchor.length > 0) {
+      const created = await tx.item.createManyAndReturn({
+        data: withoutAnchor.map((d) => ({
+          dayId: d.id,
+          type: "HOTEL" as const,
+          placeId: dbPlace.id,
+          sortOrder: 0,
+        })),
+        select: { id: true, dayId: true },
+      });
+      // Each new card needs to point a *different* TripDay back at it, so
+      // this part can't be a single batched call — still one round trip
+      // per new anchor, but that's now the only remaining per-day loop
+      // (down from two, and skipped entirely for withAnchor above).
+      for (const item of created) {
+        await tx.tripDay.update({
+          where: { id: item.dayId },
+          data: { anchorItemId: item.id },
+        });
+        results[item.dayId] = { id: item.id, type: "HOTEL", place: dbPlace };
+      }
     }
   });
 

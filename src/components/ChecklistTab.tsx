@@ -341,11 +341,12 @@ export default function ChecklistTab({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
-  // Re-syncs whenever fresh data actually arrives from the server (every
-  // action below calls router.refresh() except drag-reorder, which mirrors
-  // reorderItems in DayTimeline.tsx and skips it on purpose) — initialItems
-  // only gets a new reference when page.tsx actually re-runs, not on every
-  // local re-render, so this doesn't fight the optimistic drag update below.
+  // Re-syncs whenever fresh data actually arrives from the server (add/
+  // delete/generate below still call router.refresh(); toggle and
+  // drag-reorder skip it on purpose and update `items` optimistically
+  // instead, matching reorderItems in DayTimeline.tsx) — initialItems only
+  // gets a new reference when page.tsx actually re-runs, not on every local
+  // re-render, so this doesn't fight the optimistic updates below.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(initialItems);
@@ -372,10 +373,18 @@ export default function ChecklistTab({
     (i) => getDueStatus(i.dueDate, i.isDone) === "soon"
   ).length;
 
+  // Optimistic + no router.refresh(), matching the drag-reorder pattern
+  // below (and reorderItems in trips/actions.ts) — toggling is the
+  // highest-frequency action in this tab (rapid packing-list checking),
+  // and isDone is the only field this view actually displays that the
+  // action changes, so a local flip is enough to stay in sync.
   function handleToggle(item: ChecklistItemView) {
-    startTransition(async () => {
-      await toggleChecklistItem(item.id, !item.isDone);
-      router.refresh();
+    const nextIsDone = !item.isDone;
+    setItems((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, isDone: nextIsDone } : i))
+    );
+    startTransition(() => {
+      toggleChecklistItem(item.id, nextIsDone);
     });
   }
 

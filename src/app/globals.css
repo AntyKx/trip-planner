@@ -143,9 +143,11 @@ input[type="radio"] {
   --radius-card: 1rem; /* 16px — regular cards */
   --radius-card-lg: 1.5rem; /* 24px — hero/large cards */
 
-  /* Simple, dependency-free entrance animations — anything needing exit
-     animations or layout-position transitions (delete, drag-settle) uses
-     framer-motion instead (see Timeline/Checklist), not these. */
+  /* Simple, dependency-free entrance animations — drag-settle/reorder
+     transitions (Timeline/Checklist) are handled by dnd-kit's own
+     transform+transition instead, not these. framer-motion was removed
+     from the app entirely (2026-07-21) once its one remaining use, the Day
+     Tabs underline, was rebuilt as a measured-position CSS transition. */
   --animate-fade-up: fade-up 0.2s ease-out;
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-toast-in: toast-in 0.2s ease-out;

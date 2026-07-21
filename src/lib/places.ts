@@ -187,8 +187,14 @@ export async function searchPlaces(
     category: p.primaryTypeDisplayName?.text ?? "",
     suggestedType: suggestTypeFromPrimaryType(p.primaryType),
     country: countryFromAddressComponents(p.addressComponents) || preset || "",
+    // 300px, not 480 — this URL is what gets stored as Place.photoUrl, and
+    // its most common uses are small (search-result thumb ~72px,
+    // DayTimeline card thumb ~80-112px); it's occasionally also the
+    // fallback trip-cover image when no cover was set, where 300px is a
+    // reasonable middle ground rather than optimizing purely for the
+    // common small case.
     photoUrl: p.photos?.[0]
-      ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${apiKey}&maxWidthPx=480`
+      ? `https://places.googleapis.com/v1/${p.photos[0].name}/media?key=${apiKey}&maxWidthPx=300`
       : undefined,
   }));
 
