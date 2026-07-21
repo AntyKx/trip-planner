@@ -72,8 +72,15 @@ export async function reorderItems(
 
 // Batch write for the auto-schedule feature (AutoScheduleModal) — one
 // transaction for the whole day instead of N updateItem round trips. Same
-// no-revalidatePath reasoning as reorderItems above: the client updates
-// its items state optimistically after this resolves.
+// Unlike reorderItems, this DOES call revalidatePath — DayTimeline is
+// keyed by day id in TripDayBoard, so switching to a different day tab and
+// back fully unmounts/remounts it, resetting its local `items` state back
+// to whatever the page's server-rendered data says. Without revalidating,
+// that data is still the pre-auto-schedule times, so applying a schedule
+// looked correct until the user switched days away and back, at which
+// point the new times silently reverted. Affordable now that the query
+// this revalidates is fast (relationLoadStrategy: "join" + the new
+// indexes) — same reasoning saveRoutes already relies on.
 export async function updateItemTimes(
   tripId: string,
   dayId: string,
@@ -100,6 +107,7 @@ export async function updateItemTimes(
       })
     )
   );
+  revalidatePath(`/trips/${tripId}`);
 }
 
 export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
