@@ -358,27 +358,43 @@ function SortableItemCard({
               <h3 className="mt-1 truncate text-lg font-bold text-ink-900 hover:text-brand-700">
                 {item.place.name}
               </h3>
-              {item.place.rating != null && (
-                <p className="mt-0.5 flex items-center gap-1 text-sm text-amber-500">
-                  <Star className="h-3.5 w-3.5 fill-amber-500" />
-                  {item.place.rating.toFixed(1)}
+              {/* Rating and stay duration share one line (separated by a
+                  middot when both are present) instead of two — this is
+                  what used to push the card taller once auto-schedule
+                  started giving every item a real stay duration to show. */}
+              {(item.place.rating != null || stayDuration) && (
+                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500">
+                  {item.place.rating != null && (
+                    <span className="flex items-center gap-1 text-amber-500">
+                      <Star className="h-3.5 w-3.5 fill-amber-500" />
+                      {item.place.rating.toFixed(1)}
+                    </span>
+                  )}
+                  {item.place.rating != null && stayDuration && (
+                    <span className="text-ink-300" aria-hidden="true">
+                      ·
+                    </span>
+                  )}
+                  {stayDuration && <span>{stayDuration}</span>}
                 </p>
               )}
             </PlaceDetailsTrigger>
           ) : (
-            <h3 className="mt-1 truncate text-lg font-bold text-ink-900">
-              {item.note ?? "未命名項目"}
-            </h3>
+            <>
+              <h3 className="mt-1 truncate text-lg font-bold text-ink-900">
+                {item.note ?? "未命名項目"}
+              </h3>
+              {stayDuration && (
+                <p className="mt-0.5 text-sm text-ink-500">{stayDuration}</p>
+              )}
+            </>
           )}
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-ink-500">
-            {item.confirmationNumber && (
-              <span className="flex items-center gap-1 truncate">
-                <Ticket className="h-3 w-3 shrink-0" />
-                {item.confirmationNumber}
-              </span>
-            )}
-            {stayDuration && <span>{stayDuration}</span>}
-          </div>
+          {item.confirmationNumber && (
+            <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-ink-500">
+              <Ticket className="h-3 w-3 shrink-0" />
+              {item.confirmationNumber}
+            </div>
+          )}
         </div>
       </div>
 
