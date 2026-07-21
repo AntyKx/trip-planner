@@ -4,6 +4,15 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-21
 
+- **效能優化批次**：功能大致完備後派兩個平行稽核（DB 查詢、前端 bundle／渲染）掃過全站，做了七項：
+  1. **Checklist／行程健檢分頁改用 `next/dynamic` 程式碼分割**：這兩個分頁（含拖曳排序的 dnd-kit）先前是寫死在行程頁初始載入包裡，即使使用者只看時間軸從沒點開過也要下載；改成只在真的切到那個分頁才下載，是這批最大的一筆改善。
+  2. **移除 `framer-motion` 依賴**：全站唯一用到它的地方（Day Tabs 選中底線的滑動動畫）改成量測 DOM 位置＋CSS transition 重做，視覺效果不變，整包依賴直接移除。
+  3. **補齊 Prisma join 優化**：探索頁的行程查詢、以及每次修改行程資料都會跑的 `requireTripRole` 權限檢查，先前沒跟上首頁/行程頁主查詢已經做過的 `relationLoadStrategy: "join"`，這次補上。
+  4. **檢查清單打勾改樂觀更新，不再整頁重查**：`toggleChecklistItem` 拿掉 `revalidatePath`，前端改成跟拖曳排序一樣直接更新本地狀態——這是清單頁最高頻的操作（連續打勾），先前每點一次都強制整頁重新查詢。
+  5. **`setDayAnchor`（本日起點同步到多天）改批次寫入**：先前逐天序列 create+update，改成已有錨點的天用一次 `updateMany`、需要新建的天用 `createManyAndReturn` 批次建立，減少序列往返次數。
+  6. **景點縮圖下載尺寸從 480px 降到 300px**：存進 `Place.photoUrl` 的圖片，實際顯示大多是 72-112px 的縮圖（時間軸卡片、搜尋結果），480px 明顯超過需要。
+  7. **補上三個常用查詢欄位的索引**（`Trip.ownerId`、`TripDay.tripId`、`Item.dayId`），這個有動到正式資料庫 schema，跑過 `prisma db push` 確認同步成功、無資料流失。
+
 - **全站系統掃描，修正六項 bug**：使用者要求「掃一下有沒有 bug 或系統問題」，派三個平行稽核（權限檢查/IDOR、新功能邏輯漏洞、React 常見坑）掃過最近一批新功能。修掉的六項：
   1. `Avatar.tsx` 補上跟 `ImgWithFallback` 同款的快取圖片 onError 競速防護（同一類 bug，先前只修了圖片元件沒修頭像）。
   2. `TripMap` 的自動框景點功能，換「本日起點」到不同地點時地圖不會重新對焦——原本判斷要不要重新框只看景點 id 清單，同 id 換座標偵測不到，改成 key 也包含座標。
