@@ -5,9 +5,9 @@ export type AppBadgeVariant = "neutral" | "brand" | "success" | "warning" | "dan
 const VARIANT_CLASSES: Record<AppBadgeVariant, string> = {
   neutral: "bg-paper-alt text-ink-700",
   brand: "bg-brand-50 text-brand-700",
-  success: "bg-emerald-50 text-emerald-700",
-  warning: "bg-amber-50 text-amber-700",
-  danger: "bg-red-50 text-red-600",
+  success: "bg-success-50 text-success-700",
+  warning: "bg-warning-50 text-warning-700",
+  danger: "bg-danger-50 text-danger-600",
   // AI/highlight accent — reuses the existing warm-yellow accent tokens
   // rather than introducing a new hue just for AI features.
   ai: "bg-accent-50 text-accent-700",

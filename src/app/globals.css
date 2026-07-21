@@ -128,6 +128,36 @@ input[type="radio"] {
   --color-line: #e7e3dd;
   --color-line-strong: #d9d3ca;
 
+  /* Status tokens — collapse an audited ~70-site sprawl of raw red-500/
+     600/700, amber-600/700, emerald-600/700, sky-700 usage (same meaning,
+     different shade depending on which file wrote it first) down to one
+     canonical shade per status per role. Text/icon/badge-on-wash all share
+     one value instead of splitting hairs between e.g. red-500 (message)
+     and red-600 (icon) and red-700 (badge) for what is the same "danger"
+     meaning; -700 stays reserved as the hover/pressed partner for the one
+     solid-fill danger button (see AppButton's dangerFilled). Deliberately
+     NOT applied to decorative reuses of the same hues that aren't actual
+     status — star ratings, cost badges, the 遊記 rose badge, the
+     favorited-heart red, and the TRANSPORT/MONEY category swatches in
+     labels.ts all keep their raw Tailwind classes because they aren't
+     communicating danger/warning/success/info. */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-700: #b45309;
+
+  --color-success-50: #ecfdf5;
+  --color-success-100: #d1fae5;
+  --color-success-700: #047857;
+
+  --color-info-50: #f0f9ff;
+  --color-info-700: #0369a1;
+
   /* 手寫風強調字體（開頭/登入畫面的品牌字樣、便條式標語） */
   --font-script: var(--font-caveat), cursive;
 

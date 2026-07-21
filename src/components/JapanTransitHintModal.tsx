@@ -83,7 +83,7 @@ export default function JapanTransitHintModal({
         <div className="overflow-y-auto p-4">
           {isLoading && <p className="text-sm text-ink-500">查詢中…</p>}
           {!isLoading && error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-danger-600">{error}</p>
           )}
 
           {!isLoading && from && to && (
@@ -98,11 +98,11 @@ export default function JapanTransitHintModal({
               </div>
 
               {sameLine ? (
-                <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <p className="rounded-lg bg-success-50 px-3 py-2 text-sm text-success-700">
                   兩個車站在同一條路線上，應該不用轉乘。
                 </p>
               ) : (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                <p className="rounded-lg bg-warning-50 px-3 py-2 text-sm text-warning-700">
                   兩個車站不在同一條路線，可能需要轉乘。
                 </p>
               )}

@@ -25,7 +25,7 @@ export default function DeleteTripButton({
       type="button"
       onClick={handleDelete}
       disabled={isPending}
-      className="flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+      className="flex items-center gap-1.5 rounded-lg border border-danger-200 px-3 py-2 text-sm font-medium text-danger-600 hover:bg-danger-50 disabled:opacity-50"
     >
       <Trash2 className="h-4 w-4" />
       {isPending ? "刪除中…" : "刪除行程"}

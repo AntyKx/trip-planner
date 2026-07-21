@@ -378,7 +378,7 @@ export default function ExploreClient({
           </div>
         </div>
         {closedWarning && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-600">
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-warning-700">
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
             {closedWarning}
           </p>
@@ -456,7 +456,7 @@ export default function ExploreClient({
                 </p>
               )}
               {searchError && (
-                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                <p className="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-600">
                   {searchError}
                 </p>
               )}

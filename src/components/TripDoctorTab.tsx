@@ -72,12 +72,12 @@ export default function TripDoctorTab({
       ? {
           icon: TriangleAlert,
           title: `有 ${issueCount} 個項目需要調整`,
-          className: "border-red-100 bg-red-50 text-red-700",
+          className: "border-danger-100 bg-danger-50 text-danger-600",
         }
       : {
           icon: Info,
           title: `整體狀況良好，${noticeCount} 個提醒留意一下`,
-          className: "border-amber-100 bg-amber-50 text-amber-700",
+          className: "border-warning-100 bg-warning-50 text-warning-700",
         };
   const VerdictIcon = verdict.icon;
 
@@ -113,7 +113,7 @@ export default function TripDoctorTab({
               <Skeleton className="h-3 w-4/5" />
             </div>
           )}
-          {summaryError && <p className="mt-1.5 text-xs text-red-500">{summaryError}</p>}
+          {summaryError && <p className="mt-1.5 text-xs text-danger-600">{summaryError}</p>}
         </div>
       ) : (
         <div className="rounded-lg border border-accent-100 bg-accent-50 p-3 text-sm">
@@ -145,8 +145,8 @@ export default function TripDoctorTab({
               <span
                 className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   dayHasIssue
-                    ? "bg-red-50 text-red-600"
-                    : "bg-amber-50 text-amber-700"
+                    ? "bg-danger-50 text-danger-600"
+                    : "bg-warning-50 text-warning-700"
                 }`}
               >
                 {dayHasIssue ? "需要調整" : "建議注意"}
@@ -158,8 +158,8 @@ export default function TripDoctorTab({
                   key={i}
                   className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-sm ${
                     finding.severity === "issue"
-                      ? "bg-red-50 text-red-700"
-                      : "bg-amber-50 text-amber-700"
+                      ? "bg-danger-50 text-danger-600"
+                      : "bg-warning-50 text-warning-700"
                   }`}
                 >
                   {finding.severity === "issue" ? (

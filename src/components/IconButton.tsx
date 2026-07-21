@@ -5,7 +5,7 @@ export type IconButtonVariant = "ghost" | "secondary" | "danger";
 const VARIANT_CLASSES: Record<IconButtonVariant, string> = {
   ghost: "text-ink-500 hover:bg-paper-alt hover:text-ink-700",
   secondary: "border border-line bg-surface text-ink-700 hover:bg-paper-alt",
-  danger: "text-red-600 hover:bg-red-50",
+  danger: "text-danger-600 hover:bg-danger-50",
 };
 
 export type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {

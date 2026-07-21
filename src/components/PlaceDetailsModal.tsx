@@ -132,7 +132,7 @@ function PlaceDetailsModal({
           <p className="mt-4 text-sm text-ink-500">載入中…</p>
         )}
 
-        {error && <p className="mt-4 text-sm text-red-500">{error}</p>}
+        {error && <p className="mt-4 text-sm text-danger-600">{error}</p>}
 
         {provider !== "google" && (
           <p className="mt-4 text-sm text-ink-500">
@@ -185,7 +185,7 @@ function PlaceDetailsModal({
           {details?.openNow != null && (
             <p
               className={`flex items-center gap-2 ${
-                details.openNow ? "text-emerald-600" : "text-red-500"
+                details.openNow ? "text-success-700" : "text-danger-600"
               }`}
             >
               <Clock className="h-4 w-4" />

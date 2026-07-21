@@ -296,7 +296,7 @@ export default async function TripsPage() {
               ))}
             </ul>
           ) : (
-            <p className="flex items-center gap-1.5 text-sm text-emerald-700">
+            <p className="flex items-center gap-1.5 text-sm text-success-700">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
               行程都排好了，可以出發了！
             </p>

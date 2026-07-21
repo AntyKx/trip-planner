@@ -137,7 +137,7 @@ export default function AutoScheduleModal({
               )}
             </div>
             {p.warning && (
-              <p className="mt-1 flex items-start gap-1 text-xs text-amber-700">
+              <p className="mt-1 flex items-start gap-1 text-xs text-warning-700">
                 <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
                 {p.warning}
               </p>
@@ -146,7 +146,7 @@ export default function AutoScheduleModal({
         ))}
       </ul>
 
-      {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-2 text-xs text-danger-600">{error}</p>}
 
       <button
         type="button"

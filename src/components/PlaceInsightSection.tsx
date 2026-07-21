@@ -10,9 +10,9 @@ import { Skeleton } from "./LoadingSkeleton";
 type LoadedInsight = Extract<PlaceInsightResult, { ok: true }>;
 
 function fitScoreColor(score: number): string {
-  if (score >= 70) return "text-emerald-700";
-  if (score >= 40) return "text-amber-700";
-  return "text-red-600";
+  if (score >= 70) return "text-success-700";
+  if (score >= 40) return "text-warning-700";
+  return "text-danger-600";
 }
 
 // Shared by ExploreClient's search/favorites cards and PlaceDetailsModal —
@@ -127,7 +127,7 @@ export default function PlaceInsightSection({
             <Skeleton className="h-3 w-2/3" />
           </div>
         )}
-        {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+        {error && <p className="mt-1.5 text-xs text-danger-600">{error}</p>}
       </div>
     );
   }
@@ -169,7 +169,7 @@ export default function PlaceInsightSection({
 
       <p className="mt-2 text-xs text-ink-500">建議停留：{insight.suggestedDuration}</p>
       {insight.caution && (
-        <p className="mt-1 flex items-start gap-1 text-xs text-amber-700">
+        <p className="mt-1 flex items-start gap-1 text-xs text-warning-700">
           <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
           {insight.caution}
         </p>
@@ -187,7 +187,7 @@ export default function PlaceInsightSection({
         <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
         {isLoading ? "重新分析中…" : "重新分析"}
       </button>
-      {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-danger-600">{error}</p>}
     </div>
   );
 }

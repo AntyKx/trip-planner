@@ -157,7 +157,7 @@ export default function CoverImagePicker({
                 {isUploading ? "上傳中…" : "從手機相簿選擇"}
               </button>
               {uploadError && (
-                <p className="mt-2 text-xs text-red-500">{uploadError}</p>
+                <p className="mt-2 text-xs text-danger-600">{uploadError}</p>
               )}
 
               {availablePhotos.length > 0 && (
@@ -201,7 +201,7 @@ export default function CoverImagePicker({
                   <button
                     type="button"
                     onClick={() => apply(null)}
-                    className="text-xs text-red-500 hover:underline"
+                    className="text-xs text-danger-600 hover:underline"
                   >
                     移除封面（改回自動帶入）
                   </button>

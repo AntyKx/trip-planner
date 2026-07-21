@@ -70,7 +70,7 @@ export default function ActionMenu({
         >
           {items.map(({ key, label: itemLabel, icon: Icon, onClick, href, external, variant }) => {
             const itemClassName = `flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-paper-alt ${
-              variant === "danger" ? "text-red-600 hover:bg-red-50" : "text-ink-700"
+              variant === "danger" ? "text-danger-600 hover:bg-danger-50" : "text-ink-700"
             }`;
             if (href) {
               return (

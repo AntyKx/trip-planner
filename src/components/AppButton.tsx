@@ -13,8 +13,8 @@ const VARIANT_CLASSES: Record<AppButtonVariant, string> = {
   primary: "bg-brand-800 text-white hover:bg-brand-700",
   secondary: "border border-line bg-surface text-ink-700 hover:bg-paper-alt",
   ghost: "text-brand-600 hover:bg-brand-50",
-  danger: "text-red-600 hover:bg-red-50",
-  dangerFilled: "bg-red-600 text-white hover:bg-red-700",
+  danger: "text-danger-600 hover:bg-danger-50",
+  dangerFilled: "bg-danger-600 text-white hover:bg-danger-700",
 };
 
 const SIZE_CLASSES: Record<AppButtonSize, string> = {

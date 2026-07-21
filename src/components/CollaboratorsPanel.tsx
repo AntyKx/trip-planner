@@ -173,7 +173,7 @@ export default function CollaboratorsPanel({
                   type="button"
                   disabled={isPending}
                   onClick={() => handleRemove(c.userId)}
-                  className="text-xs text-red-500 hover:underline disabled:opacity-50"
+                  className="text-xs text-danger-600 hover:underline disabled:opacity-50"
                 >
                   移除
                 </button>
@@ -218,7 +218,7 @@ export default function CollaboratorsPanel({
             </button>
           </form>
 
-          {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+          {error && <p className="mt-2 text-xs text-danger-600">{error}</p>}
 
           <div className="mt-4 border-t border-line pt-4">
             <div className="flex items-center justify-between gap-2">
@@ -269,7 +269,7 @@ export default function CollaboratorsPanel({
                     className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
                   >
                     {copied ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
+                      <Check className="h-3.5 w-3.5 text-success-700" />
                     ) : (
                       <Copy className="h-3.5 w-3.5" />
                     )}

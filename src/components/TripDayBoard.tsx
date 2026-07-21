@@ -490,7 +490,7 @@ export default function TripDayBoard({
                   Day {selectedDay.dayIndex} · {selectedDay.date}
                 </span>
                 {selectedDay.weather && SelectedWeatherIcon ? (
-                  <span className="flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sm font-normal text-sky-700">
+                  <span className="flex items-center gap-1 rounded-full bg-info-50 px-2 py-0.5 text-sm font-normal text-info-700">
                     <SelectedWeatherIcon className="h-4 w-4" />
                     <span>
                       {Math.round(selectedDay.weather.maxTemp)}° /{" "}
@@ -523,7 +523,7 @@ export default function TripDayBoard({
               getWeatherReminders(selectedDay.weather).map((reminder) => (
                 <p
                   key={reminder}
-                  className="mt-1 text-sm text-sky-700"
+                  className="mt-1 text-sm text-info-700"
                 >
                   {reminder}
                 </p>

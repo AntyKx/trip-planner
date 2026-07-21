@@ -104,7 +104,7 @@ export default function JournalSharePanel({
             className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-600" />
+              <Check className="h-3.5 w-3.5 text-success-700" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}

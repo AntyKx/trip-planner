@@ -88,14 +88,14 @@ function dueDateBadge(dueDate: string | null, isDone: boolean) {
   const displayDate = `${due.slice(5, 7)}/${due.slice(8, 10)}`;
   if (status === "overdue") {
     return (
-      <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+      <span className="rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-600">
         已逾期 · {displayDate}
       </span>
     );
   }
   if (status === "soon") {
     return (
-      <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+      <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
         即將到期 · {displayDate}
       </span>
     );
@@ -308,7 +308,7 @@ function SortableChecklistItem({
               type="button"
               onClick={onDelete}
               aria-label="刪除項目"
-              className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-red-500"
+              className="flex min-h-8 min-w-8 items-center justify-center text-ink-500 hover:text-danger-600"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -481,7 +481,11 @@ export default function ChecklistTab({
         </div>
         <ProgressBar value={doneCount} max={total} className="mt-2" />
         {(overdueCount > 0 || dueSoonCount > 0) && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-700">
+          <p
+            className={`mt-2 flex items-center gap-1.5 text-xs ${
+              overdueCount > 0 ? "text-danger-600" : "text-warning-700"
+            }`}
+          >
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
             {overdueCount > 0 && <span>{overdueCount} 項已逾期</span>}
             {overdueCount > 0 && dueSoonCount > 0 && <span>·</span>}

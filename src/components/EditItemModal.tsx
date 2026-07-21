@@ -387,7 +387,7 @@ export default function EditItemModal({
           <ScanText className="h-4 w-4" />
           {isScanning ? "辨識中…" : "拍照/上傳訂房票券自動帶入"}
         </button>
-        {scanError && <p className="mt-2 text-xs text-red-500">{scanError}</p>}
+        {scanError && <p className="mt-2 text-xs text-danger-600">{scanError}</p>}
       </div>
 
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
@@ -428,7 +428,7 @@ export default function EditItemModal({
               className="mt-1 w-full min-w-0 rounded-md border border-line px-2 py-2 text-sm"
             />
             {startTimeWarning && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+              <p className="mt-1 flex items-center gap-1 text-xs text-warning-700">
                 <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
                 {startTimeWarning}
               </p>
@@ -446,7 +446,7 @@ export default function EditItemModal({
               className="mt-1 w-full min-w-0 rounded-md border border-line px-2 py-2 text-sm"
             />
             {endTimeWarning && (
-              <p className="mt-1 flex items-center gap-1 text-xs text-amber-600">
+              <p className="mt-1 flex items-center gap-1 text-xs text-warning-700">
                 <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
                 {endTimeWarning}
               </p>
@@ -488,7 +488,7 @@ export default function EditItemModal({
                       type="button"
                       onClick={() => removeCostRow(row.key)}
                       aria-label="刪除這筆花費"
-                      className="shrink-0 rounded-md p-1 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                      className="shrink-0 rounded-md p-1 text-ink-500 hover:bg-danger-50 hover:text-danger-600"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -521,7 +521,7 @@ export default function EditItemModal({
                       type="button"
                       onClick={() => removeCostRow(row.key)}
                       aria-label="刪除這筆花費"
-                      className="shrink-0 rounded-md p-1.5 text-ink-500 hover:bg-red-50 hover:text-red-600"
+                      className="shrink-0 rounded-md p-1.5 text-ink-500 hover:bg-danger-50 hover:text-danger-600"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -615,7 +615,7 @@ export default function EditItemModal({
           />
         </div>
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p className="text-xs text-danger-600">{error}</p>}
 
         <button
           type="submit"

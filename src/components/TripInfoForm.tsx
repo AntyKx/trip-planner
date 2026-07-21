@@ -127,7 +127,7 @@ export default function TripInfoForm({
         </div>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-danger-600">{error}</p>}
       {success && !error && <p className="text-sm text-brand-700">已儲存</p>}
 
       <AppButton type="submit" isLoading={isPending} className="w-full">

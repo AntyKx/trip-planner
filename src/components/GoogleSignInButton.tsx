@@ -135,7 +135,7 @@ export default function GoogleSignInButton({ next = "/" }: { next?: string }) {
         />
         {isPending ? "登入中…" : "使用 Google 帳號登入"}
       </button>
-      {error && <p className="mt-2 text-center text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-center text-xs text-danger-600">{error}</p>}
     </div>
   );
 }

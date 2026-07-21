@@ -62,9 +62,9 @@ export default async function TripSettingsPage({
 
       <AppCard
         padding="lg"
-        className="mt-8 border-red-200"
+        className="mt-8 border-danger-200"
       >
-        <h2 className="text-sm font-semibold text-red-600">危險區域</h2>
+        <h2 className="text-sm font-semibold text-danger-600">危險區域</h2>
         <p className="mt-1 text-sm text-ink-500">
           刪除行程後將無法復原,所有天數、景點與清單資料都會一併移除。
         </p>

@@ -104,7 +104,7 @@ export default function NewTripPage() {
           {preview && (
             <p
               className={`flex items-center gap-1.5 text-sm ${
-                preview.invalid ? "text-red-600" : "text-brand-700"
+                preview.invalid ? "text-danger-600" : "text-brand-700"
               }`}
             >
               <Luggage className="h-4 w-4" />
@@ -112,7 +112,7 @@ export default function NewTripPage() {
             </p>
           )}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger-600">{error}</p>}
 
           <AppButton
             type="submit"

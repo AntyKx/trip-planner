@@ -184,7 +184,7 @@ export default function JournalEditModal({
           />
         </div>
 
-        {error && <p className="text-xs text-red-500">{error}</p>}
+        {error && <p className="text-xs text-danger-600">{error}</p>}
 
         <button
           type="button"

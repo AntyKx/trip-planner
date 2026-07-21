@@ -34,7 +34,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
             </span>
           </p>
           {getWeatherReminders(day.weather).map((reminder) => (
-            <p key={reminder} className="text-sm text-sky-700">
+            <p key={reminder} className="text-sm text-info-700">
               {reminder}
             </p>
           ))}

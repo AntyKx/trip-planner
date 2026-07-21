@@ -38,7 +38,7 @@ export default function TransitAlternativesModal({
         <div className="overflow-y-auto p-4">
           {isLoading && <p className="text-sm text-ink-500">查詢路線中…</p>}
           {!isLoading && error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-danger-600">{error}</p>
           )}
           {!isLoading && !error && alternatives.length === 0 && (
             <p className="text-sm text-ink-500">

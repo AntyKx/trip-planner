@@ -246,7 +246,7 @@ export default function DayAnchorControl({
         </div>
       )}
 
-      {error && <p className="mt-2 text-red-600">{error}</p>}
+      {error && <p className="mt-2 text-danger-600">{error}</p>}
 
       {results.length > 0 && (
         <ul className="mt-2 max-h-48 space-y-1 overflow-y-auto">

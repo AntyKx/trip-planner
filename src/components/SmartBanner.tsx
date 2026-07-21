@@ -10,8 +10,8 @@ const VARIANT_STYLE: Record<
   { icon: LucideIcon; className: string }
 > = {
   info: { icon: Info, className: "border-brand-100 bg-brand-50 text-brand-700" },
-  warning: { icon: TriangleAlert, className: "border-amber-100 bg-amber-50 text-amber-700" },
-  success: { icon: CheckCircle2, className: "border-emerald-100 bg-emerald-50 text-emerald-700" },
+  warning: { icon: TriangleAlert, className: "border-warning-100 bg-warning-50 text-warning-700" },
+  success: { icon: CheckCircle2, className: "border-success-100 bg-success-50 text-success-700" },
   ai: { icon: Sparkles, className: "border-accent-100 bg-accent-50 text-accent-700" },
 };
 

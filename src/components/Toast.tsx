@@ -28,8 +28,8 @@ export function useToast(): ToastApi {
 }
 
 const VARIANT_STYLE: Record<ToastVariant, { icon: LucideIcon; className: string }> = {
-  success: { icon: CheckCircle2, className: "text-emerald-600" },
-  error: { icon: XCircle, className: "text-red-600" },
+  success: { icon: CheckCircle2, className: "text-success-700" },
+  error: { icon: XCircle, className: "text-danger-600" },
   info: { icon: Info, className: "text-brand-600" },
 };
 
