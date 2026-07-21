@@ -225,23 +225,22 @@ function SortableItemCard({
           </span>
         )}
         {item.place && (
-          // Bounded stretch, not a fixed size and not unbounded stretch —
-          // a plain fixed size left dead whitespace once the text column
-          // grew taller than the photo (an extra 停留-duration line once
-          // auto-schedule started giving every item both a start and end
-          // time); unbounded items-stretch (the original behavior) instead
-          // let a long text column pull the photo into an oddly tall, thin
-          // crop. min-h matches the old fixed size (never smaller/more
-          // cropped than before); max-h caps how far it'll stretch to fill
-          // extra text height before the row is just allowed to show a
-          // little whitespace instead of a distorted-looking crop.
+          // Stretches to fill the row's full height (items-stretch on the
+          // parent), min-h only — no max-h. A max-h cap was tried, but any
+          // card with an extra badge line (遊記, multi-line type badges,
+          // ...) pushed the text column past that cap, leaving a visible
+          // gap below the capped photo — worse than the occasional tall
+          // crop this trades for, because it made cards visibly
+          // inconsistent (some full, some gapped) rather than uniformly
+          // "fills, occasionally a bit tall". min-h still guarantees it's
+          // never smaller/more cropped than the original fixed size.
           <ImgWithFallback
             src={item.place.photoUrl}
             alt={item.place.name}
-            className="w-20 min-h-20 max-h-32 shrink-0 rounded-l-xl object-cover sm:w-28 sm:min-h-28 sm:max-h-40"
+            className="w-20 min-h-20 shrink-0 rounded-l-xl object-cover sm:w-28 sm:min-h-28"
             fallback={
               <div
-                className={`flex w-20 min-h-20 max-h-32 shrink-0 items-center justify-center rounded-l-xl sm:w-28 sm:min-h-28 sm:max-h-40 ${typeColor.bg}`}
+                className={`flex w-20 min-h-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 sm:min-h-28 ${typeColor.bg}`}
               >
                 <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
               </div>
