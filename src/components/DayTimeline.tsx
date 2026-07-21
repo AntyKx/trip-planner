@@ -203,7 +203,7 @@ function SortableItemCard({
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
-        className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
+        className={`group relative flex touch-manipulation items-start rounded-xl border transition select-none [-webkit-touch-callout:none] ${
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
         } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"} ${
           isSelected ? "ring-2 ring-brand-400" : ""
@@ -225,13 +225,20 @@ function SortableItemCard({
           </span>
         )}
         {item.place && (
+          // Fixed square size, not stretched to match the text column's
+          // height (which grew an extra line — 停留 duration — once
+          // auto-schedule started giving every item both a start and end
+          // time) — the row itself still grows to fit the text either way,
+          // this just stops the photo from being pulled taller along with
+          // it. items-start on the row (not items-stretch) is what makes
+          // this take effect.
           <ImgWithFallback
             src={item.place.photoUrl}
             alt={item.place.name}
-            className="w-20 shrink-0 rounded-l-xl object-cover sm:w-28"
+            className="h-20 w-20 shrink-0 rounded-l-xl object-cover sm:h-28 sm:w-28"
             fallback={
               <div
-                className={`flex w-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 ${typeColor.bg}`}
+                className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-l-xl sm:h-28 sm:w-28 ${typeColor.bg}`}
               >
                 <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
               </div>
