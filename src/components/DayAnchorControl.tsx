@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { MapPin, Search, X } from "lucide-react";
 import { searchPlaces, type PlaceResult } from "@/lib/places";
 import {
@@ -62,12 +62,21 @@ export default function DayAnchorControl({
     });
   }
 
+  // Guards against a stale response overwriting fresher results — nothing
+  // stops a user from editing the query and hitting Enter again while a
+  // previous searchPlaces() call is still in flight, and network order
+  // isn't guaranteed to match request order (same fix as ExploreClient's
+  // handleSearch).
+  const searchRequestRef = useRef(0);
+
   function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!query.trim()) return;
     setError(null);
     setIsSearching(true);
+    const requestId = ++searchRequestRef.current;
     searchPlaces(query, effectiveRegion).then((res) => {
+      if (requestId !== searchRequestRef.current) return;
       setIsSearching(false);
       if (res.ok) {
         setResults(res.results);

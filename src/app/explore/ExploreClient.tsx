@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, type FormEvent } from "react";
+import { useRef, useState, useTransition, type FormEvent } from "react";
 import { MapPin, Search, Check, Star, TriangleAlert, Heart } from "lucide-react";
 import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
@@ -119,13 +119,21 @@ export default function ExploreClient({
 
   const selectedTrip = trips.find((t) => t.id === selectedTripId);
 
+  // Guards against a stale response overwriting fresher results — nothing
+  // stops a user from editing the query and hitting Enter again while a
+  // previous searchPlaces() call is still in flight, and network order
+  // isn't guaranteed to match request order.
+  const searchRequestRef = useRef(0);
+
   function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!query.trim()) return;
     setSearchError(null);
     setHasSearched(true);
+    const requestId = ++searchRequestRef.current;
     startSearch(async () => {
       const res = await searchPlaces(query, effectiveRegion);
+      if (requestId !== searchRequestRef.current) return;
       if (res.ok) {
         setResults(res.results);
       } else {

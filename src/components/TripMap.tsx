@@ -123,17 +123,45 @@ function FitBounds({ items }: { items: MapItem[] }) {
 
   useEffect(() => {
     if (!map || items.length === 0) return;
-    const bounds = new google.maps.LatLngBounds();
-    items.forEach((i) => bounds.extend({ lat: i.lat, lng: i.lng }));
-    map.fitBounds(bounds, 48);
 
-    // A single stop (or a tight cluster) makes fitBounds zoom all the way
-    // in — capping it once the viewport settles avoids a separate branch
-    // for "only one item".
-    const listener = google.maps.event.addListenerOnce(map, "idle", () => {
-      if ((map.getZoom() ?? 0) > 16) map.setZoom(16);
+    function fit() {
+      const bounds = new google.maps.LatLngBounds();
+      items.forEach((i) => bounds.extend({ lat: i.lat, lng: i.lng }));
+      map!.fitBounds(bounds, 48);
+
+      // A single stop (or a tight cluster) makes fitBounds zoom all the
+      // way in — capping it once the viewport settles avoids a separate
+      // branch for "only one item".
+      return google.maps.event.addListenerOnce(map!, "idle", () => {
+        if ((map!.getZoom() ?? 0) > 16) map!.setZoom(16);
+      });
+    }
+
+    let idleListener = fit();
+
+    // The map card can be CSS-hidden (display:none, see TripDayBoard's
+    // mobile 時間軸／地圖 toggle) — Google Maps never relayouts tiles or
+    // recomputes its viewport on its own for a container that was 0×0
+    // when it initialized, so revealing it needs an explicit `resize`
+    // trigger plus a re-fit, or it renders blank/mis-framed the first
+    // time a mobile user switches to it.
+    const container = map.getDiv();
+    let wasVisible = container.offsetWidth > 0 && container.offsetHeight > 0;
+    const observer = new ResizeObserver(() => {
+      const isVisible = container.offsetWidth > 0 && container.offsetHeight > 0;
+      if (isVisible && !wasVisible) {
+        google.maps.event.trigger(map!, "resize");
+        google.maps.event.removeListener(idleListener);
+        idleListener = fit();
+      }
+      wasVisible = isVisible;
     });
-    return () => google.maps.event.removeListener(listener);
+    observer.observe(container);
+
+    return () => {
+      google.maps.event.removeListener(idleListener);
+      observer.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [map, itemsKey]);
 

@@ -4,6 +4,12 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-22
 
+- **全站掃描修正四項 bug**：地圖切換功能一上線就派三個平行稽核（新改動邏輯、權限檢查、React 常見坑），權限那份全乾淨，另兩份抓到四個：
+  1. 剛做的「時間軸／地圖」切換裡，`handleLocateItem` 在同一個 tick 呼叫 `setMobileMapView(true)` 又立刻 `scrollIntoView`——但 React 狀態更新非同步，捲動當下地圖其實還是 `display:none`，等於沒作用。改成用 ref 記錄「有待捲動」，交給 `useEffect` 等 `mobileMapView` 真的變成 true 之後才捲。
+  2. 同一個功能還有更嚴重的：Google Maps 容器從 `display:none` 變成有大小時，Maps SDK 不會自動重新排版/計算視角，手機版第一次切到地圖很可能整個空白或框錯位置——剛好是這個功能想解決的「範圍廣看不清楚」情境。在 `TripMap.tsx` 的 `FitBounds` 裡加 `ResizeObserver`，偵測容器從隱藏變顯示時觸發 `google.maps.event.trigger(map, "resize")` 並重新 `fitBounds`。
+  3. `ChecklistTab.tsx` 的「今天」日期（用來判斷逾期/即將到期）直接在 render 裡呼叫 `localTodayStr()`，跟先前 `GreetingHero`／`TripDayBoard` 修過的同一類 SSR/client 時區 hydration mismatch，UTC+8 使用者凌晨時段會有問題。改成 `today` 延遲到 mount 後的 `useEffect` 才算，未算出前一率不顯示逾期狀態。
+  4. `ExploreClient.tsx`／`DayAnchorControl.tsx` 的地點搜尋都有競速：快速連續搜尋時，先送出但晚回來的舊請求結果會蓋掉使用者後來的新搜尋結果。兩處都加上跟 `DayTimeline.tsx` 同款的 request token 防護。
+
 - **手機版編輯模式加「時間軸／地圖」切換**：使用者回報手機版地圖太小、景點一多連線擠在一起看不清楚——根因是地圖面板容器寫死 `h-[260px]`，被塞在時間軸下面當一個小附屬區塊。討論時研究過去趣／Wanderlog 等同類 App 的作法，判斷地圖是「時間軸的另一種檢視方式」而不是獨立功能，所以沒有選擇加進底部導覽列跟檢查清單/行程健檢搶版位，改成在編輯模式內加一個 `lg:hidden` 的分頁切換鈕：手機版預設顯示時間軸，切到地圖後改成近全螢幕高度（`h-[70vh]`）；桌面版完全不受影響，維持原本時間軸＋地圖側欄並排。時間軸卡片的「在地圖上定位」按鈕也同步補上，點擊時會先自動切到地圖檢視再捲動過去，不然會捲向一個被隱藏的元素。
 
 ## 2026-07-21

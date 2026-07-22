@@ -67,13 +67,20 @@ export type ChecklistItemView = {
 export type ChecklistMember = { userId: string; name: string; avatarUrl?: string | null };
 
 // Shared by the per-item badge and the top summary banner, so "what counts
-// as overdue/soon" is only defined once.
+// as overdue/soon" is only defined once. `today` is threaded in rather than
+// computed here with localTodayStr() — the server renders in UTC, so
+// calling it directly during render would disagree with the client's local
+// timezone during the client's early-morning hours in any UTC+ zone,
+// producing a hydration mismatch. `today` is null until the component
+// below resolves it post-mount (same deferred pattern as GreetingHero/
+// TripDayBoard), during which every item is deliberately shown as "no
+// status yet" rather than guessing.
 function getDueStatus(
   dueDate: string | null,
-  isDone: boolean
+  isDone: boolean,
+  today: string | null
 ): "overdue" | "soon" | "normal" | null {
-  if (!dueDate || isDone) return null;
-  const today = localTodayStr();
+  if (!dueDate || isDone || !today) return null;
   const due = dueDate.slice(0, 10);
   if (due < today) return "overdue";
   const daysUntil =
@@ -81,8 +88,8 @@ function getDueStatus(
   return daysUntil <= 3 ? "soon" : "normal";
 }
 
-function dueDateBadge(dueDate: string | null, isDone: boolean) {
-  const status = getDueStatus(dueDate, isDone);
+function dueDateBadge(dueDate: string | null, isDone: boolean, today: string | null) {
+  const status = getDueStatus(dueDate, isDone, today);
   if (!status || !dueDate) return null;
   const due = dueDate.slice(0, 10);
   const displayDate = `${due.slice(5, 7)}/${due.slice(8, 10)}`;
@@ -218,6 +225,7 @@ function SortableChecklistItem({
   isBusy,
   isEditing,
   members,
+  today,
   onToggle,
   onToggleEdit,
   onDelete,
@@ -228,6 +236,7 @@ function SortableChecklistItem({
   isBusy: boolean;
   isEditing: boolean;
   members: ChecklistMember[];
+  today: string | null;
   onToggle: () => void;
   onToggleEdit: () => void;
   onDelete: () => void;
@@ -284,7 +293,7 @@ function SortableChecklistItem({
             {item.title}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {dueDateBadge(item.dueDate, item.isDone)}
+            {dueDateBadge(item.dueDate, item.isDone, today)}
             {item.assignedToName && (
               <span className="flex items-center gap-1 rounded-full bg-paper-alt py-0.5 pr-2 pl-0.5 text-xs text-ink-700">
                 <Avatar name={item.assignedToName} avatarUrl={item.assignedToAvatarUrl} size="sm" />
@@ -340,6 +349,13 @@ export default function ChecklistTab({
   canEdit: boolean;
 }) {
   const router = useRouter();
+  // Deferred to post-mount, same reasoning as getDueStatus/dueDateBadge
+  // above — avoids computing "today" from the server's UTC clock.
+  const [today, setToday] = useState<string | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setToday(localTodayStr());
+  }, []);
   const [items, setItems] = useState(initialItems);
   // Re-syncs whenever fresh data actually arrives from the server. Every
   // mutation here updates `items` optimistically for instant feedback;
@@ -373,10 +389,10 @@ export default function ChecklistTab({
   const doneCount = items.filter((i) => i.isDone).length;
   const total = items.length;
   const overdueCount = items.filter(
-    (i) => getDueStatus(i.dueDate, i.isDone) === "overdue"
+    (i) => getDueStatus(i.dueDate, i.isDone, today) === "overdue"
   ).length;
   const dueSoonCount = items.filter(
-    (i) => getDueStatus(i.dueDate, i.isDone) === "soon"
+    (i) => getDueStatus(i.dueDate, i.isDone, today) === "soon"
   ).length;
 
   // Optimistic + no router.refresh(), matching the drag-reorder pattern
@@ -532,6 +548,7 @@ export default function ChecklistTab({
                       isBusy={isPending}
                       isEditing={editingId === item.id}
                       members={members}
+                      today={today}
                       onToggle={() => handleToggle(item)}
                       onToggleEdit={() =>
                         setEditingId(editingId === item.id ? null : item.id)

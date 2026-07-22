@@ -131,17 +131,30 @@ export default function TripDayBoard({
   // side by side via the lg: grid, so this never needs resetting when
   // switching days/modes.
   const [mobileMapView, setMobileMapView] = useState(false);
+  // handleLocateItem flips mobileMapView on to reveal the (until-then
+  // CSS-hidden) map panel — the scroll itself has to wait for that state
+  // update to actually commit, or it runs against a still-`display:none`
+  // element and silently does nothing. Deferred to the effect below,
+  // keyed on mobileMapView, instead of firing in the same tick.
+  const scrollToMapRef = useRef(false);
+  useEffect(() => {
+    if (mobileMapView && scrollToMapRef.current) {
+      scrollToMapRef.current = false;
+      document
+        .getElementById("day-map-panel")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [mobileMapView]);
 
   function handleLocateItem(itemId: string) {
     setSelectedItemId(itemId);
     // On mobile the map is hidden behind the toggle unless already
-    // selected — switch to it first so the scroll below actually lands on
-    // a visible element instead of a `display:none` one. A no-op on
-    // desktop, where the map is already in view.
+    // selected — switch to it first so the effect above scrolls once it's
+    // actually visible. A no-op on desktop, where the map is already in
+    // view (mobileMapView flips true in state but every lg: class ignores
+    // it).
+    scrollToMapRef.current = true;
     setMobileMapView(true);
-    document
-      .getElementById("day-map-panel")
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
   // One-shot highlight for an item just added from the explore page (see
   // the sessionStorage handshake in ExploreClient's handleAdd) — jump to
