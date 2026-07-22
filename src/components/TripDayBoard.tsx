@@ -126,12 +126,19 @@ export default function TripDayBoard({
   // changes (see TripMap: only renders a match if the id belongs to the
   // day currently shown).
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  // Mobile-only "時間軸／地圖" toggle for edit mode (see the segmented
+  // control below) — desktop ignores this entirely and always shows both
+  // side by side via the lg: grid, so this never needs resetting when
+  // switching days/modes.
+  const [mobileMapView, setMobileMapView] = useState(false);
 
   function handleLocateItem(itemId: string) {
     setSelectedItemId(itemId);
-    // The map panel sits below the timeline on mobile — without this,
-    // "定位" would select the item but the map itself stays off-screen.
-    // A no-op on desktop, where the map is already in view.
+    // On mobile the map is hidden behind the toggle unless already
+    // selected — switch to it first so the scroll below actually lands on
+    // a visible element instead of a `display:none` one. A no-op on
+    // desktop, where the map is already in view.
+    setMobileMapView(true);
     document
       .getElementById("day-map-panel")
       ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -427,9 +434,41 @@ export default function TripDayBoard({
           <p className="text-sm text-ink-700">這個行程還沒有天數。</p>
         )
       ) : (
+      <div>
+      {/* Mobile-only "時間軸／地圖" toggle — the map is a different view of
+          the same day's data (like edit mode itself), not a separate
+          top-level feature, so it doesn't belong in the bottom tab bar
+          alongside 檢查清單/行程健檢. Desktop already shows both side by
+          side (see the lg: grid below) and has no size problem, so this
+          stays lg:hidden rather than becoming a fifth shared mode. */}
+      <div className="mb-3 inline-flex rounded-lg border border-line bg-surface p-1 text-sm lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileMapView(false)}
+          aria-pressed={!mobileMapView}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+            !mobileMapView ? "bg-brand-600 text-white" : "text-ink-700 hover:bg-paper-alt"
+          }`}
+        >
+          <ListChecks className="h-4 w-4" />
+          時間軸
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileMapView(true)}
+          aria-pressed={mobileMapView}
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 ${
+            mobileMapView ? "bg-brand-600 text-white" : "text-ink-700 hover:bg-paper-alt"
+          }`}
+        >
+          <MapIcon className="h-4 w-4" />
+          地圖
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
       {/* Day timeline */}
-      <div>
+      <div className={mobileMapView ? "hidden lg:block" : ""}>
         <div
           ref={tabListRef}
           role="tablist"
@@ -563,14 +602,25 @@ export default function TripDayBoard({
         )}
       </div>
 
-      {/* Map panel — always scoped to the day selected above */}
-      <aside id="day-map-panel" className="space-y-4 lg:sticky lg:top-10">
-        <div className="h-fit rounded-xl border border-line bg-surface p-4 shadow-sm">
+      {/* Map panel — always scoped to the day selected above. Hidden on
+          mobile unless the toggle above is on "地圖" (see mobileMapView) —
+          desktop ignores that state and always shows this via lg:block. */}
+      <aside className="space-y-4 lg:sticky lg:top-10">
+        <div
+          id="day-map-panel"
+          className={`h-fit rounded-xl border border-line bg-surface p-4 shadow-sm ${
+            mobileMapView ? "" : "hidden lg:block"
+          }`}
+        >
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
             <MapIcon className="h-4 w-4" />
             地圖{selectedDay && ` · Day ${selectedDay.dayIndex}`}
           </h3>
-          <div className="mt-3 h-[260px] lg:h-[480px]">
+          <div
+            className={
+              mobileMapView ? "mt-3 h-[70vh] lg:h-[480px]" : "mt-3 hidden lg:block lg:h-[480px]"
+            }
+          >
             <TripMap
               apiKey={apiKey}
               selectedItemId={selectedItemId}
@@ -635,6 +685,7 @@ export default function TripDayBoard({
           journalShareToken={journalShareToken}
         />
       </aside>
+      </div>
       </div>
       )}
       </div>
