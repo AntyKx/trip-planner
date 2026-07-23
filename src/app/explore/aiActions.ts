@@ -187,7 +187,11 @@ export async function getPlaceInsight(
       suggestedDuration: result.suggestedDuration,
       caution: result.caution ?? null,
     };
-  } catch {
+  } catch (err) {
+    // TEMPORARY debug log — remove once the current AI-failure report is
+    // diagnosed. The bare catch below was swallowing the real error with
+    // no trace anywhere.
+    console.error("getPlaceInsight failed:", err);
     return { ok: false, error: "AI 分析失敗，請稍後再試" };
   }
 }

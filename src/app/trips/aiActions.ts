@@ -134,7 +134,11 @@ export async function extractConfirmationFromImage(
       endTime: output.endTime ?? null,
       note: output.note ?? null,
     };
-  } catch {
+  } catch (err) {
+    // TEMPORARY debug log — remove once the current AI-failure report is
+    // diagnosed. The bare catch below was swallowing the real error with
+    // no trace anywhere.
+    console.error("extractConfirmationFromImage failed:", err);
     return { ok: false, error: "AI 辨識失敗，請稍後再試" };
   }
 }
@@ -209,7 +213,10 @@ export async function summarizeTripDoctorFindings(
     if (!output) return { ok: false, error: "AI 沒有回傳內容，請再試一次" };
 
     return { ok: true, overview: output.overview, priorities: output.priorities };
-  } catch {
+  } catch (err) {
+    // TEMPORARY debug log — see the matching note in
+    // extractConfirmationFromImage above, same reason.
+    console.error("summarizeTripDoctorFindings failed:", err);
     return { ok: false, error: "AI 統整失敗，請稍後再試" };
   }
 }
