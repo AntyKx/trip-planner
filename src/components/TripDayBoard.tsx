@@ -453,8 +453,14 @@ export default function TripDayBoard({
           top-level feature, so it doesn't belong in the bottom tab bar
           alongside 檢查清單/行程健檢. Desktop already shows both side by
           side (see the lg: grid below) and has no size problem, so this
-          stays lg:hidden rather than becoming a fifth shared mode. */}
-      <div className="mb-3 inline-flex rounded-lg border border-line bg-surface p-1 text-sm lg:hidden">
+          stays lg:hidden rather than becoming a fifth shared mode.
+          `sticky` (not just static) because the map uses gestureHandling=
+          "greedy" — a one-finger drag anywhere on it pans the map instead
+          of scrolling the page, so once you're a screen-height down inside
+          the map there'd be no way to drag back up to a static toggle.
+          Pinning it to the top of the viewport keeps it one tap away
+          regardless of scroll position. */}
+      <div className="sticky top-2 z-10 mb-3 inline-flex rounded-lg border border-line bg-surface p-1 text-sm shadow-sm lg:hidden">
         <button
           type="button"
           onClick={() => setMobileMapView(false)}
