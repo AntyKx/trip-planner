@@ -4,6 +4,8 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-23
 
+- **診斷 AI 分析／健檢總結失敗，補上錯誤 log**：使用者回報景點 AI 適合度分析、行程健檢 AI 總結都失敗。三個 AI action（含截圖辨識）原本 `catch` 都只回傳固定訊息，真正錯誤完全沒有留下任何紀錄，查了 Vercel log 也看不出線索。先加 `console.error` 補上 log 再請使用者重現一次，這次抓到真正原因：**AI Gateway 回傳「Free tier users do not have access to this model」**——是 Vercel 帳號的 AI Gateway 額度/付款狀態問題，不是程式碼 bug，需要使用者自行到 Vercel 後台確認付款方式或儲值。這個 log 判斷是永久保留（原本完全沒有任何錯誤可見度，是有意義的補強，不只是這次除錯用）。
+
 - **地圖畫面內可直接切換日期**：`TripMap.tsx` 原本就有「多天時顯示日期下拉選單」的邏輯，但 `TripDayBoard` 一直只傳當天資料進去，這段邏輯從沒真正跑過（死代碼）。既然地圖現在有自己的全螢幕頁面（見 07-22 的時間軸／地圖切換），讓使用者在地圖裡切換 Day 會比切回時間軸再切回地圖順手。改成把地圖的日期選擇從內部 `useState` 改成跟主要 Day Tabs 共用同一份 `selectedDayId`／`setSelectedDayId`（控制項模式，比照既有的 `selectedItemId`／`onSelectItem`），避免地圖自己選的日期跟時間軸顯示的日期各自獨立、切回去對不上。
 
 ## 2026-07-22

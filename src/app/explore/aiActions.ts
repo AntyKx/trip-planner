@@ -188,9 +188,9 @@ export async function getPlaceInsight(
       caution: result.caution ?? null,
     };
   } catch (err) {
-    // TEMPORARY debug log — remove once the current AI-failure report is
-    // diagnosed. The bare catch below was swallowing the real error with
-    // no trace anywhere.
+    // Logged server-side — see the matching note in
+    // src/app/trips/aiActions.ts's extractConfirmationFromImage, same
+    // reason (this bare catch used to swallow the real error entirely).
     console.error("getPlaceInsight failed:", err);
     return { ok: false, error: "AI 分析失敗，請稍後再試" };
   }

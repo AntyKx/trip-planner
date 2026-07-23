@@ -135,9 +135,10 @@ export async function extractConfirmationFromImage(
       note: output.note ?? null,
     };
   } catch (err) {
-    // TEMPORARY debug log — remove once the current AI-failure report is
-    // diagnosed. The bare catch below was swallowing the real error with
-    // no trace anywhere.
+    // Logged server-side — previously this bare catch swallowed the real
+    // error entirely, which meant a 2026-07-23 AI Gateway billing outage
+    // ("Free tier users do not have access to this model") left no trace
+    // anywhere and had to be diagnosed by adding this log after the fact.
     console.error("extractConfirmationFromImage failed:", err);
     return { ok: false, error: "AI 辨識失敗，請稍後再試" };
   }
@@ -214,7 +215,7 @@ export async function summarizeTripDoctorFindings(
 
     return { ok: true, overview: output.overview, priorities: output.priorities };
   } catch (err) {
-    // TEMPORARY debug log — see the matching note in
+    // Logged server-side — see the matching note in
     // extractConfirmationFromImage above, same reason.
     console.error("summarizeTripDoctorFindings failed:", err);
     return { ok: false, error: "AI 統整失敗，請稍後再試" };
