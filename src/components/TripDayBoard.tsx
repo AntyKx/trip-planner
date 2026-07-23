@@ -638,18 +638,20 @@ export default function TripDayBoard({
               apiKey={apiKey}
               selectedItemId={selectedItemId}
               onSelectItem={setSelectedItemId}
-              days={
-                selectedDay
-                  ? [
-                      {
-                        id: selectedDay.id,
-                        dayIndex: selectedDay.dayIndex,
-                        items: selectedDay.mapItems,
-                        routes: selectedDay.mapRoutes,
-                      },
-                    ]
-                  : []
-              }
+              // All days now (not just the selected one) — TripMap shows
+              // its own day dropdown when there's more than one, wired to
+              // the same selectedDayId/setSelectedDayId as the Day Tabs
+              // above so switching days from inside the map view (handy
+              // once it's the mobile full-screen view) keeps the timeline
+              // in sync instead of drifting independently.
+              days={daysWithWeather.map((d) => ({
+                id: d.id,
+                dayIndex: d.dayIndex,
+                items: d.mapItems,
+                routes: d.mapRoutes,
+              }))}
+              selectedDayId={selectedDay?.id}
+              onSelectDay={setSelectedDayId}
             />
           </div>
           <ul className="mt-4 space-y-2">

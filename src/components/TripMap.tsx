@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
 
@@ -180,18 +180,27 @@ function MissingKeyNotice() {
 export default function TripMap({
   apiKey,
   days,
+  selectedDayId,
+  onSelectDay,
   selectedItemId,
   onSelectItem,
 }: {
   apiKey?: string;
   days: MapDay[];
+  // Controlled, not local state — this used to be an internal useState,
+  // but that let the map's own day dropdown drift out of sync with the
+  // main Day Tabs above the timeline (switch day in the map, flip back to
+  // the timeline, and it'd still show the old day). Driven by the same
+  // selectedDayId/setSelectedDayId TripDayBoard already uses for the tabs,
+  // same pattern as selectedItemId/onSelectItem below.
+  selectedDayId: string | undefined;
+  onSelectDay: (id: string) => void;
   // "Currently selected" item — set by clicking a marker, or by the
   // timeline card's "定位" button (see TripDayBoard). Drives both the
   // highlighted marker style and the InfoWindow.
   selectedItemId: string | null;
   onSelectItem: (id: string | null) => void;
 }) {
-  const [selectedDayId, setSelectedDayId] = useState(days[0]?.id);
   const day = days.find((d) => d.id === selectedDayId) ?? days[0];
 
   if (!apiKey) {
@@ -217,7 +226,7 @@ export default function TripMap({
       {days.length > 1 && (
         <select
           value={selectedDayId}
-          onChange={(e) => setSelectedDayId(e.target.value)}
+          onChange={(e) => onSelectDay(e.target.value)}
           className="mb-2 w-full shrink-0 rounded-md border border-line px-2 py-1 text-sm"
         >
           {days.map((d) => (
