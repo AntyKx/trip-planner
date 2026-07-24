@@ -59,7 +59,12 @@ export default function ActionMenu({
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex min-h-10 min-w-10 items-center justify-center text-ink-500 hover:text-brand-600"
+        // items-start + pt-0.5 (not items-center) so the icon lines up
+        // with the top of whatever text row it sits beside — matches the
+        // other per-item action buttons in DayTimeline.tsx, this menu's
+        // only caller today. Revisit if a future caller needs it centered
+        // instead (e.g. sitting alone with nothing to align to).
+        className="flex min-h-10 min-w-10 items-start justify-center pt-0.5 text-ink-500 hover:text-brand-600"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>

@@ -331,15 +331,20 @@ function SortableItemCard({
             {/* 40px targets with zero gap — slightly under the 44px
                 guideline as a deliberate density trade-off the user chose
                 (狀態徽章 keep full visibility; only the action buttons
-                tighten up). */}
-            <div className="flex shrink-0 items-center">
+                tighten up). items-start (not items-center) on both this
+                row and each button's own icon centering — so the icon
+                glyphs line up with the top badge row's text instead of
+                sitting centered inside the full 40px tap target, which
+                visually drifted low once the badges started wrapping to a
+                second line (see the spine-gutter width fix above). */}
+            <div className="flex shrink-0 items-start">
               {item.place && (
                 <button
                   type="button"
                   onClick={onLocate}
                   aria-label="在地圖上定位"
                   title="在地圖上定位"
-                  className={`flex min-h-10 min-w-10 items-center justify-center hover:text-brand-600 ${
+                  className={`flex min-h-10 min-w-10 items-start justify-center pt-0.5 hover:text-brand-600 ${
                     isSelected ? "text-brand-600" : "text-ink-500"
                   }`}
                 >
@@ -352,7 +357,7 @@ function SortableItemCard({
                   onClick={onOpenJournal}
                   aria-label="編輯遊記"
                   title="遊記與照片"
-                  className={`flex min-h-10 min-w-10 items-center justify-center hover:text-rose-600 ${
+                  className={`flex min-h-10 min-w-10 items-start justify-center pt-0.5 hover:text-rose-600 ${
                     item.journalText || item.photos.length > 0
                       ? "text-rose-600"
                       : "text-ink-500"
@@ -366,7 +371,7 @@ function SortableItemCard({
                   type="button"
                   onClick={onEdit}
                   aria-label="編輯項目"
-                  className="flex min-h-10 min-w-10 items-center justify-center text-ink-500 hover:text-brand-600"
+                  className="flex min-h-10 min-w-10 items-start justify-center pt-0.5 text-ink-500 hover:text-brand-600"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
