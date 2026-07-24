@@ -206,7 +206,7 @@ function SortableItemCard({
     <div
       ref={setNodeRef}
       style={{ ...style, animationDelay: `${Math.min(index * 60, 400)}ms` }}
-      className="relative mb-3 flex animate-fade-up gap-3"
+      className="relative mb-3 flex animate-fade-up gap-2"
       id={`timeline-item-${item.id}`}
     >
       {/* Spine gutter — the dot marks this stop on the shared dashed line
@@ -216,7 +216,7 @@ function SortableItemCard({
           already uses this dashed-line + font-script language (see
           JournalBook.tsx) — this extends it to the timeline itself
           instead of leaving it only on the post-trip recap. */}
-      <div className="w-9 shrink-0 pt-4 text-center">
+      <div className="w-8 shrink-0 pt-4 text-center">
         <span
           aria-hidden="true"
           className={`mx-auto block rounded-full border-2 border-paper bg-brand-700 ${
@@ -280,7 +280,14 @@ function SortableItemCard({
         )}
 
         <div className="min-w-0 flex-1 p-3">
-          <div className="flex items-center justify-between gap-2">
+          {/* items-start (not items-center) — the badge group wraps to a
+              second line once the spine gutter narrowed this card's
+              available width (住宿/本日起點, or a cost pill, no longer
+              always fit on one line). items-center used to vertically
+              center the button row against that now-taller wrapped badge
+              stack, landing the icons visually inside/between the two
+              badge lines instead of clear of them. */}
+          <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               {/* Time used to be repeated here as plain bold text — now
                   shown once, as the handwritten label on the spine gutter
@@ -1177,13 +1184,13 @@ export default function DayTimeline({
             {/* Dashed spine — a static line, not animated (the per-item
                 dots/cards below stagger in on top of it via animate-fade-up
                 instead); real card heights vary too much for an SVG
-                stroke-dashoffset draw-in to stay aligned. left-[17px]
-                centers it under each row's w-9 gutter (see
+                stroke-dashoffset draw-in to stay aligned. left-[15px]
+                centers it under each row's w-8 gutter (see
                 SortableItemCard above) — same dashed-line language as
                 JournalBook's day-section rule, just vertical here. */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute bottom-2 left-[17px] top-2 w-0 border-l-2 border-dashed border-brand-200"
+              className="pointer-events-none absolute bottom-2 left-[15px] top-2 w-0 border-l-2 border-dashed border-brand-200"
             />
             {items.map((item, index) => {
               const nextId = nextPlaceItemId.get(item.id);
