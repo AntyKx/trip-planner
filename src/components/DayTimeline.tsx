@@ -123,6 +123,7 @@ function SortableItemCard({
   tripId,
   dayId,
   item,
+  index,
   route,
   hasNextStop,
   isAnchor,
@@ -143,6 +144,9 @@ function SortableItemCard({
   tripId: string;
   dayId: string;
   item: TimelineItem;
+  // Only used for the entrance-animation stagger delay (see the wrapper
+  // below) — capped there, so this doesn't need bounding itself.
+  index: number;
   route?: TimelineRoute;
   hasNextStop: boolean;
   isAnchor: boolean;
@@ -199,7 +203,34 @@ function SortableItemCard({
   const stayDuration = formatStayDuration(item.startTime, item.endTime);
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-3" id={`timeline-item-${item.id}`}>
+    <div
+      ref={setNodeRef}
+      style={{ ...style, animationDelay: `${Math.min(index * 60, 400)}ms` }}
+      className="relative mb-3 flex animate-fade-up gap-3"
+      id={`timeline-item-${item.id}`}
+    >
+      {/* Spine gutter — the dot marks this stop on the shared dashed line
+          drawn by the list wrapper (see DayTimeline's items.map below);
+          the handwritten time replaces the old plain-text time badge that
+          used to sit in the card's top row. This app's journal page
+          already uses this dashed-line + font-script language (see
+          JournalBook.tsx) — this extends it to the timeline itself
+          instead of leaving it only on the post-trip recap. */}
+      <div className="w-9 shrink-0 pt-4 text-center">
+        <span
+          aria-hidden="true"
+          className={`mx-auto block rounded-full border-2 border-paper bg-brand-700 ${
+            isAnchor ? "h-3.5 w-3.5 ring-2 ring-brand-300" : "h-3 w-3"
+          }`}
+        />
+        {formatTime(item.startTime) && (
+          <span className="mt-1 block -rotate-2 font-script text-lg leading-none text-brand-700">
+            {formatTime(item.startTime)}
+          </span>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
@@ -251,14 +282,9 @@ function SortableItemCard({
         <div className="min-w-0 flex-1 p-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              {/* Time is the second-most-important thing on this card (after
-                  the place name) — sized/weighted/colored to read at a
-                  glance instead of blending into the badge row next to it. */}
-              {formatTime(item.startTime) && (
-                <span className="shrink-0 text-base font-bold tabular-nums text-brand-700">
-                  {formatTime(item.startTime)}
-                </span>
-              )}
+              {/* Time used to be repeated here as plain bold text — now
+                  shown once, as the handwritten label on the spine gutter
+                  to the card's left, instead of duplicating it inline. */}
               <span
                 className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
               >
@@ -475,6 +501,7 @@ function SortableItemCard({
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -1146,8 +1173,19 @@ export default function DayTimeline({
           items={items.map((i) => i.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className={isPending ? "opacity-70" : undefined}>
-            {items.map((item) => {
+          <div className={`relative ${isPending ? "opacity-70" : ""}`}>
+            {/* Dashed spine — a static line, not animated (the per-item
+                dots/cards below stagger in on top of it via animate-fade-up
+                instead); real card heights vary too much for an SVG
+                stroke-dashoffset draw-in to stay aligned. left-[17px]
+                centers it under each row's w-9 gutter (see
+                SortableItemCard above) — same dashed-line language as
+                JournalBook's day-section rule, just vertical here. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute bottom-2 left-[17px] top-2 w-0 border-l-2 border-dashed border-brand-200"
+            />
+            {items.map((item, index) => {
               const nextId = nextPlaceItemId.get(item.id);
               const route = nextId
                 ? routes.find(
@@ -1160,6 +1198,7 @@ export default function DayTimeline({
                   tripId={tripId}
                   dayId={dayId}
                   item={item}
+                  index={index}
                   route={route}
                   hasNextStop={nextId != null}
                   isAnchor={item.id === anchorItemId}
