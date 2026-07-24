@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* iOS 26 Safari has a known regression where position: fixed/sticky
+   elements can visually detach and float mid-page during scroll (the
+   address bar's new collapse/expand behavior confuses it) — reported for
+   this app's mobile bottom tab bar, and documented across many other
+   sites (see Apple Developer Forums thread 800798, mastodon/mastodon#36144).
+   This isn't something app code can fully guarantee a fix for — Apple's
+   own guidance points at a future WebKit patch — but one commonly cited,
+   low-risk mitigation is ensuring html/body always have at least a full
+   viewport of height. On devices with no notch this is just
+   `min-height: 100%` (already true almost always); on notched devices it
+   adds a few dozen px of floor, only visible on pages shorter than one
+   viewport, which this app's real pages basically never are.
+   Experimental — kept simple to revert if it doesn't help. */
+html {
+  min-height: calc(100% + env(safe-area-inset-top));
+}
+
 :root {
   color-scheme: light;
 
