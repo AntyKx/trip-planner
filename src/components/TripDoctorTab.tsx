@@ -140,10 +140,18 @@ export default function TripDoctorTab({
             key={dayIndex}
             className="rounded-card-lg border border-line bg-surface p-4 shadow-sm"
           >
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-bold text-ink-900">Day {dayIndex}</h3>
+            {/* Handwritten "Day N" + dashed rule — same pattern as
+                JournalBook's day divider, extending that language here
+                instead of the plain bold heading this used to be. Status
+                pill stays put at the end of the row; it's state, not
+                decoration, so it's untouched. */}
+            <div className="flex items-baseline gap-2.5">
+              <span className="font-script text-3xl leading-none text-brand-600">
+                Day {dayIndex}
+              </span>
+              <div className="h-0 flex-1 border-t border-dashed border-brand-200" />
               <span
-                className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                   dayHasIssue
                     ? "bg-danger-50 text-danger-600"
                     : "bg-warning-50 text-warning-700"
@@ -152,25 +160,35 @@ export default function TripDoctorTab({
                 {dayHasIssue ? "需要調整" : "建議注意"}
               </span>
             </div>
-            <ul className="mt-2.5 space-y-1.5">
-              {dayFindings.map((finding, i) => (
-                <li
-                  key={i}
-                  className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-sm ${
-                    finding.severity === "issue"
-                      ? "bg-danger-50 text-danger-600"
-                      : "bg-warning-50 text-warning-700"
-                  }`}
-                >
-                  {finding.severity === "issue" ? (
-                    <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                  ) : (
-                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  )}
-                  <span>{finding.message}</span>
-                </li>
-              ))}
-            </ul>
+            {/* Dashed spine ties the findings back to the day label above,
+                echoing DayTimeline's per-stop spine — just a connecting
+                line here, no per-finding dots (the colored severity rows
+                below already carry that weight). */}
+            <div className="relative mt-3 pl-4">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-1 left-1 top-1 w-0 border-l-2 border-dashed border-brand-200"
+              />
+              <ul className="space-y-1.5">
+                {dayFindings.map((finding, i) => (
+                  <li
+                    key={i}
+                    className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-sm ${
+                      finding.severity === "issue"
+                        ? "bg-danger-50 text-danger-600"
+                        : "bg-warning-50 text-warning-700"
+                    }`}
+                  >
+                    {finding.severity === "issue" ? (
+                      <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+                    ) : (
+                      <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    )}
+                    <span>{finding.message}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         );
       })}
