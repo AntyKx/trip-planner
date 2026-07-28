@@ -145,7 +145,7 @@ export default function TripDoctorTab({
                 instead of the plain bold heading this used to be. Status
                 pill stays put at the end of the row; it's state, not
                 decoration, so it's untouched. */}
-            <div className="flex items-baseline gap-2.5">
+            <div className="flex items-center gap-2.5">
               <span className="font-script text-3xl leading-none text-brand-600">
                 Day {dayIndex}
               </span>
