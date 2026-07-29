@@ -242,7 +242,13 @@ export default function TripMap({
         style={{ width: "100%", height: "100%", borderRadius: 12 }}
         defaultCenter={center}
         defaultZoom={14}
-        gestureHandling="greedy"
+        // "cooperative" (not "greedy") — a single-finger swipe over the map
+        // scrolls the page like everywhere else; panning/zooming the map
+        // itself needs two fingers (or ctrl+scroll on desktop). "greedy"
+        // captured every one-finger touch as a pan, so on mobile — where
+        // the map fills 70vh (see TripDayBoard) — there was almost no way
+        // to scroll past it to reach the overview list below.
+        gestureHandling="cooperative"
         disableDefaultUI={false}
       >
         <FitBounds items={day.items} />

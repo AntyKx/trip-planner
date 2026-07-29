@@ -4,6 +4,8 @@ Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在�
 
 ## 2026-07-29
 
+- **地圖手勢改成 cooperative，解決滑不過地圖的問題**：使用者回報進入地圖頁面想往下滑到總覽清單，手指一滑就被地圖吃掉變成拖曳地圖，只能戳卡片邊緣那圈窄窄的 padding 才滑得動。根因是 `TripMap.tsx` 的 `gestureHandling` 設成 `"greedy"`（沒有理由註解，看起來是沒特別考慮過的預設值），這個模式會把單指觸控一律當成地圖手勢。改成 `"cooperative"`：單指滑動正常捲頁面，要拖曳/縮放地圖才需要兩指（地圖上會顯示一次性提示），順便修掉桌機版滑鼠滾輪滑過地圖被誤判成縮放的同類問題。手機版地圖高度佔 70vh（`h-[70vh]`，見 `TripDayBoard.tsx`），影響範圍最明顯。
+
 - **全站原生 emoji 收斂**：使用者反映想要更好看、跨裝置一致的圖示（原生 unicode emoji 長相完全交給裝置字型決定，蘋果/Windows/Android 三邊不一樣）。實測比較 Twemoji／Noto Emoji／純 lucide 線條圖示三種替代方案後選定 Twemoji。盤點全站實際 emoji 用量發現大多數其實跟旁邊已有的 lucide 圖示重複（`TripDoctorTab`／`PlaceInsightSection` 的 ✨ 跟 `Sparkles` 圖示重複、`ExploreClient` 公休警告的 ⚠️ 跟 `TriangleAlert` 圖示重複）——這些直接拿掉重複的 emoji 文字，不是換成 Twemoji。真正需要圖示、旁邊沒有既有 lucide 圖示的只有 `TravelModeView` 確認碼的 🔖，換成自架的 Twemoji SVG（`public/emoji/`，CC-BY 4.0 附 ATTRIBUTION.md）。天氣提醒（☔❄️🥵🧥）原本也是文字裡夾 emoji，但 `weather.ts` 自己在 `WEATHER_LABEL` 已經明文寫「不用 emoji，避免跨平台不一致又跟全站 lucide 圖示語言衝突」——這條理由套用在這裡一樣成立，所以改成沿用同一套 lucide 圖示（`CloudRain`/`Snowflake`/`ThermometerSun`/`ThermometerSnowflake`），`getWeatherReminders()` 回傳型別從 `string[]` 改成 `{ icon, text }[]`，三個呼叫端（`tripDoctor.ts`／`TravelModeView.tsx`／`TripDayBoard.tsx`）跟著更新。地區選單（🇯🇵🇹🇼🌐）維持原生 emoji 不動——原生 `<option>` 元素沒辦法塞圖片，這是 HTML 本身的限制。順手清掉一個從沒被用過的 `COUNTRY_FLAG` 死程式碼。
 
 ## 2026-07-28
