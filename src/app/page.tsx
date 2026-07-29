@@ -19,6 +19,7 @@ import EmptyState from "@/components/EmptyState";
 import { NoTripsIllustration } from "@/components/EmptyStateIllustrations";
 import GreetingHero from "@/components/GreetingHero";
 import SignOutButton from "@/components/SignOutButton";
+import PushNotificationToggle from "@/components/PushNotificationToggle";
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
@@ -345,6 +346,7 @@ export default async function TripsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
       <div className="flex items-center justify-end gap-3 text-sm text-ink-700">
+        <PushNotificationToggle />
         <ImgWithFallback
           src={user.avatarUrl}
           alt={user.name}

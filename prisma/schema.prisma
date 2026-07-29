@@ -55,17 +55,18 @@ enum ChecklistCategory {
 }
 
 model User {
-  id                String          @id @default(cuid())
+  id                String             @id @default(cuid())
   name              String
-  email             String          @unique
+  email             String             @unique
   avatarUrl         String?
-  googleUid         String?         @unique
+  googleUid         String?            @unique
   trips             Trip[]
   collaborating     Collaborator[]
   favorites         Favorite[]
-  checklistDone     ChecklistItem[] @relation("ChecklistDoneBy")
-  checklistAssigned ChecklistItem[] @relation("ChecklistAssignedTo")
-  createdAt         DateTime        @default(now())
+  checklistDone     ChecklistItem[]    @relation("ChecklistDoneBy")
+  checklistAssigned ChecklistItem[]    @relation("ChecklistAssignedTo")
+  pushSubscriptions PushSubscription[]
+  createdAt         DateTime           @default(now())
 }
 
 // A personal bucket-list, independent of any specific trip — "我的收藏".
@@ -343,4 +344,23 @@ model ChecklistItem {
   @@unique([tripId, sourceKey])
   @@index([tripId, category])
   @@index([tripId, isDone])
+}
+
+// One row per browser/device push subscription (a user signed in on two
+// phones gets two rows) — `endpoint` is the push service's per-subscription
+// URL, globally unique by construction, so it's the natural dedupe key
+// instead of a synthetic one. `p256dh`/`auth` are the subscription's public
+// key and auth secret, both required by the Web Push protocol to encrypt
+// the payload; neither is a secret we generate, they come from the
+// browser's PushManager.subscribe() response.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
