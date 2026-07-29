@@ -96,11 +96,6 @@ export const MODE_ICON: Record<string, LucideIcon> = {
   BIKE: Bike,
 };
 
-export const COUNTRY_FLAG: Record<string, string> = {
-  TW: "🇹🇼",
-  JP: "🇯🇵",
-};
-
 export const CHECKLIST_CATEGORY_LABEL: Record<ChecklistCategoryValue, string> = {
   DOCUMENT: "文件 / 證件",
   TRANSPORT: "交通",

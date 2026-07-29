@@ -150,11 +150,11 @@ function checkBusyDay(day: DoctorDay): DoctorFinding[] {
 
 function checkWeather(day: DoctorDay): DoctorFinding[] {
   if (!day.weather) return [];
-  return getWeatherReminders(day.weather).map((message) => ({
+  return getWeatherReminders(day.weather).map((reminder) => ({
     dayId: day.id,
     dayIndex: day.dayIndex,
     severity: "notice" as const,
-    message,
+    message: reminder.text,
   }));
 }
 

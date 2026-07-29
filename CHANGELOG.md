@@ -2,6 +2,10 @@
 
 Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在最上面。
 
+## 2026-07-29
+
+- **全站原生 emoji 收斂**：使用者反映想要更好看、跨裝置一致的圖示（原生 unicode emoji 長相完全交給裝置字型決定，蘋果/Windows/Android 三邊不一樣）。實測比較 Twemoji／Noto Emoji／純 lucide 線條圖示三種替代方案後選定 Twemoji。盤點全站實際 emoji 用量發現大多數其實跟旁邊已有的 lucide 圖示重複（`TripDoctorTab`／`PlaceInsightSection` 的 ✨ 跟 `Sparkles` 圖示重複、`ExploreClient` 公休警告的 ⚠️ 跟 `TriangleAlert` 圖示重複）——這些直接拿掉重複的 emoji 文字，不是換成 Twemoji。真正需要圖示、旁邊沒有既有 lucide 圖示的只有 `TravelModeView` 確認碼的 🔖，換成自架的 Twemoji SVG（`public/emoji/`，CC-BY 4.0 附 ATTRIBUTION.md）。天氣提醒（☔❄️🥵🧥）原本也是文字裡夾 emoji，但 `weather.ts` 自己在 `WEATHER_LABEL` 已經明文寫「不用 emoji，避免跨平台不一致又跟全站 lucide 圖示語言衝突」——這條理由套用在這裡一樣成立，所以改成沿用同一套 lucide 圖示（`CloudRain`/`Snowflake`/`ThermometerSun`/`ThermometerSnowflake`），`getWeatherReminders()` 回傳型別從 `string[]` 改成 `{ icon, text }[]`，三個呼叫端（`tripDoctor.ts`／`TravelModeView.tsx`／`TripDayBoard.tsx`）跟著更新。地區選單（🇯🇵🇹🇼🌐）維持原生 emoji 不動——原生 `<option>` 元素沒辦法塞圖片，這是 HTML 本身的限制。順手清掉一個從沒被用過的 `COUNTRY_FLAG` 死程式碼。
+
 ## 2026-07-28
 
 - **行程健檢的「Day N」標題延伸手繪時間軸語言**：時間軸卡片先前換上手繪虛線＋手寫字後，同一個行程頁裡的行程健檢分頁還是原本粗體 sans-serif＋色塊徽章的排版，切分頁時風格會斷掉。改成跟遊記頁 `JournalBook` 的「Day N」分隔線同款：手寫字標題＋一條延伸到狀態徽章前的虛線；每天的發現列外加一條銜接標題的虛線，呼應時間軸的 spine。刻意不動的部分：需要調整／建議注意的色塊徽章與發現列紅黃底色（語意色不裝飾）、AI 總結按鈕、整體狀況卡——跟做時間軸時「狀態不收、操作才收」是同一個判斷。檢查清單分頁的同款提案先出過 Artifact 預覽，這次只採用行程健檢的部分。

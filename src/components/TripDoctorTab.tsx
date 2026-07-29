@@ -102,7 +102,7 @@ export default function TripDoctorTab({
             className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
           >
             <Sparkles className={`h-3.5 w-3.5 ${isSummarizing ? "animate-pulse" : ""}`} />
-            {isSummarizing ? "AI 統整中…" : "✨ AI 幫我總結，排出優先順序"}
+            {isSummarizing ? "AI 統整中…" : "AI 幫我總結，排出優先順序"}
           </button>
           {/* Previews the shape of the summary card about to replace this
               button, instead of a blank gap while the request is in flight. */}

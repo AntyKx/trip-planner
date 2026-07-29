@@ -418,7 +418,7 @@ export default function TripDayBoard({
               <SmartBanner
                 dismissKey={`weather:${selectedDay.id}:${selectedDay.weather!.weatherCode}`}
                 variant="info"
-                title={`Day ${selectedDay.dayIndex}：${weatherReminder}`}
+                title={`Day ${selectedDay.dayIndex}：${weatherReminder.text}`}
               />
             </div>
           );
@@ -580,10 +580,11 @@ export default function TripDayBoard({
             {selectedDay.weather ? (
               getWeatherReminders(selectedDay.weather).map((reminder) => (
                 <p
-                  key={reminder}
-                  className="mt-1 text-sm text-info-700"
+                  key={reminder.text}
+                  className="mt-1 flex items-center gap-1.5 text-sm text-info-700"
                 >
-                  {reminder}
+                  <reminder.icon className="h-3.5 w-3.5 shrink-0" />
+                  {reminder.text}
                 </p>
               ))
             ) : (

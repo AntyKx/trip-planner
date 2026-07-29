@@ -16,7 +16,7 @@ function fitScoreColor(score: number): string {
 }
 
 // Shared by ExploreClient's search/favorites cards and PlaceDetailsModal —
-// same "✨ AI 看看適不適合" button + gold-toned result card either way, so
+// same "AI 看看適不適合" button + gold-toned result card either way, so
 // this only needs to be built (and gotten right) once.
 export default function PlaceInsightSection({
   provider,
@@ -37,7 +37,7 @@ export default function PlaceInsightSection({
   // practice since its own content is wide enough to fill a flex row on
   // its own regardless.
   className,
-  // The full "✨ AI 看看適不適合" label is too wide to actually share a
+  // The full "AI 看看適不適合" label is too wide to actually share a
   // row with other buttons in a narrow card (measured — it doesn't fit
   // next to the favorite/add controls on a standard phone width even at
   // full card width). PlaceDetailsModal's footer has the whole modal
@@ -112,7 +112,7 @@ export default function PlaceInsightSection({
           className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
         >
           <Sparkles className={`h-3.5 w-3.5 ${isLoading ? "animate-pulse" : ""}`} />
-          {isLoading ? "AI 分析中…" : compact ? "✨ AI 分析" : "✨ AI 看看適不適合"}
+          {isLoading ? "AI 分析中…" : compact ? "AI 分析" : "AI 看看適不適合"}
         </button>
         {/* Previews the shape of the result card that's about to replace
             this button (score badge + two text lines) instead of leaving a

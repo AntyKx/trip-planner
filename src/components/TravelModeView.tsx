@@ -34,8 +34,12 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
             </span>
           </p>
           {getWeatherReminders(day.weather).map((reminder) => (
-            <p key={reminder} className="text-sm text-info-700">
-              {reminder}
+            <p
+              key={reminder.text}
+              className="flex items-center gap-1.5 text-sm text-info-700"
+            >
+              <reminder.icon className="h-3.5 w-3.5 shrink-0" />
+              {reminder.text}
             </p>
           ))}
         </div>
@@ -58,8 +62,13 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
             <p className="mt-1 text-sm text-brand-100">{nextStop.place.address}</p>
           )}
           {nextStop.confirmationNumber && (
-            <p className="mt-1 text-sm text-brand-100">
-              🔖 {nextStop.confirmationNumber}
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-brand-100">
+              {/* Self-hosted Twemoji SVG, not the raw 🔖 unicode character —
+                  renders identically across devices instead of however each
+                  OS's own emoji font happens to draw it. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/emoji/bookmark.svg" alt="" className="h-4 w-4 shrink-0" />
+              {nextStop.confirmationNumber}
             </p>
           )}
           {nextStop.place && (

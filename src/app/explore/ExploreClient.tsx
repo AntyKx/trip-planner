@@ -161,7 +161,10 @@ export default function ExploreClient({
             const periods: OpeningPeriod[] = JSON.parse(openHoursJson);
             const date = new Date(`${targetDay.date}T00:00:00`);
             if (isClosedAllDay(periods, date)) {
-              warning = `⚠️ 這天（${weekdayLabel(date)}）可能公休，請確認營業時間`;
+              // No leading icon in this string — the card that renders it
+              // already puts a <TriangleAlert> right before {closedWarning}
+              // (see renderPlaceCard below), so baking ⚠️ in here duplicated it.
+              warning = `這天（${weekdayLabel(date)}）可能公休，請確認營業時間`;
             }
           }
         }
@@ -431,6 +434,10 @@ export default function ExploreClient({
                   first (not after typing a query) matches the order
                   someone actually reasons through the search in. */}
               <form onSubmit={handleSearch} className="flex flex-col gap-2 sm:flex-row">
+                {/* Native <option> text can't render an <img> — unlike the
+                    rest of the app's emoji (now self-hosted Twemoji SVGs or
+                    dropped where a lucide icon already covered the same
+                    spot), these have to stay actual unicode characters. */}
                 <select
                   value={region}
                   onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}

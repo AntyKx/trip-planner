@@ -10,6 +10,8 @@ import {
   CloudLightning,
   Snowflake,
   Thermometer,
+  ThermometerSun,
+  ThermometerSnowflake,
 } from "lucide-react";
 
 export type DailyWeather = {
@@ -54,23 +56,28 @@ const SNOW_CODES = new Set([71, 73, 75]);
 const HOT_THRESHOLD_C = 30;
 const COLD_THRESHOLD_C = 10;
 
+export type WeatherReminder = { icon: LucideIcon; text: string };
+
 // Turns raw weather data into short, actionable reminders instead of just
 // a temperature readout — a day can trigger more than one (e.g. hot AND
-// rainy), so this returns a list.
-export function getWeatherReminders(weather: DailyWeather): string[] {
-  const reminders: string[] = [];
+// rainy), so this returns a list. Icon + text kept separate (not baked into
+// the string as emoji) for the same reason as WEATHER_LABEL above — lets
+// each caller render it consistently with the rest of the app's lucide
+// icons instead of relying on the device's own emoji font.
+export function getWeatherReminders(weather: DailyWeather): WeatherReminder[] {
+  const reminders: WeatherReminder[] = [];
 
   if (RAIN_CODES.has(weather.weatherCode)) {
-    reminders.push("☔ 記得帶傘，可以安排室內備案");
+    reminders.push({ icon: CloudRain, text: "記得帶傘，可以安排室內備案" });
   }
   if (SNOW_CODES.has(weather.weatherCode)) {
-    reminders.push("❄️ 有降雪，注意保暖與交通狀況");
+    reminders.push({ icon: Snowflake, text: "有降雪，注意保暖與交通狀況" });
   }
   if (weather.maxTemp >= HOT_THRESHOLD_C) {
-    reminders.push("🥵 氣溫偏高，記得補水，戶外景點避開中午");
+    reminders.push({ icon: ThermometerSun, text: "氣溫偏高，記得補水，戶外景點避開中午" });
   }
   if (weather.minTemp <= COLD_THRESHOLD_C) {
-    reminders.push("🧥 氣溫偏低，記得保暖");
+    reminders.push({ icon: ThermometerSnowflake, text: "氣溫偏低，記得保暖" });
   }
 
   return reminders;
