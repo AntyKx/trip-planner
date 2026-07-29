@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
+import { Move, Check } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
 
 const START_MARKER_COLOR = "#b45309";
@@ -201,6 +202,17 @@ export default function TripMap({
   selectedItemId: string | null;
   onSelectItem: (id: string | null) => void;
 }) {
+  // Starts locked (cooperative — one-finger swipe scrolls the page, see the
+  // gestureHandling comment below) so opening the map view never traps
+  // scrolling; the button lets someone who actually wants to pan opt in
+  // without needing two fingers. Reset on day switch so re-opening the map
+  // on a different day doesn't inherit a stale unlocked state.
+  const [mapEngaged, setMapEngaged] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMapEngaged(false);
+  }, [selectedDayId]);
+
   const day = days.find((d) => d.id === selectedDayId) ?? days[0];
 
   if (!apiKey) {
@@ -237,18 +249,48 @@ export default function TripMap({
         </select>
       )}
 
-      <div className="min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1">
+      {/* Lock/unlock toggle — lets someone who actually wants to pan the
+          map do it with one finger (gestureHandling="greedy") without
+          reintroducing the "swipe gets eaten by the map" scroll trap for
+          everyone else, who stays on "cooperative" by default. */}
+      <button
+        type="button"
+        onClick={() => setMapEngaged((prev) => !prev)}
+        // bottom-left — Google's default UI (disableDefaultUI={false} below)
+        // already occupies the other three corners: map type top-left,
+        // fullscreen top-right, zoom + street view pegman bottom-right.
+        className={`absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur ${
+          mapEngaged
+            ? "bg-brand-600 text-white"
+            : "bg-white/90 text-ink-700 hover:bg-white"
+        }`}
+      >
+        {mapEngaged ? (
+          <>
+            <Check className="h-3.5 w-3.5" />
+            完成拖曳
+          </>
+        ) : (
+          <>
+            <Move className="h-3.5 w-3.5" />
+            拖曳地圖
+          </>
+        )}
+      </button>
       <Map
         style={{ width: "100%", height: "100%", borderRadius: 12 }}
         defaultCenter={center}
         defaultZoom={14}
-        // "cooperative" (not "greedy") — a single-finger swipe over the map
-        // scrolls the page like everywhere else; panning/zooming the map
-        // itself needs two fingers (or ctrl+scroll on desktop). "greedy"
-        // captured every one-finger touch as a pan, so on mobile — where
-        // the map fills 70vh (see TripDayBoard) — there was almost no way
-        // to scroll past it to reach the overview list below.
-        gestureHandling="cooperative"
+        // "cooperative" by default — a single-finger swipe scrolls the page
+        // like everywhere else; panning/zooming the map needs two fingers
+        // (or ctrl+scroll on desktop). Switches to "greedy" only while the
+        // button above is engaged, so a one-finger drag pans the map on
+        // request instead of always needing two fingers. "greedy" as the
+        // permanent default captured every one-finger touch as a pan, so on
+        // mobile — where the map fills 70vh (see TripDayBoard) — there was
+        // almost no way to scroll past it to reach the overview list below.
+        gestureHandling={mapEngaged ? "greedy" : "cooperative"}
         disableDefaultUI={false}
       >
         <FitBounds items={day.items} />
