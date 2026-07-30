@@ -23,8 +23,17 @@ function tomorrowRange(): { start: Date; end: Date; iso: string } {
 }
 
 export async function GET(request: Request) {
+  const cronSecret = process.env.CRON_SECRET;
+  // Checked separately from the header comparison below — otherwise an
+  // unset CRON_SECRET makes the comparison degrade to matching the literal
+  // string "Bearer undefined", which anyone can send. Fail closed instead.
+  if (!cronSecret) {
+    console.error("push-reminders cron: CRON_SECRET is not configured");
+    return NextResponse.json({ error: "server misconfigured" }, { status: 500 });
+  }
+
   const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 

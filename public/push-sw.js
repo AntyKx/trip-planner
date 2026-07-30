@@ -34,20 +34,30 @@ self.addEventListener("push", (event) => {
 
 // Clicking the notification focuses an already-open tab on that URL if one
 // exists, otherwise opens a new one — avoids piling up duplicate tabs for
-// someone who already has the app open when a push arrives.
+// someone who already has the app open when a push arrives. Matches on
+// pathname + query (not just pathname) — the checklist reminder's URL is
+// "/trips/{id}?mode=checklist", and comparing pathname alone would treat an
+// already-open "/trips/{id}" tab (no query) as "already there" and just
+// focus it without ever navigating to the checklist mode. Same pathname,
+// different query navigates the existing tab instead of opening a
+// duplicate one.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || "/";
+  const target = new URL(targetUrl, self.location.origin);
 
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clients) => {
+      .then(async (clients) => {
         for (const client of clients) {
           const clientUrl = new URL(client.url);
-          if (clientUrl.pathname === new URL(targetUrl, self.location.origin).pathname && "focus" in client) {
-            return client.focus();
+          if (clientUrl.pathname !== target.pathname || !("focus" in client)) continue;
+
+          if (clientUrl.search !== target.search && "navigate" in client) {
+            await client.navigate(target.href);
           }
+          return client.focus();
         }
         return self.clients.openWindow(targetUrl);
       })

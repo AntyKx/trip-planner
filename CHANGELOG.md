@@ -2,6 +2,13 @@
 
 Trip Planner 開發記錄。日期為實際部署／合併的日子，新的在最上面。
 
+## 2026-07-30
+
+- **推播通知上線後複查抓到 3 個真的會出錯的問題**：委託子代理針對前一天新上的推播功能做深入審查（權限、時區、React 坑、資源清理四個面向），抓到三個問題，都自己重新讀過程式碼確認後才修：
+  1. `ServiceWorkerCleanup.tsx` 只檢查 `registration.active?.scriptURL` 判斷是不是新的 `push-sw.js`——但剛註冊的 Service Worker 會先經過 `installing`/`waiting` 狀態，這時 `.active` 是 `null`，會被誤判成「不是 push-sw.js」而登出。`PushNotificationToggle` 跟 `ServiceWorkerCleanup` 又是同一頁同時掛載，等於第一次訂閱推播時有機率被自己的清理程式碼砍掉。改成同時檢查 `active`/`waiting`/`installing` 三種狀態。
+  2. `push-sw.js` 的 `notificationclick` 比對已開啟分頁時只比 `pathname`，沒比對 query string。檢查清單提醒的網址是 `/trips/{id}?mode=checklist`，如果使用者剛好開著同一趟行程但沒帶 `?mode=` 的分頁，點通知只會 focus 原分頁、不會真的切到檢查清單分頁，深連結被靜默丟掉。改成 pathname 相符但 query 不同時用 `client.navigate()` 先導頁再 focus，而不是誤判成「已經在那裡」。
+  3. `/api/cron/push-reminders` 的 `CRON_SECRET` 比對如果環境變數沒設定，會退化成比對字面字串 `"Bearer undefined"`——一旦哪次部署漏設這個環境變數，任何人送 `Authorization: Bearer undefined` 就能通過驗證觸發對全站發推播。改成 `CRON_SECRET` 未設定時直接回 500，不讓比較退化成可猜測的值。
+
 ## 2026-07-29
 
 - **推播通知上線（行前提醒／天氣示警／檢查清單提醒）**：先出 Artifact 預覽鎖定畫面上實際會長怎樣的樣子確認方向，才動工。技術上是 Web Push（`web-push` + VAPID 金鑰），首頁右上角加一個鈴鐺開關（`PushNotificationToggle.tsx`），點下去請求瀏覽器通知權限、註冊新的 `public/push-sw.js`、訂閱後把 endpoint/keys 存進新的 `PushSubscription` 表。動工前先確認了一個會踩雷的地方：`ServiceWorkerCleanup.tsx`（07-10 撤除離線快取 SW 留下來的清理元件）原本會在每次頁面載入時把所有 Service Worker 全部登出，如果直接加新 SW 會被立刻登出、白做——改成只登出「不是」`/push-sw.js` 的舊註冊，新的推播 SW 才留得住；`push-sw.js` 本身刻意不碰 `fetch` 事件，只處理 `push`／`notificationclick`，不重踩當時「攔截導覽+快取動態頁面」的坑。新增 `vercel.json` 排程每天早上 9 點（台灣時間，UTC 01:00）打 `/api/cron/push-reminders`（`CRON_SECRET` 驗證來源），撈出「明天出發」的行程送行前提醒＋檢查清單未完成提醒、撈出「明天日期」的每個 TripDay 算天氣送示警——天氣邏輯直接沿用既有的 `getDailyWeather`/`getWeatherReminders`，沒有重新設計判斷規則。推播送達失敗回應 404/410（訂閱已失效）時自動清掉那筆 `PushSubscription`，避免每天重複寄送註定失敗的請求。iOS Safari 只有「已加入主畫面」的使用者才收得到，這是系統限制不是這次的 bug。

@@ -23,7 +23,16 @@ export default function ServiceWorkerCleanup() {
     if (!("serviceWorker" in navigator)) return;
     navigator.serviceWorker.getRegistrations().then((registrations) => {
       registrations.forEach((registration) => {
-        const scriptUrl = registration.active?.scriptURL ?? "";
+        // A brand-new push-sw.js registration is `installing`/`waiting`
+        // before it's `active` — checking only `.active` treated it as "not
+        // push-sw.js" (empty scriptURL) during that window and unregistered
+        // it out from under PushNotificationToggle, which registers on the
+        // same page load. Check all three states a worker can be in.
+        const scriptUrl =
+          registration.active?.scriptURL ??
+          registration.waiting?.scriptURL ??
+          registration.installing?.scriptURL ??
+          "";
         if (!scriptUrl.endsWith("/push-sw.js")) {
           registration.unregister();
         }
