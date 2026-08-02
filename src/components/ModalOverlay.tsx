@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 // 280ms — matches the speed the user picked when reviewing a live demo of
@@ -49,7 +50,12 @@ export function ModalCloseButton({
 }) {
   const requestClose = useRequestModalClose();
   return (
-    <button type="button" onClick={requestClose} aria-label="關閉" className={className}>
+    <button
+      type="button"
+      onClick={requestClose}
+      aria-label="關閉"
+      className={className}
+    >
       <X className="h-5 w-5" />
     </button>
   );
@@ -123,14 +129,17 @@ const ModalOverlay = forwardRef<
       // the (visually hidden but still tabbable) page behind it.
       if (e.key === "Tab" && panelRef.current) {
         const focusables = panelRef.current.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
         );
         if (focusables.length === 0) return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
         const active = document.activeElement;
         const inside = panelRef.current.contains(active);
-        if (e.shiftKey && (!inside || active === first || active === panelRef.current)) {
+        if (
+          e.shiftKey &&
+          (!inside || active === first || active === panelRef.current)
+        ) {
           e.preventDefault();
           last.focus();
         } else if (!e.shiftKey && (!inside || active === last)) {
@@ -173,7 +182,22 @@ const ModalOverlay = forwardRef<
     if (dy > 80) requestClose();
   }
 
-  return (
+  // Portal straight to <body> — this backdrop is `position: fixed; inset:
+  // 0`, which is only actually viewport-sized as long as NO ancestor
+  // establishes a containing block for it. Any ancestor with a transform,
+  // filter, or (as of the individual transform properties in CSS
+  // Transforms Level 2) a non-none translate/scale/rotate does that —
+  // including a plain `hover:-translate-y-0.5` card-lift effect several
+  // levels up. Rendered in place (no portal), opening this modal while
+  // hovering such a card silently shrank the backdrop down to that card's
+  // own box instead of the full screen, and — because browsers don't
+  // always re-release that containing-block relationship the instant the
+  // hover ends — the backdrop would suddenly snap back to full-screen
+  // moments after the mouse moved away, reading as the whole dialog
+  // flickering shut and reopening. A portal makes this modal's fixed
+  // positioning immune to every such ancestor, present or future, instead
+  // of chasing down each individual transform/translate offender.
+  return createPortal(
     <div
       className={`fixed inset-0 z-[var(--z-modal)] flex items-end justify-center bg-black/50 transition-opacity motion-reduce:transition-none sm:items-center sm:p-4 ${
         visible ? "opacity-100" : "opacity-0"
@@ -205,16 +229,23 @@ const ModalOverlay = forwardRef<
           onTouchMove={handleDragMove}
           onTouchEnd={handleDragEnd}
         >
-          <div className="h-1 w-9 rounded-full bg-line-strong" aria-hidden="true" />
+          <div
+            className="h-1 w-9 rounded-full bg-line-strong"
+            aria-hidden="true"
+          />
         </div>
         <ModalCloseContext.Provider value={requestClose}>
           {children}
         </ModalCloseContext.Provider>
         {/* Bottom sheets sit flush with the screen edge on mobile — keep
             content clear of the iPhone home indicator. */}
-        <div className="h-[env(safe-area-inset-bottom)] sm:hidden" aria-hidden="true" />
+        <div
+          className="h-[env(safe-area-inset-bottom)] sm:hidden"
+          aria-hidden="true"
+        />
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 });
 

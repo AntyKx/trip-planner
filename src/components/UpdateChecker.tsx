@@ -42,6 +42,15 @@ export default function UpdateChecker() {
       }
       setUpdating(true);
       reloadTimerRef.current = setTimeout(() => {
+        // Re-check right before actually reloading — a modal could have
+        // opened during the visible countdown above, after the check that
+        // got us here already passed.
+        if (isEditingSomething()) {
+          setUpdating(false);
+          reloadTimerRef.current = null;
+          scheduleReloadWhenSafe();
+          return;
+        }
         window.location.reload();
       }, RELOAD_DELAY_MS);
     }
