@@ -470,6 +470,63 @@ export async function deleteItem(tripId: string, itemId: string) {
   revalidatePath(`/trips/${tripId}`);
 }
 
+// Moves a card to a different day of the same trip — the timeline itself
+// only shows one day at a time (DayTimeline mounts fresh per day, see its
+// `key={dayId}` in TripDayBoard), so this is reachable from a menu action
+// rather than a drag gesture that would require both days on screen at once.
+// startTime/endTime don't need touching: they're only ever read as a
+// time-of-day (see formatTime/toHHMM call sites), never combined with their
+// own date component — the day a card belongs to comes entirely from its
+// dayId, not from any date embedded in its startTime.
+export async function moveItemToDay(
+  tripId: string,
+  itemId: string,
+  fromDayId: string,
+  toDayId: string
+) {
+  await requireTripEditor(tripId);
+  await requireDayInTrip(tripId, fromDayId);
+  await requireDayInTrip(tripId, toDayId);
+  if (fromDayId === toDayId) return;
+
+  // Proves the item actually belongs to fromDayId before moving it — same
+  // ownership-scoped-mutation reasoning as every other action here.
+  const owned = await prisma.item.findFirst({
+    where: { id: itemId, dayId: fromDayId },
+    select: { id: true },
+  });
+  if (!owned) redirect("/");
+
+  const lastItem = await prisma.item.findFirst({
+    where: { dayId: toDayId },
+    orderBy: { sortOrder: "desc" },
+  });
+
+  await prisma.$transaction([
+    // A route only makes sense within the day it was computed for. Left in
+    // place, it'd be a stale row still tied to fromDayId but pointing at an
+    // item that's no longer part of that day — the destination day's own
+    // auto-fill effect computes a fresh leg once it's actually viewed there.
+    prisma.route.deleteMany({
+      where: { dayId: fromDayId, OR: [{ fromItemId: itemId }, { toItemId: itemId }] },
+    }),
+    // An anchor has to belong to the day it anchors — same clearing this
+    // does when the anchor card is deleted outright (see deleteItem above).
+    prisma.tripDay.updateMany({
+      where: { id: fromDayId, anchorItemId: itemId },
+      data: { anchorItemId: null },
+    }),
+    // Appended to the end of the destination day, same "last sortOrder + 1"
+    // convention addPlaceToDay uses for a freshly added item.
+    prisma.item.update({
+      where: { id: itemId },
+      data: { dayId: toDayId, sortOrder: (lastItem?.sortOrder ?? 0) + 1 },
+    }),
+  ]);
+
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export type ItemTypeValue =
   | "PLACE"
   | "RESTAURANT"

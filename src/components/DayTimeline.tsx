@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   BookOpen,
   CalendarClock,
+  CalendarDays,
   ExternalLink,
   GripVertical,
   MapPin,
@@ -48,6 +49,7 @@ import { useToast } from "./Toast";
 import {
   reorderItems,
   deleteItem,
+  moveItemToDay,
   saveRoutes,
   getJapanTransitHint,
   type JapanTransitHint,
@@ -73,6 +75,7 @@ import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
 import EmptyState from "./EmptyState";
 import { NoItemsTodayIllustration } from "./EmptyStateIllustrations";
 import ActionMenu, { type ActionMenuItem } from "./ActionMenu";
+import AppModal from "./AppModal";
 
 export type TimelineItem = {
   id: string;
@@ -133,9 +136,11 @@ function SortableItemCard({
   isRecomputing,
   isAutoFilling,
   isLoadingJapanHint,
+  otherDays,
   onDelete,
   onEdit,
   onOpenJournal,
+  onOpenMove,
   onModeChange,
   onViewAlternatives,
   onOpenJapanHint,
@@ -161,9 +166,13 @@ function SortableItemCard({
   isRecomputing: boolean;
   isAutoFilling: boolean;
   isLoadingJapanHint: boolean;
+  // Only for the "移動到其他天" menu item's picker — empty on a single-day
+  // trip, where there's nowhere to move a card to.
+  otherDays: DaySummary[];
   onDelete: () => void;
   onEdit: () => void;
   onOpenJournal: () => void;
+  onOpenMove: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
   onOpenJapanHint: () => void;
@@ -188,6 +197,9 @@ function SortableItemCard({
             external: true,
           },
         ]
+      : []),
+    ...(canEdit && otherDays.length > 0
+      ? [{ key: "move", label: "移動到其他天", icon: CalendarDays, onClick: onOpenMove }]
       : []),
     ...(canEdit
       ? [{ key: "delete", label: "刪除", icon: X, onClick: onDelete, variant: "danger" as const }]
@@ -518,6 +530,43 @@ function SortableItemCard({
   );
 }
 
+// Only one day is ever mounted at a time (DayTimeline remounts fresh per
+// day via `key={dayId}` in TripDayBoard — see the item-removal comment on
+// handleMoveItem above), so there's no on-screen drag target for a
+// cross-day move the way within-day reordering has. This is the picker
+// that stands in for it.
+function MoveToDayModal({
+  itemName,
+  otherDays,
+  isMoving,
+  onPick,
+  onClose,
+}: {
+  itemName: string;
+  otherDays: DaySummary[];
+  isMoving: boolean;
+  onPick: (dayId: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <AppModal titleId="move-to-day-title" title={`把「${itemName}」移到哪一天？`} onClose={onClose}>
+      <div className="flex flex-wrap gap-2">
+        {otherDays.map((day) => (
+          <button
+            key={day.id}
+            type="button"
+            disabled={isMoving}
+            onClick={() => onPick(day.id)}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
+          >
+            Day {day.dayIndex}
+          </button>
+        ))}
+      </div>
+    </AppModal>
+  );
+}
+
 export default function DayTimeline({
   tripId,
   dayId,
@@ -602,6 +651,8 @@ export default function DayTimeline({
     null
   );
   const [journalItem, setJournalItem] = useState<TimelineItem | null>(null);
+  const [movingItem, setMovingItem] = useState<TimelineItem | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
   const sensors = useSensors(
     // Mouse: quick distance-based activation (no scroll to conflict with).
@@ -912,6 +963,26 @@ export default function DayTimeline({
     });
   }
 
+  // Awaited (not the optimistic-then-fire-and-forget pattern handleDeleteItem
+  // above uses) because this is driven from a modal with a discrete
+  // "pick a day" click rather than an instant single-purpose button — it's
+  // worth a brief loading state on the picked day and a real error path
+  // instead of removing the card from view before knowing the move landed.
+  async function handleMoveItem(itemId: string, toDayId: string) {
+    setIsMoving(true);
+    try {
+      await moveItemToDay(tripId, itemId, dayId, toDayId);
+      setItems((prev) => prev.filter((i) => i.id !== itemId));
+      setMovingItem(null);
+      toast.success("已搬到其他天");
+    } catch (err) {
+      console.error("moveItemToDay failed:", err);
+      toast.error("移動失敗，請再試一次");
+    } finally {
+      setIsMoving(false);
+    }
+  }
+
   function handleItemSaved(result: SavedItemResult) {
     setItems((prev) => {
       const exists = prev.some((i) => i.id === result.id);
@@ -1148,6 +1219,16 @@ export default function DayTimeline({
         />
       )}
 
+      {movingItem && (
+        <MoveToDayModal
+          itemName={movingItem.place?.name ?? movingItem.note ?? "此項目"}
+          otherDays={otherDays}
+          isMoving={isMoving}
+          onClose={() => setMovingItem(null)}
+          onPick={(toDayId) => handleMoveItem(movingItem.id, toDayId)}
+        />
+      )}
+
       {items.length === 0 ? (
         <EmptyState
           illustration={<NoItemsTodayIllustration />}
@@ -1224,9 +1305,11 @@ export default function DayTimeline({
                     japanHintLeg?.from.id === item.id &&
                     japanHintLeg?.to.id === nextId
                   }
+                  otherDays={otherDays}
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
                   onOpenJournal={() => setJournalItem(item)}
+                  onOpenMove={() => setMovingItem(item)}
                   onModeChange={(mode) => {
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) handleLegModeChange(item, to, mode);
