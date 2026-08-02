@@ -11,6 +11,13 @@ const RELOAD_DELAY_MS = 2200;
 const SAFE_RECHECK_MS = 3000;
 
 function isEditingSomething() {
+  // Any open modal (place details, journal photo lightbox, edit dialogs,
+  // …) counts as "busy" even though its focused element is a plain button
+  // or link, not a form field — every modal in the app renders
+  // role="dialog" (see ModalOverlay.tsx), so this one check covers all of
+  // them without each caller needing to know about the update checker.
+  if (document.querySelector('[role="dialog"]')) return true;
+
   const active = document.activeElement;
   if (!active) return false;
   const tag = active.tagName;
