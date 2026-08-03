@@ -42,6 +42,7 @@ import {
   TYPE_ICON,
   TYPE_COLOR,
   MODE_ICON,
+  MODE_LABEL,
   formatTime,
   formatStayDuration,
 } from "@/lib/labels";
@@ -59,7 +60,9 @@ import {
 import {
   GOOGLE_TRAVEL_MODE,
   computeBestLeg,
+  estimateFlightLeg,
   fetchTransitAlternatives,
+  isAirportPlaceName,
   isGoogleTransitSupported,
   optimizeStopOrder,
   type TransitAlternative,
@@ -129,6 +132,7 @@ function SortableItemCard({
   index,
   route,
   hasNextStop,
+  bothAirports,
   isAnchor,
   isHighlighted,
   isSelected,
@@ -154,6 +158,11 @@ function SortableItemCard({
   index: number;
   route?: TimelineRoute;
   hasNextStop: boolean;
+  // Both this stop and the next one look like airports (see
+  // isAirportPlaceName) — only then does "搭飛機" show up as a mode
+  // option, since Directions can't route a flight and offering it for a
+  // normal hop would just be a mode nobody could ever pick correctly.
+  bothAirports: boolean;
   isAnchor: boolean;
   // Just added from the explore page — plays a one-shot amber wash so the
   // user sees where their place landed.
@@ -185,6 +194,9 @@ function SortableItemCard({
   const TypeIcon = TYPE_ICON[item.type] ?? TYPE_ICON.CUSTOM;
   const typeColor = TYPE_COLOR[item.type] ?? TYPE_COLOR.CUSTOM;
   const ModeIcon = route ? MODE_ICON[route.mode] : null;
+  const modeOptions = bothAirports
+    ? [{ value: "FLY" as TravelModeValue, label: "搭飛機" }, ...TRAVEL_MODE_OPTIONS]
+    : TRAVEL_MODE_OPTIONS;
 
   const menuItems: ActionMenuItem[] = [
     ...(item.place
@@ -464,7 +476,7 @@ function SortableItemCard({
               // dropdown arrow no longer fit in a narrower width.
               className="w-28 shrink-0 rounded-md border border-line bg-surface px-1 py-0.5 text-xs disabled:opacity-50"
             >
-              {TRAVEL_MODE_OPTIONS.map((opt) => {
+              {modeOptions.map((opt) => {
                 const disabled =
                   opt.value === "TRANSIT" && !transitSupported;
                 return (
@@ -486,8 +498,7 @@ function SortableItemCard({
             </select>
           ) : (
             <span className="shrink-0 text-xs font-medium text-ink-700">
-              {TRAVEL_MODE_OPTIONS.find((opt) => opt.value === (route?.mode ?? "WALK"))
-                ?.label}
+              {MODE_LABEL[route?.mode ?? "WALK"]}
             </span>
           )}
           {isRecomputing || (isAutoFilling && !route) ? (
@@ -720,7 +731,11 @@ export default function DayTimeline({
             directionsService,
             { lat: from.place!.lat, lng: from.place!.lng },
             { lat: to.place!.lat, lng: to.place!.lng },
-            from.place!.country.toLowerCase()
+            from.place!.country.toLowerCase(),
+            {
+              bothAirports:
+                isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name),
+            }
           );
           if (!leg) return null;
           return {
@@ -785,6 +800,24 @@ export default function DayTimeline({
     to: TimelineItem,
     mode: TravelModeValue
   ) {
+    // No Directions call for this one — Google can't route a flight, so
+    // the estimate (see estimateFlightLeg) is the whole computation.
+    if (mode === "FLY") {
+      setRouteError(null);
+      const leg = estimateFlightLeg(
+        { lat: from.place!.lat, lng: from.place!.lng },
+        { lat: to.place!.lat, lng: to.place!.lng }
+      );
+      upsertRoute({
+        fromItemId: from.id,
+        toItemId: to.id,
+        mode: "FLY",
+        durationMin: leg.durationMin,
+        distanceKm: leg.distanceKm,
+        provider: "estimate",
+      });
+      return;
+    }
     if (!routesLibrary) return;
     if (mode === "TRANSIT" && !isGoogleTransitSupported(from.place?.country)) {
       setRouteError("Google 目前沒有這個國家的大眾運輸資料，請選開車或步行");
@@ -802,7 +835,7 @@ export default function DayTimeline({
       const result = await directionsService.route({
         origin: { lat: from.place!.lat, lng: from.place!.lng },
         destination: { lat: to.place!.lat, lng: to.place!.lng },
-        travelMode: GOOGLE_TRAVEL_MODE[mode],
+        travelMode: GOOGLE_TRAVEL_MODE[mode]!,
         region: from.place!.country.toLowerCase(),
         language: "zh-TW",
         ...(mode === "TRANSIT"
@@ -1285,6 +1318,10 @@ export default function DayTimeline({
                     (r) => r.fromItemId === item.id && r.toItemId === nextId
                   )
                 : undefined;
+              const bothAirports =
+                nextId != null &&
+                isAirportPlaceName(item.place?.name) &&
+                isAirportPlaceName(placeItems.find((i) => i.id === nextId)?.place?.name);
               return (
                 <SortableItemCard
                   key={item.id}
@@ -1294,6 +1331,7 @@ export default function DayTimeline({
                   index={index}
                   route={route}
                   hasNextStop={nextId != null}
+                  bothAirports={bothAirports}
                   isAnchor={item.id === anchorItemId}
                   isHighlighted={item.id === highlightItemId}
                   isSelected={item.id === selectedItemId}

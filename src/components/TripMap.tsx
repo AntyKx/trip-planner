@@ -51,7 +51,7 @@ export type MapItem = {
 export type MapRoute = {
   fromItemId: string;
   toItemId: string;
-  mode: "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
+  mode: "WALK" | "TRANSIT" | "DRIVE" | "BIKE" | "FLY";
 };
 
 export type MapDay = {
@@ -61,7 +61,10 @@ export type MapDay = {
   routes: MapRoute[];
 };
 
-const TRAVEL_MODE_MAP: Record<MapRoute["mode"], google.maps.TravelMode> = {
+// FLY has no entry — there's no real routable path for a flight, so it's
+// drawn as a straight dashed line below instead of ever reaching
+// DirectionsService.
+const TRAVEL_MODE_MAP: Partial<Record<MapRoute["mode"], google.maps.TravelMode>> = {
   WALK: "WALKING" as google.maps.TravelMode,
   TRANSIT: "TRANSIT" as google.maps.TravelMode,
   DRIVE: "DRIVING" as google.maps.TravelMode,
@@ -82,6 +85,28 @@ function RouteSegment({
   useEffect(() => {
     if (!map) return;
 
+    // A flight has no real road/rail path to draw — a straight dashed line
+    // reads as "estimated, as the crow flies" rather than a real route,
+    // which a solid DirectionsRenderer line would wrongly imply here.
+    if (mode === "FLY") {
+      const dash = {
+        path: "M 0,-1 0,1",
+        strokeOpacity: 1,
+        scale: 3,
+      };
+      const polyline = new google.maps.Polyline({
+        map,
+        path: [
+          { lat: from.lat, lng: from.lng },
+          { lat: to.lat, lng: to.lng },
+        ],
+        strokeOpacity: 0,
+        strokeColor: "#2b6094",
+        icons: [{ icon: dash, offset: "0", repeat: "14px" }],
+      });
+      return () => polyline.setMap(null);
+    }
+
     const directionsService = new google.maps.DirectionsService();
     const renderer = new google.maps.DirectionsRenderer({
       map,
@@ -94,7 +119,7 @@ function RouteSegment({
       {
         origin: { lat: from.lat, lng: from.lng },
         destination: { lat: to.lat, lng: to.lng },
-        travelMode: TRAVEL_MODE_MAP[mode],
+        travelMode: TRAVEL_MODE_MAP[mode]!,
       },
       (result, status) => {
         if (status === "OK" && result) {

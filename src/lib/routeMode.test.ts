@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { isGoogleTransitSupported, optimizeStopOrder } from "./routeMode";
+import {
+  estimateFlightLeg,
+  isAirportPlaceName,
+  isGoogleTransitSupported,
+  optimizeStopOrder,
+} from "./routeMode";
 
 describe("isGoogleTransitSupported", () => {
   it("is false for Japan and India, case-insensitively", () => {
@@ -14,6 +19,45 @@ describe("isGoogleTransitSupported", () => {
     expect(isGoogleTransitSupported("US")).toBe(true);
     expect(isGoogleTransitSupported(undefined)).toBe(true);
     expect(isGoogleTransitSupported("")).toBe(true);
+  });
+});
+
+describe("isAirportPlaceName", () => {
+  it("matches Chinese, Japanese, and English airport naming", () => {
+    expect(isAirportPlaceName("福岡國際機場")).toBe(true);
+    expect(isAirportPlaceName("新千歳空港")).toBe(true);
+    expect(isAirportPlaceName("Narita International Airport")).toBe(true);
+    expect(isAirportPlaceName("narita airport")).toBe(true);
+  });
+
+  it("is false for non-airport places and empty/missing input", () => {
+    expect(isAirportPlaceName("太宰府天滿宮")).toBe(false);
+    expect(isAirportPlaceName("")).toBe(false);
+    expect(isAirportPlaceName(null)).toBe(false);
+    expect(isAirportPlaceName(undefined)).toBe(false);
+  });
+});
+
+describe("estimateFlightLeg", () => {
+  it("returns a FLY leg with a positive duration and roughly-great-circle distance", () => {
+    // Fukuoka <-> Tokyo (Haneda), ~880km great-circle.
+    const fukuoka = { lat: 33.5859, lng: 130.4506 };
+    const haneda = { lat: 35.5494, lng: 139.7798 };
+    const leg = estimateFlightLeg(fukuoka, haneda);
+    expect(leg.mode).toBe("FLY");
+    expect(leg.distanceKm).toBeGreaterThan(800);
+    expect(leg.distanceKm).toBeLessThan(950);
+    expect(leg.durationMin).toBeGreaterThan(60);
+    expect(leg.durationMin).toBeLessThan(180);
+  });
+
+  it("a longer leg takes longer than a shorter one", () => {
+    const a = { lat: 0, lng: 0 };
+    const near = { lat: 0, lng: 1 };
+    const far = { lat: 0, lng: 20 };
+    const shortLeg = estimateFlightLeg(a, near);
+    const longLeg = estimateFlightLeg(a, far);
+    expect(longLeg.durationMin).toBeGreaterThan(shortLeg.durationMin);
   });
 });
 

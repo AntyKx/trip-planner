@@ -1,11 +1,26 @@
 import type { TravelModeValue } from "@/app/trips/actions";
 
-export const GOOGLE_TRAVEL_MODE: Record<TravelModeValue, google.maps.TravelMode> = {
+// FLY has no entry — Google Directions doesn't route flights, so a flight
+// leg is estimated locally (see estimateFlightLeg) and never reaches a
+// directionsService.route() call. Partial (not a full Record) so indexing
+// with "FLY" surfaces as undefined at the type level instead of silently
+// picking some other mode's value, forcing every call site to branch on
+// FLY before touching this map.
+export const GOOGLE_TRAVEL_MODE: Partial<Record<TravelModeValue, google.maps.TravelMode>> = {
   WALK: "WALKING" as google.maps.TravelMode,
   TRANSIT: "TRANSIT" as google.maps.TravelMode,
   DRIVE: "DRIVING" as google.maps.TravelMode,
   BIKE: "BICYCLING" as google.maps.TravelMode,
 };
+
+// A stop's name reliably signals "this is an airport" across providers and
+// languages (機場/空港/Airport) without needing Google's raw primaryType,
+// which isn't persisted on Place — this also works retroactively for
+// items added long before this check existed, not just newly-searched ones.
+export function isAirportPlaceName(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return name.includes("機場") || name.includes("空港") || /airport/i.test(name);
+}
 
 export type ComputedLeg = {
   mode: TravelModeValue;
@@ -60,18 +75,43 @@ function estimateWalk(straightLineKm: number): ComputedLeg {
   return { mode: "WALK", durationMin, distanceKm };
 }
 
+// Google Directions has no flight mode, so an airport-to-airport leg is
+// estimated locally instead: an average speed that nets out climb/descent
+// against cruise (a real gate-to-gate flight is slower per km than pure
+// cruise speed, especially on short hops), plus a fixed overhead for
+// taxiing, takeoff, and landing that doesn't scale with distance. Not
+// meant to match a specific flight's schedule — just close enough to be
+// useful for day-planning gap checks (see tripDoctor.ts).
+const ASSUMED_FLIGHT_KMH = 700;
+const FLIGHT_FIXED_OVERHEAD_MIN = 45;
+
+function estimateFlight(straightLineKm: number): ComputedLeg {
+  const distanceKm = Math.round(straightLineKm * 10) / 10;
+  const durationMin = Math.round(
+    (distanceKm / ASSUMED_FLIGHT_KMH) * 60 + FLIGHT_FIXED_OVERHEAD_MIN
+  );
+  return { mode: "FLY", durationMin, distanceKm };
+}
+
+export function estimateFlightLeg(
+  origin: google.maps.LatLngLiteral,
+  destination: google.maps.LatLngLiteral
+): ComputedLeg {
+  return estimateFlight(haversineKm(origin, destination));
+}
+
 async function fetchLeg(
   directionsService: google.maps.DirectionsService,
   origin: google.maps.LatLngLiteral,
   destination: google.maps.LatLngLiteral,
-  mode: TravelModeValue,
+  mode: Exclude<TravelModeValue, "FLY">,
   region?: string
 ): Promise<ComputedLeg | null> {
   try {
     const result = await directionsService.route({
       origin,
       destination,
-      travelMode: GOOGLE_TRAVEL_MODE[mode],
+      travelMode: GOOGLE_TRAVEL_MODE[mode]!,
       region,
       language: "zh-TW",
       ...(mode === "TRANSIT"
@@ -99,13 +139,23 @@ export async function computeBestLeg(
   directionsService: google.maps.DirectionsService,
   origin: google.maps.LatLngLiteral,
   destination: google.maps.LatLngLiteral,
-  region?: string
+  region?: string,
+  options?: { bothAirports?: boolean }
 ): Promise<ComputedLeg | null> {
   const straightLineKm = haversineKm(origin, destination);
 
   if (straightLineKm <= OBVIOUS_WALK_KM) {
     const walk = await fetchLeg(directionsService, origin, destination, "WALK", region);
     return walk ?? estimateWalk(straightLineKm);
+  }
+
+  // Two airport-named stops next to each other in the day, further apart
+  // than "obviously walkable" above (so two terminals of the same airport
+  // still just walk) — flying is the only mode that makes sense, and
+  // Directions can't route it, so skip straight to the estimate instead of
+  // comparing walk/transit/drive candidates that would never win anyway.
+  if (options?.bothAirports) {
+    return estimateFlight(straightLineKm);
   }
 
   // Fetch every candidate mode up front instead of walk-then-wait-then-
@@ -287,7 +337,7 @@ export async function fetchTransitAlternatives(
     const result = await directionsService.route({
       origin,
       destination,
-      travelMode: GOOGLE_TRAVEL_MODE.TRANSIT,
+      travelMode: GOOGLE_TRAVEL_MODE.TRANSIT!,
       region,
       language: "zh-TW",
       provideRouteAlternatives: true,

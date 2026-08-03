@@ -18,6 +18,7 @@ import {
   CarTaxiFront,
   TramFront,
   Route,
+  Plane,
   FileText,
   Wallet,
   Wifi,
@@ -87,6 +88,7 @@ export const MODE_LABEL: Record<string, string> = {
   TRANSIT: "大眾運輸",
   DRIVE: "開車",
   BIKE: "騎車",
+  FLY: "搭飛機",
 };
 
 export const MODE_ICON: Record<string, LucideIcon> = {
@@ -94,6 +96,7 @@ export const MODE_ICON: Record<string, LucideIcon> = {
   TRANSIT: TrainFront,
   DRIVE: Car,
   BIKE: Bike,
+  FLY: Plane,
 };
 
 export const CHECKLIST_CATEGORY_LABEL: Record<ChecklistCategoryValue, string> = {

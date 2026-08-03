@@ -31,6 +31,7 @@ enum TravelMode {
   TRANSIT
   DRIVE
   BIKE
+  FLY
 }
 
 enum CostCategory {

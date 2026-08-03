@@ -110,7 +110,7 @@ export async function updateItemTimes(
   revalidatePath(`/trips/${tripId}`);
 }
 
-export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
+export type TravelModeValue = "WALK" | "TRANSIT" | "DRIVE" | "BIKE" | "FLY";
 
 export type RouteInput = {
   fromItemId: string;
