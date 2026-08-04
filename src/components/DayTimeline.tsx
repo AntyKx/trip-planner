@@ -460,7 +460,7 @@ function SortableItemCard({
       </div>
 
       {hasNextStop && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-full border border-line bg-paper-alt px-3 py-1.5 text-sm text-ink-700">
+        <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-full border border-line bg-paper-alt px-3 py-1.5 text-sm text-ink-700">
           {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0 text-ink-500" />}
           {canEdit ? (
             <select
@@ -505,8 +505,8 @@ function SortableItemCard({
             <span className="text-xs text-ink-500">計算中…</span>
           ) : route && route.durationMin != null ? (
             <span className="text-xs text-ink-700">
-              {route.durationMin} 分鐘
-              {route.distanceKm != null && ` · ${route.distanceKm} km`}
+              {route.durationMin}分鐘
+              {route.distanceKm != null && `·${route.distanceKm}km`}
             </span>
           ) : (
             <span className="text-xs text-ink-500">
@@ -531,7 +531,7 @@ function SortableItemCard({
               className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline disabled:opacity-50"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              {isLoadingJapanHint ? "查詢中…" : "查看轉乘建議"}
+              {isLoadingJapanHint ? "查詢中…" : "轉乘建議"}
             </button>
           )}
         </div>
