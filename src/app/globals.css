@@ -203,6 +203,8 @@ input[type="radio"] {
   /* One-shot amber wash for a timeline card that was just added from the
      explore page — tells the user exactly where their place landed. */
   --animate-added-highlight: added-highlight 2s ease-out;
+  /* Light sweep across the app-open splash screen's photo while it holds. */
+  --animate-splash-sheen: splash-sheen 2.2s ease-in-out 1;
 }
 
 @keyframes fade-up {
@@ -256,12 +258,25 @@ input[type="radio"] {
   }
 }
 
+@keyframes splash-sheen {
+  0% {
+    background-position: 130% -10%;
+  }
+  60% {
+    background-position: -30% 110%;
+  }
+  100% {
+    background-position: -30% 110%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .animate-fade-in,
   .animate-toast-in,
   .animate-pop-in,
-  .animate-added-highlight {
+  .animate-added-highlight,
+  .animate-splash-sheen {
     animation: none;
   }
 }

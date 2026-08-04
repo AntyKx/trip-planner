@@ -5,6 +5,7 @@ import UpdateChecker from "@/components/UpdateChecker";
 import VersionBadge from "@/components/VersionBadge";
 import ToastProvider from "@/components/Toast";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
+import SplashScreen from "@/components/SplashScreen";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -95,6 +96,10 @@ export default function RootLayout({
           <InstallPrompt />
           <VersionBadge />
         </ToastProvider>
+        {/* Last in the DOM so it wins any z-index tie with the update
+            banner (both z-critical) — while it's up, nothing else should
+            show above it. */}
+        <SplashScreen />
       </body>
     </html>
   );
