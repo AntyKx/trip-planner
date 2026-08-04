@@ -1212,20 +1212,42 @@ export default function DayTimeline({
   // existing leg picks up e.g. NAVITIME transit data added after it was
   // first computed, without deleting and re-adding the item.
   async function handleRecheckLeg(from: TimelineItem, to: TimelineItem) {
-    if (!routesLibrary) return;
+    // Unlike the day-level rescan button (disabled until routesLibrary is
+    // ready), this menu item has no disabled state to gate on — ActionMenu
+    // items don't support one — so this can be reached in the brief window
+    // before Google Maps finishes loading. Silently doing nothing there
+    // looks like the click didn't register at all.
+    if (!routesLibrary) {
+      setRouteError("地圖服務尚未準備好，請稍後再試");
+      return;
+    }
+    // Shares legModeRequestIdRef with handleLegModeChange (same key format)
+    // rather than its own counter — this menu item and the mode <select>
+    // both write to the same leg, so a click on either one needs to
+    // supersede an in-flight call from the *other*, not just from itself.
+    // Without this, double-clicking (or clicking while the auto-fill
+    // effect is still resolving this same leg in the background) let
+    // whichever request happened to resolve last win, discarding a
+    // possibly newer/better result and clearing the shared "計算中…"
+    // indicator out from under the other in-flight call.
     const key = `${from.id}->${to.id}`;
+    const requestId = (legModeRequestIdRef.current[key] ?? 0) + 1;
+    legModeRequestIdRef.current[key] = requestId;
+    const isCurrent = () => legModeRequestIdRef.current[key] === requestId;
+
     setRecomputingKey(key);
     setRouteError(null);
     try {
       const directionsService = new routesLibrary.DirectionsService();
       const best = await computeBestLegForPair(directionsService, from, to);
+      if (!isCurrent()) return;
       if (best) {
         upsertRoute({ fromItemId: from.id, toItemId: to.id, ...best });
       } else {
         setRouteError("無法自動規劃這段路線，請手動選擇交通方式");
       }
     } finally {
-      setRecomputingKey(null);
+      if (isCurrent()) setRecomputingKey(null);
     }
   }
 

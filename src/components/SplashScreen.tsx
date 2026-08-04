@@ -61,7 +61,7 @@ export default function SplashScreen() {
   return (
     <div
       aria-hidden="true"
-      className={`fixed inset-0 z-[var(--z-critical)] overflow-hidden bg-paper transition-opacity motion-reduce:transition-none ${
+      className={`pointer-events-none fixed inset-0 z-[var(--z-critical)] overflow-hidden bg-paper transition-opacity motion-reduce:transition-none ${
         phase === "exit"
           ? "opacity-0 duration-500 ease-in"
           : "opacity-100 duration-700 ease-out"
