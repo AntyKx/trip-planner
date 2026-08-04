@@ -29,6 +29,7 @@ import {
   Navigation,
   Pencil,
   Plus,
+  RefreshCw,
   Route as RouteIcon,
   Search,
   Star,
@@ -123,6 +124,80 @@ const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
   { value: "BIKE", label: "騎車" },
 ];
 
+type BestLeg = {
+  mode: TravelModeValue;
+  durationMin: number;
+  distanceKm: number;
+  provider: string;
+};
+
+// Shared by the auto-fill effect (only ever called for legs with no saved
+// route yet) and the manual "重新判斷交通方式" menu action (re-runs this for
+// a leg that already has one, e.g. to pick up NAVITIME transit data added
+// after that leg was first computed — auto-fill by design never revisits
+// an existing route on its own).
+async function computeBestLegForPair(
+  directionsService: google.maps.DirectionsService,
+  from: TimelineItem,
+  to: TimelineItem
+): Promise<BestLeg | null> {
+  const bothAirports =
+    isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name);
+  const leg = await computeBestLeg(
+    directionsService,
+    { lat: from.place!.lat, lng: from.place!.lng },
+    { lat: to.place!.lat, lng: to.place!.lng },
+    from.place!.country.toLowerCase(),
+    { bothAirports }
+  );
+
+  let best = leg;
+  let bestProvider = "google";
+
+  // Google has no transit data for Japan at all (see
+  // isGoogleTransitSupported's comment), so computeBestLeg only ever
+  // compared WALK vs. DRIVE there — check NAVITIME's fastest transit
+  // option too and use it if it actually beats what Google found.
+  // Skipped once Google's own result is already "good enough" (same
+  // cutoff computeBestLeg applies internally) to avoid spending
+  // NAVITIME's free-tier quota on legs transit was never going to win.
+  if (
+    !bothAirports &&
+    (from.place!.country ?? "").toUpperCase() === "JP" &&
+    (!best || best.durationMin > WALK_GOOD_ENOUGH_MIN)
+  ) {
+    const hint = await getJapanTransitHint(
+      from.place!.lat,
+      from.place!.lng,
+      to.place!.lat,
+      to.place!.lng
+    );
+    if (hint.ok && hint.alternatives.length > 0) {
+      const fastest = hint.alternatives.reduce((a, b) =>
+        a.durationMin < b.durationMin ? a : b
+      );
+      if (!best || fastest.durationMin < best.durationMin) {
+        best = {
+          mode: "TRANSIT",
+          durationMin: fastest.durationMin,
+          distanceKm: fastest.distanceKm,
+        };
+        bestProvider = "navitime";
+      }
+    }
+  }
+
+  if (!best) return null;
+  if (best.mode === "FLY") bestProvider = "estimate";
+
+  return {
+    mode: best.mode,
+    durationMin: best.durationMin,
+    distanceKm: best.distanceKm,
+    provider: bestProvider,
+  };
+}
+
 function SortableItemCard({
   tripId,
   dayId,
@@ -144,6 +219,7 @@ function SortableItemCard({
   onOpenMove,
   onModeChange,
   onViewAlternatives,
+  onRecheckLeg,
   onLocate,
 }: {
   tripId: string;
@@ -179,6 +255,11 @@ function SortableItemCard({
   onOpenMove: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
+  // Re-runs computeBestLegForPair for this leg even though it already has
+  // a saved route — the auto-fill effect only ever computes legs that
+  // don't have one yet, so this is the only way an existing leg picks up
+  // e.g. NAVITIME transit data added after it was first computed.
+  onRecheckLeg: () => void;
   onLocate: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -206,6 +287,16 @@ function SortableItemCard({
             icon: Navigation,
             href: `https://www.google.com/maps/dir/?api=1&destination=${item.place.lat},${item.place.lng}`,
             external: true,
+          },
+        ]
+      : []),
+    ...(canEdit && hasNextStop
+      ? [
+          {
+            key: "recheck-leg",
+            label: "重新判斷交通方式",
+            icon: RefreshCw,
+            onClick: onRecheckLeg,
           },
         ]
       : []),
@@ -713,64 +804,9 @@ export default function DayTimeline({
       const results = await Promise.all(
         missingPairs.map(async ({ from, to, key }): Promise<TimelineRoute | null> => {
           attemptedAutoFillRef.current.add(key);
-          const bothAirports =
-            isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name);
-          const leg = await computeBestLeg(
-            directionsService,
-            { lat: from.place!.lat, lng: from.place!.lng },
-            { lat: to.place!.lat, lng: to.place!.lng },
-            from.place!.country.toLowerCase(),
-            { bothAirports }
-          );
-
-          let best = leg;
-          let bestProvider = "google";
-
-          // Google has no transit data for Japan at all (see
-          // isGoogleTransitSupported's comment), so computeBestLeg only
-          // ever compared WALK vs. DRIVE there — check NAVITIME's fastest
-          // transit option too and use it if it actually beats what
-          // Google found. Skipped once Google's own result is already
-          // "good enough" (same cutoff computeBestLeg applies internally)
-          // to avoid spending NAVITIME's free-tier quota on legs transit
-          // was never going to win anyway.
-          if (
-            !bothAirports &&
-            (from.place!.country ?? "").toUpperCase() === "JP" &&
-            (!best || best.durationMin > WALK_GOOD_ENOUGH_MIN)
-          ) {
-            const hint = await getJapanTransitHint(
-              from.place!.lat,
-              from.place!.lng,
-              to.place!.lat,
-              to.place!.lng
-            );
-            if (hint.ok && hint.alternatives.length > 0) {
-              const fastest = hint.alternatives.reduce((a, b) =>
-                a.durationMin < b.durationMin ? a : b
-              );
-              if (!best || fastest.durationMin < best.durationMin) {
-                best = {
-                  mode: "TRANSIT",
-                  durationMin: fastest.durationMin,
-                  distanceKm: fastest.distanceKm,
-                };
-                bestProvider = "navitime";
-              }
-            }
-          }
-
+          const best = await computeBestLegForPair(directionsService, from, to);
           if (!best) return null;
-          if (best.mode === "FLY") bestProvider = "estimate";
-
-          return {
-            fromItemId: from.id,
-            toItemId: to.id,
-            mode: best.mode,
-            durationMin: best.durationMin,
-            distanceKm: best.distanceKm,
-            provider: bestProvider,
-          };
+          return { fromItemId: from.id, toItemId: to.id, ...best };
         })
       );
       const computed = results.filter((r): r is TimelineRoute => r != null);
@@ -1014,6 +1050,29 @@ export default function DayTimeline({
       provider: isJapanLeg ? "navitime" : "google",
     });
     setViewingLeg(null);
+  }
+
+  // "重新判斷交通方式" — forces a fresh computeBestLegForPair run for a leg
+  // that already has a saved route (the auto-fill effect above only ever
+  // computes legs that don't yet — see its comment), so this is how an
+  // existing leg picks up e.g. NAVITIME transit data added after it was
+  // first computed, without deleting and re-adding the item.
+  async function handleRecheckLeg(from: TimelineItem, to: TimelineItem) {
+    if (!routesLibrary) return;
+    const key = `${from.id}->${to.id}`;
+    setRecomputingKey(key);
+    setRouteError(null);
+    try {
+      const directionsService = new routesLibrary.DirectionsService();
+      const best = await computeBestLegForPair(directionsService, from, to);
+      if (best) {
+        upsertRoute({ fromItemId: from.id, toItemId: to.id, ...best });
+      } else {
+        setRouteError("無法自動規劃這段路線，請手動選擇交通方式");
+      }
+    } finally {
+      setRecomputingKey(null);
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -1408,6 +1467,10 @@ export default function DayTimeline({
                   onViewAlternatives={() => {
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) openAlternatives(item, to);
+                  }}
+                  onRecheckLeg={() => {
+                    const to = placeItems.find((i) => i.id === nextId);
+                    if (to) handleRecheckLeg(item, to);
                   }}
                   onLocate={() => onLocateItem?.(item.id)}
                 />
