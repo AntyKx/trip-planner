@@ -60,6 +60,7 @@ import {
   GOOGLE_TRAVEL_MODE,
   computeBestLeg,
   estimateFlightLeg,
+  fetchLeg,
   fetchTransitAlternatives,
   isAirportPlaceName,
   isGoogleTransitSupported,
@@ -200,6 +201,117 @@ async function computeBestLegForPair(
     distanceKm: best.distanceKm,
     provider: bestProvider,
   };
+}
+
+export type ModePreference = "AUTO" | "WALK" | "TRANSIT" | "DRIVE" | "BIKE";
+
+const MODE_PREFERENCE_OPTIONS: { value: ModePreference; label: string }[] = [
+  { value: "AUTO", label: "自動（最快為主）" },
+  { value: "WALK", label: "步行優先" },
+  { value: "TRANSIT", label: "大眾運輸優先" },
+  { value: "DRIVE", label: "開車優先" },
+  { value: "BIKE", label: "騎車優先" },
+];
+
+// Used by the day-level "重新掃描交通方式" action — unlike
+// computeBestLegForPair (always fastest-wins), a pinned preference is
+// adopted whenever it has any data at all, regardless of speed (the user
+// explicitly asked for "always adopt", not "prefer unless much slower").
+// Airport-to-airport legs still always fly no matter what's picked —
+// there's no walking/driving/transit option between two airports in
+// different cities to begin with.
+async function computeLegWithPreference(
+  directionsService: google.maps.DirectionsService,
+  from: TimelineItem,
+  to: TimelineItem,
+  preference: ModePreference
+): Promise<BestLeg | null> {
+  const bothAirports =
+    isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name);
+  if (bothAirports) {
+    const flight = estimateFlightLeg(
+      { lat: from.place!.lat, lng: from.place!.lng },
+      { lat: to.place!.lat, lng: to.place!.lng }
+    );
+    return {
+      mode: "FLY",
+      durationMin: flight.durationMin,
+      distanceKm: flight.distanceKm,
+      provider: "estimate",
+    };
+  }
+
+  if (preference === "AUTO") {
+    return computeBestLegForPair(directionsService, from, to);
+  }
+
+  const origin = { lat: from.place!.lat, lng: from.place!.lng };
+  const destination = { lat: to.place!.lat, lng: to.place!.lng };
+  const country = from.place!.country.toLowerCase();
+  const isJapan = (from.place!.country ?? "").toUpperCase() === "JP";
+
+  if (preference === "TRANSIT") {
+    if (isJapan) {
+      const hint = await getJapanTransitHint(origin.lat, origin.lng, destination.lat, destination.lng);
+      if (hint.ok && hint.alternatives.length > 0) {
+        const fastest = hint.alternatives.reduce((a, b) =>
+          a.durationMin < b.durationMin ? a : b
+        );
+        return {
+          mode: "TRANSIT",
+          durationMin: fastest.durationMin,
+          distanceKm: fastest.distanceKm,
+          provider: "navitime",
+        };
+      }
+    } else if (isGoogleTransitSupported(country)) {
+      const leg = await fetchLeg(directionsService, origin, destination, "TRANSIT", country);
+      if (leg) {
+        return { mode: leg.mode, durationMin: leg.durationMin, distanceKm: leg.distanceKm, provider: "google" };
+      }
+    }
+    // No transit data source at all for this leg (e.g. India) — fall back
+    // to the normal fastest-wins comparison rather than leaving it blank.
+    return computeBestLegForPair(directionsService, from, to);
+  }
+
+  const leg = await fetchLeg(directionsService, origin, destination, preference, country);
+  if (leg) {
+    return { mode: leg.mode, durationMin: leg.durationMin, distanceKm: leg.distanceKm, provider: "google" };
+  }
+  return computeBestLegForPair(directionsService, from, to);
+}
+
+function RescanRoutesModal({
+  onPick,
+  onClose,
+}: {
+  onPick: (preference: ModePreference) => void;
+  onClose: () => void;
+}) {
+  return (
+    <AppModal
+      titleId="rescan-routes-title"
+      title="重新掃描這天的交通方式"
+      onClose={onClose}
+    >
+      <p className="mb-3 text-sm text-ink-500">
+        會重新計算這天每一段路程的交通方式，取代目前已經存的結果（包含手動選過的）。
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {MODE_PREFERENCE_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onPick(opt.value)}
+            className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50"
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </AppModal>
+  );
 }
 
 function SortableItemCard({
@@ -746,6 +858,8 @@ export default function DayTimeline({
   const [movingItem, setMovingItem] = useState<TimelineItem | null>(null);
   const [isMoving, setIsMoving] = useState(false);
   const [isAutoScheduling, setIsAutoScheduling] = useState(false);
+  const [isRescanningRoutes, setIsRescanningRoutes] = useState(false);
+  const [isRescanBusy, setIsRescanBusy] = useState(false);
   const sensors = useSensors(
     // Mouse: quick distance-based activation (no scroll to conflict with).
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -958,6 +1072,42 @@ export default function DayTimeline({
       if (isCurrent()) setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
     } finally {
       if (isCurrent()) setRecomputingKey(null);
+    }
+  }
+
+  // "重新掃描交通方式" — unlike the auto-fill effect (only computes legs
+  // with no saved route yet) or "重新判斷交通方式" (one leg at a time),
+  // this recomputes every adjacent pair in the day regardless of whether
+  // it already has a route, replacing the whole set — including any leg
+  // the user picked a mode for manually. That's the point: it's an
+  // explicit, opt-in "start over" action, not something that should ever
+  // run implicitly.
+  async function handleRescanDay(preference: ModePreference) {
+    setIsRescanningRoutes(false);
+    if (!routesLibrary) return;
+    setIsRescanBusy(true);
+    setRouteError(null);
+    try {
+      const directionsService = new routesLibrary.DirectionsService();
+      const pairs: { from: TimelineItem; to: TimelineItem }[] = [];
+      for (let i = 0; i < placeItems.length - 1; i++) {
+        pairs.push({ from: placeItems[i], to: placeItems[i + 1] });
+      }
+      const results = await Promise.all(
+        pairs.map(async ({ from, to }): Promise<TimelineRoute | null> => {
+          const best = await computeLegWithPreference(directionsService, from, to, preference);
+          if (!best) return null;
+          return { fromItemId: from.id, toItemId: to.id, ...best };
+        })
+      );
+      const computed = results.filter((r): r is TimelineRoute => r != null);
+      // Full replacement, not a merge — this also clears out any stale
+      // Route rows left over from a previous item order that no longer
+      // match today's adjacency (persistRoutes/saveRoutes replace the
+      // day's entire route set with exactly what's passed in).
+      persistRoutes(computed);
+    } finally {
+      setIsRescanBusy(false);
     }
   }
 
@@ -1305,6 +1455,18 @@ export default function DayTimeline({
             </button>
           </div>
 
+          {placeItems.length >= 2 && (
+            <button
+              type="button"
+              onClick={() => setIsRescanningRoutes(true)}
+              disabled={isRescanBusy || !routesLibrary}
+              className="mb-3 flex items-center gap-1 text-xs text-brand-600 hover:underline disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRescanBusy ? "animate-spin" : ""}`} />
+              {isRescanBusy ? "重新掃描中…" : "重新掃描這天的交通方式"}
+            </button>
+          )}
+
           <div className="mb-3">
             <DayAnchorControl
               tripId={tripId}
@@ -1323,6 +1485,13 @@ export default function DayTimeline({
         <p className="mb-3 rounded-lg bg-danger-50 px-3 py-2 text-xs text-danger-600">
           {routeError}
         </p>
+      )}
+
+      {isRescanningRoutes && (
+        <RescanRoutesModal
+          onPick={handleRescanDay}
+          onClose={() => setIsRescanningRoutes(false)}
+        />
       )}
 
       {isAutoScheduling && (

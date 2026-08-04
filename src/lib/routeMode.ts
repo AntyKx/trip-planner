@@ -103,7 +103,11 @@ export function estimateFlightLeg(
   return estimateFlight(haversineKm(origin, destination));
 }
 
-async function fetchLeg(
+// Exported so callers that need one specific mode (not the "compare and
+// pick fastest" behavior below) can fetch it directly — e.g. a per-day
+// "rescan with a preferred mode" action, see DayTimeline's
+// computeLegWithPreference.
+export async function fetchLeg(
   directionsService: google.maps.DirectionsService,
   origin: google.maps.LatLngLiteral,
   destination: google.maps.LatLngLiteral,
