@@ -23,7 +23,6 @@ import {
   BookOpen,
   CalendarClock,
   CalendarDays,
-  ExternalLink,
   GripVertical,
   MapPin,
   MapPinned,
@@ -53,7 +52,6 @@ import {
   moveItemToDay,
   saveRoutes,
   getJapanTransitHint,
-  type JapanTransitHint,
   type TravelModeValue,
   type AnchorItemResult,
 } from "@/app/trips/actions";
@@ -73,7 +71,6 @@ import JournalEditModal, { type JournalPhoto } from "./JournalEditModal";
 import AutoScheduleModal, { type AppliedTimeUpdate } from "./AutoScheduleModal";
 import ImgWithFallback from "./ImgWithFallback";
 import TransitAlternativesModal from "./TransitAlternativesModal";
-import JapanTransitHintModal from "./JapanTransitHintModal";
 import DayAnchorControl, { type DaySummary } from "./DayAnchorControl";
 import EmptyState from "./EmptyState";
 import { NoItemsTodayIllustration } from "./EmptyStateIllustrations";
@@ -139,7 +136,6 @@ function SortableItemCard({
   canEdit,
   isRecomputing,
   isAutoFilling,
-  isLoadingJapanHint,
   otherDays,
   onDelete,
   onEdit,
@@ -147,7 +143,6 @@ function SortableItemCard({
   onOpenMove,
   onModeChange,
   onViewAlternatives,
-  onOpenJapanHint,
   onLocate,
 }: {
   tripId: string;
@@ -174,7 +169,6 @@ function SortableItemCard({
   canEdit: boolean;
   isRecomputing: boolean;
   isAutoFilling: boolean;
-  isLoadingJapanHint: boolean;
   // Only for the "移動到其他天" menu item's picker — empty on a single-day
   // trip, where there's nowhere to move a card to.
   otherDays: DaySummary[];
@@ -184,7 +178,6 @@ function SortableItemCard({
   onOpenMove: () => void;
   onModeChange: (mode: TravelModeValue) => void;
   onViewAlternatives: () => void;
-  onOpenJapanHint: () => void;
   onLocate: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -513,7 +506,13 @@ function SortableItemCard({
               無法自動規劃，請手動選擇交通方式
             </span>
           )}
-          {transitSupported && route?.mode === "TRANSIT" && (
+          {/* Japan (and India) never get a Google-computed TRANSIT route
+              to begin with (see isGoogleTransitSupported), so this button
+              shows regardless of the currently-picked mode there — it's
+              the only way to see transit options at all. Everywhere else,
+              it only shows once TRANSIT is already picked, matching
+              "查看/change the route Google already gave you". */}
+          {(isJapan || (transitSupported && route?.mode === "TRANSIT")) && (
             <button
               type="button"
               onClick={onViewAlternatives}
@@ -521,17 +520,6 @@ function SortableItemCard({
             >
               <RouteIcon className="h-3.5 w-3.5" />
               路線選項
-            </button>
-          )}
-          {isJapan && (
-            <button
-              type="button"
-              onClick={onOpenJapanHint}
-              disabled={isLoadingJapanHint}
-              className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline disabled:opacity-50"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              {isLoadingJapanHint ? "查詢中…" : "轉乘建議"}
             </button>
           )}
         </div>
@@ -637,7 +625,6 @@ export default function DayTimeline({
   // different leg, or re-triggered the same one, before the first request
   // finished) just discards its result instead of overwriting newer state.
   const legModeRequestIdRef = useRef<Record<string, number>>({});
-  const japanHintRequestIdRef = useRef(0);
   const alternativesRequestIdRef = useRef(0);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
   const [viewingLeg, setViewingLeg] = useState<{
@@ -649,12 +636,6 @@ export default function DayTimeline({
   const [alternativesError, setAlternativesError] = useState<string | null>(
     null
   );
-  const [japanHintLeg, setJapanHintLeg] = useState<{
-    from: TimelineItem;
-    to: TimelineItem;
-  } | null>(null);
-  const [japanHint, setJapanHint] = useState<JapanTransitHint | null>(null);
-  const [isLoadingJapanHint, setIsLoadingJapanHint] = useState(false);
   // Legs we've already tried to auto-fill this session, so a leg Directions
   // can't find a route for isn't retried on every items/routes change.
   const attemptedAutoFillRef = useRef<Set<string>>(new Set());
@@ -900,45 +881,42 @@ export default function DayTimeline({
     });
   }
 
-  function openJapanHint(from: TimelineItem, to: TimelineItem) {
-    setJapanHintLeg({ from, to });
-    setJapanHint(null);
-    setIsLoadingJapanHint(true);
-    const requestId = ++japanHintRequestIdRef.current;
-    (async () => {
-      const result = await getJapanTransitHint(
-        from.place!.lat,
-        from.place!.lng,
-        to.place!.lat,
-        to.place!.lng
-      );
-      // Superseded — the user opened a different leg (or re-opened this
-      // one) before this request finished; don't clobber the newer state.
-      if (japanHintRequestIdRef.current !== requestId) return;
-      setJapanHint(result);
-      setIsLoadingJapanHint(false);
-    })();
-  }
-
+  // Japan (and India) are excluded from Google's own transit data — see
+  // isGoogleTransitSupported's comment — so this branches to NAVITIME for
+  // exactly those, feeding the same TransitAlternativesModal Google's path
+  // uses below instead of Japan getting its own separate, weaker UI.
   function openAlternatives(from: TimelineItem, to: TimelineItem) {
-    if (!routesLibrary) return;
     setViewingLeg({ from, to });
     setAlternatives([]);
     setAlternativesError(null);
     setIsLoadingAlternatives(true);
     const requestId = ++alternativesRequestIdRef.current;
+    const isJapanLeg = (from.place?.country ?? "").toUpperCase() === "JP";
     (async () => {
-      const directionsService = new routesLibrary.DirectionsService();
-      const alts = await fetchTransitAlternatives(
-        directionsService,
-        { lat: from.place!.lat, lng: from.place!.lng },
-        { lat: to.place!.lat, lng: to.place!.lng },
-        from.place!.country.toLowerCase()
-      );
+      let alts: TransitAlternative[] = [];
+      let error: string | null = null;
+      if (isJapanLeg) {
+        const result = await getJapanTransitHint(
+          from.place!.lat,
+          from.place!.lng,
+          to.place!.lat,
+          to.place!.lng
+        );
+        if (result.ok) alts = result.alternatives;
+        else error = result.error;
+      } else if (routesLibrary) {
+        const directionsService = new routesLibrary.DirectionsService();
+        alts = await fetchTransitAlternatives(
+          directionsService,
+          { lat: from.place!.lat, lng: from.place!.lng },
+          { lat: to.place!.lat, lng: to.place!.lng },
+          from.place!.country.toLowerCase()
+        );
+      }
       if (alternativesRequestIdRef.current !== requestId) return;
       setAlternatives(alts);
       if (alts.length === 0) {
-        setAlternativesError("找不到大眾運輸路線建議");
+        setAlternativesError(error ?? "找不到大眾運輸路線建議");
       }
       setIsLoadingAlternatives(false);
     })();
@@ -947,13 +925,14 @@ export default function DayTimeline({
   function handleChooseAlternative(alt: TransitAlternative) {
     if (!viewingLeg) return;
     const { from, to } = viewingLeg;
+    const isJapanLeg = (from.place?.country ?? "").toUpperCase() === "JP";
     upsertRoute({
       fromItemId: from.id,
       toItemId: to.id,
       mode: "TRANSIT",
       durationMin: alt.durationMin,
       distanceKm: alt.distanceKm,
-      provider: "google",
+      provider: isJapanLeg ? "navitime" : "google",
     });
     setViewingLeg(null);
   }
@@ -1338,11 +1317,6 @@ export default function DayTimeline({
                   canEdit={canEdit}
                   isRecomputing={recomputingKey === `${item.id}->${nextId}`}
                   isAutoFilling={isAutoFilling}
-                  isLoadingJapanHint={
-                    isLoadingJapanHint &&
-                    japanHintLeg?.from.id === item.id &&
-                    japanHintLeg?.to.id === nextId
-                  }
                   otherDays={otherDays}
                   onDelete={() => handleDeleteItem(item.id)}
                   onEdit={() => setEditingItem(item)}
@@ -1355,10 +1329,6 @@ export default function DayTimeline({
                   onViewAlternatives={() => {
                     const to = placeItems.find((i) => i.id === nextId);
                     if (to) openAlternatives(item, to);
-                  }}
-                  onOpenJapanHint={() => {
-                    const to = placeItems.find((i) => i.id === nextId);
-                    if (to) openJapanHint(item, to);
                   }}
                   onLocate={() => onLocateItem?.(item.id)}
                 />
@@ -1378,20 +1348,6 @@ export default function DayTimeline({
           error={alternativesError}
           onChoose={handleChooseAlternative}
           onClose={() => setViewingLeg(null)}
-        />
-      )}
-
-      {japanHintLeg && (
-        <JapanTransitHintModal
-          fromPlaceName={japanHintLeg.from.place?.name ?? ""}
-          toPlaceName={japanHintLeg.to.place?.name ?? ""}
-          isLoading={isLoadingJapanHint}
-          error={japanHint && !japanHint.ok ? japanHint.error : null}
-          from={japanHint && japanHint.ok ? japanHint.from : null}
-          to={japanHint && japanHint.ok ? japanHint.to : null}
-          sameLine={japanHint && japanHint.ok ? japanHint.sameLine : false}
-          externalUrl={japanHint && japanHint.ok ? japanHint.externalUrl : null}
-          onClose={() => setJapanHintLeg(null)}
         />
       )}
     </div>

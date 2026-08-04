@@ -8,6 +8,7 @@ import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 import { isOwnBlobUrl, deleteBlobsQuietly } from "@/lib/blob";
 import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
+import type { TransitAlternative, TransitStepSummary } from "@/lib/routeMode";
 import { generateChecklistForTrip } from "./[id]/checklistActions";
 
 // requireTripEditor/requireTripOwner only check that the caller has a role
@@ -984,100 +985,93 @@ export async function createTrip(
   redirect(`/trips/${trip.id}`);
 }
 
-type EkispertStationPoint = {
-  Station?: { code?: string; Name?: string };
-  Distance?: string;
+// NAVITIME's move type -> our own VehicleType-ish key (see VEHICLE_ICON/
+// VEHICLE_LABEL in src/lib/labels.ts). Not an exhaustive list of every
+// value NAVITIME can return — anything unmapped falls back to "OTHER"
+// (still shows a Route icon and "大眾運輸" label, just without the more
+// specific glyph/name).
+const NAVITIME_MOVE_TO_VEHICLE: Record<string, string> = {
+  local_train: "RAIL",
+  rapid_train: "RAIL",
+  express_train: "RAIL",
+  semi_express_train: "RAIL",
+  limited_express_train: "RAIL",
+  shinkansen: "HIGH_SPEED_TRAIN",
+  bus: "BUS",
+  highway_bus: "INTERCITY_BUS",
+  midnight_bus: "INTERCITY_BUS",
+  community_bus: "BUS",
+  monorail: "MONORAIL",
+  new_transit: "MONORAIL",
+  tram: "TRAM",
+  ferry: "FERRY",
 };
 
-type EkispertNearestStation = { code: string; name: string; walkMeters: number };
-
-// Free plan's stationCount lets us list several candidate boarding stations
-// per point (not just the closest one) — useful since the closest station
-// isn't always the most convenient line.
-const NEARBY_STATION_COUNT = 3;
-
-async function findNearbyEkispertStations(
-  key: string,
-  lat: number,
-  lng: number
-): Promise<EkispertNearestStation[]> {
-  const url = new URL("https://api.ekispert.jp/v1/json/geo/station");
-  url.searchParams.set("key", key);
-  url.searchParams.set("geoPoint", `${lat},${lng},wgs84,2000`);
-  url.searchParams.set("stationCount", String(NEARBY_STATION_COUNT));
-
-  const res = await fetch(url.toString());
-  if (!res.ok) return [];
-  const data: {
-    ResultSet?: { Point?: EkispertStationPoint | EkispertStationPoint[] };
-  } = await res.json();
-  const point = data.ResultSet?.Point;
-  const points = Array.isArray(point) ? point : point ? [point] : [];
-  return points.flatMap((p) => {
-    const code = p.Station?.code;
-    const name = p.Station?.Name;
-    const walkMeters = p.Distance != null ? Number(p.Distance) : NaN;
-    if (!code || !name || Number.isNaN(walkMeters)) return [];
-    return [{ code, name, walkMeters }];
-  });
-}
-
-type EkispertLine = { Name?: string };
-
-// The line(s) serving a station, e.g. "福岡市地下鉄空港線" — free plan can't
-// tell us which line a *route* takes, but it can tell us which lines each
-// station itself sits on, which is enough to hint "same line, no transfer"
-// vs. "different lines, you'll need to change trains", and to show which
-// lines are boardable from each candidate station.
-async function findStationLines(
-  key: string,
-  stationCode: string
-): Promise<string[]> {
-  const url = new URL("https://api.ekispert.jp/v1/json/station/info");
-  url.searchParams.set("key", key);
-  url.searchParams.set("code", stationCode);
-  url.searchParams.set("type", "operationLine");
-
-  const res = await fetch(url.toString());
-  if (!res.ok) return [];
-  const data: {
-    ResultSet?: { Information?: { Line?: EkispertLine | EkispertLine[] } };
-  } = await res.json();
-  const line = data.ResultSet?.Information?.Line;
-  const lines = Array.isArray(line) ? line : line ? [line] : [];
-  return lines.flatMap((l) => (l.Name ? [l.Name] : []));
-}
-
-export type JapanTransitStationHint = {
-  name: string;
-  walkMeters: number;
-  lines: string[];
+type NavitimeSection = {
+  type: string; // "point" | "move"
+  move?: string; // only on type:"move" — "walk" | "local_train" | "bus" | ...
+  time?: number;
+  line_name?: string;
+  transport?: { color?: string };
 };
+
+type NavitimeItem = {
+  summary: {
+    move: {
+      time: number;
+      distance: number;
+      fare?: Record<string, number>;
+    };
+  };
+  sections: NavitimeSection[];
+};
+
+function summarizeNavitimeSections(sections: NavitimeSection[]): TransitStepSummary[] {
+  return sections
+    .filter((s): s is NavitimeSection & { move: string } => s.type === "move" && !!s.move)
+    .map((s) => {
+      const durationMin = s.time ?? 0;
+      if (s.move === "walk") {
+        return { mode: "WALK" as const, durationMin };
+      }
+      return {
+        mode: "TRANSIT" as const,
+        vehicleType: NAVITIME_MOVE_TO_VEHICLE[s.move] ?? "OTHER",
+        lineName: s.line_name,
+        durationMin,
+        color: s.transport?.color,
+      };
+    });
+}
+
+// unit_0 is the standard cash-ticket fare (JPY) — unit_48 (IC card) etc.
+// are also in the response but a single figure is enough for a planning
+// hint; the exact fare structure isn't something this app tries to fully
+// model.
+function formatNavitimeFare(fare: Record<string, number> | undefined): string | undefined {
+  const cash = fare?.unit_0;
+  return cash != null ? `¥${Math.round(cash)}` : undefined;
+}
 
 export type JapanTransitHint =
-  | {
-      ok: true;
-      from: JapanTransitStationHint[];
-      to: JapanTransitStationHint[];
-      sameLine: boolean;
-      externalUrl: string;
-    }
+  | { ok: true; alternatives: TransitAlternative[] }
   | { ok: false; error: string };
 
-// Ekispert's free plan doesn't expose structured route data (durations,
-// fares, departure times, transfer count — that's search/course/extreme
-// and the timetable endpoints, which are paid-plan-only and reject
-// free-plan keys outright; confirmed by testing and by Ekispert's own plan
-// comparison page). What it does give us for free: several candidate
-// boarding stations near each end (with walking distance), and every line
-// each of those stations sits on. That's the most we can show in-app
-// without sending the user to the external results page — actual
-// timetables/fares still require that external link.
-// Each call fans out into up to 5 Ekispert requests (2 nearby-station
-// lookups + one line lookup per station found + the course search) — same
-// AiUsageLog bucket already shared across the AI actions (see
-// src/app/explore/aiActions.ts), just guarding against burning this
-// project's Ekispert quota instead of AI Gateway spend.
+const NAVITIME_RAPIDAPI_HOST = "navitime-route-totalnavi.p.rapidapi.com";
+
+// Same shape of result Google's fetchTransitAlternatives (see
+// src/lib/routeMode.ts) returns for every other country — Japan (and
+// India) are excluded from Google's own transit data (see
+// isGoogleTransitSupported's comment), so this is the substitute source
+// for exactly those two buttons sharing one modal
+// (TransitAlternativesModal) instead of Japan getting a separate, weaker
+// UI. NAVITIME via RapidAPI's Basic (free) plan is the current source —
+// see project_navitime_transit_integration memory for the plan/quota
+// this is built against.
+// Same AiUsageLog bucket already shared across the AI actions (see
+// src/app/explore/aiActions.ts) and the previous Ekispert-based version of
+// this function — guards against burning this project's NAVITIME quota,
+// not AI Gateway spend.
 const JAPAN_TRANSIT_CALLS_PER_DAY = 30;
 
 export async function getJapanTransitHint(
@@ -1087,12 +1081,12 @@ export async function getJapanTransitHint(
   destLng: number
 ): Promise<JapanTransitHint> {
   // Unlike every other action here, this had no auth check at all — callable
-  // anonymously to burn this project's Ekispert API quota.
+  // anonymously to burn this project's NAVITIME quota.
   const user = await requireUser();
 
-  const key = process.env.EKISPERT_ACCESS_KEY;
+  const key = process.env.NAVITIME_RAPIDAPI_KEY;
   if (!key) {
-    return { ok: false, error: "尚未設定 EKISPERT_ACCESS_KEY" };
+    return { ok: false, error: "尚未設定 NAVITIME_RAPIDAPI_KEY" };
   }
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -1105,51 +1099,55 @@ export async function getJapanTransitHint(
   await prisma.aiUsageLog.create({ data: { userId: user.id } });
 
   try {
-    const [fromStations, toStations] = await Promise.all([
-      findNearbyEkispertStations(key, originLat, originLng),
-      findNearbyEkispertStations(key, destLat, destLng),
-    ]);
-    if (fromStations.length === 0 || toStations.length === 0) {
-      return { ok: false, error: "找不到附近的車站" };
+    // NAVITIME wants a wall-clock JST timestamp with no timezone suffix
+    // (it interprets it as JST regardless) — shifting the epoch by +9h
+    // before formatting in UTC is the standard trick for extracting a
+    // fixed-offset wall clock without touching the server's own timezone.
+    const jstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const startTime = jstNow.toISOString().slice(0, 19);
+
+    const url = new URL(`https://${NAVITIME_RAPIDAPI_HOST}/route_transit`);
+    url.searchParams.set("start", `${originLat},${originLng}`);
+    url.searchParams.set("goal", `${destLat},${destLng}`);
+    url.searchParams.set("datum", "wgs84");
+    url.searchParams.set("coord_unit", "degree");
+    url.searchParams.set("term", "1440");
+    url.searchParams.set("limit", "5");
+    url.searchParams.set("start_time", startTime);
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        "x-rapidapi-host": NAVITIME_RAPIDAPI_HOST,
+        "x-rapidapi-key": key,
+      },
+    });
+    if (!res.ok) {
+      return { ok: false, error: `NAVITIME API 錯誤 (${res.status})` };
+    }
+    const data: { items?: NavitimeItem[] } = await res.json();
+    const items = data.items ?? [];
+
+    const alternatives: TransitAlternative[] = items
+      .map((item): TransitAlternative | null => {
+        const steps = summarizeNavitimeSections(item.sections);
+        // A walk-only result (common for very close points) isn't a
+        // "transit alternative" — same convention Google's version uses.
+        if (!steps.some((s) => s.mode === "TRANSIT")) return null;
+        return {
+          summary: "",
+          durationMin: item.summary.move.time,
+          distanceKm: Math.round((item.summary.move.distance / 1000) * 10) / 10,
+          fareText: formatNavitimeFare(item.summary.move.fare),
+          steps,
+        };
+      })
+      .filter((a): a is TransitAlternative => a != null);
+
+    if (alternatives.length === 0) {
+      return { ok: false, error: "找不到需要轉乘的大眾運輸路線" };
     }
 
-    const [fromLines, toLines] = await Promise.all([
-      Promise.all(fromStations.map((s) => findStationLines(key, s.code))),
-      Promise.all(toStations.map((s) => findStationLines(key, s.code))),
-    ]);
-
-    const from: JapanTransitStationHint[] = fromStations.map((s, i) => ({
-      name: s.name,
-      walkMeters: s.walkMeters,
-      lines: fromLines[i],
-    }));
-    const to: JapanTransitStationHint[] = toStations.map((s, i) => ({
-      name: s.name,
-      walkMeters: s.walkMeters,
-      lines: toLines[i],
-    }));
-
-    const linkUrl = new URL("https://api.ekispert.jp/v1/json/search/course/light");
-    linkUrl.searchParams.set("key", key);
-    linkUrl.searchParams.set("from", fromStations[0].code);
-    linkUrl.searchParams.set("to", toStations[0].code);
-    linkUrl.searchParams.set("searchType", "departure");
-    const linkRes = await fetch(linkUrl.toString());
-    const linkData: { ResultSet?: { ResourceURI?: string } } = linkRes.ok
-      ? await linkRes.json()
-      : {};
-
-    const sameLine = from.some((f) =>
-      to.some((t) => f.lines.some((line) => t.lines.includes(line)))
-    );
-
-    return {
-      ok: true,
-      from,
-      to,
-      sameLine,
-      externalUrl: linkData.ResultSet?.ResourceURI ?? "",
-    };
+    return { ok: true, alternatives };
   } catch {
     return { ok: false, error: "查詢失敗，請稍後再試" };
   }

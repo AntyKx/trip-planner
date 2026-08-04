@@ -42,8 +42,8 @@ export default function TransitAlternativesModal({
           )}
           {!isLoading && !error && alternatives.length === 0 && (
             <p className="text-sm text-ink-500">
-              這兩點之間 Google 沒有提供大眾運輸路線建議，距離可能太近，直接
-              步行更快，建議改選步行。
+              這兩點之間沒有大眾運輸路線建議，距離可能太近，直接步行更快，
+              建議改選步行。
             </p>
           )}
 
