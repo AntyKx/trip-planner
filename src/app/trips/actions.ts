@@ -119,6 +119,7 @@ export type RouteInput = {
   mode: TravelModeValue;
   durationMin: number;
   distanceKm: number;
+  provider: string;
 };
 
 // Replaces every Route for this day with a fresh set — called after
@@ -157,7 +158,7 @@ export async function saveRoutes(
           durationMin: Math.round(r.durationMin),
           distanceKm: Math.round(r.distanceKm * 10) / 10,
           country,
-          provider: "google",
+          provider: r.provider,
         },
       })
     ),

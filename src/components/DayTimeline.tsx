@@ -761,6 +761,7 @@ export default function DayTimeline({
             mode: r.mode as TravelModeValue,
             durationMin: r.durationMin!,
             distanceKm: r.distanceKm!,
+            provider: r.provider,
           }))
       );
     });
