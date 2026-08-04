@@ -157,14 +157,18 @@ async function computeBestLegForPair(
   // Google has no transit data for Japan at all (see
   // isGoogleTransitSupported's comment), so computeBestLeg only ever
   // compared WALK vs. DRIVE there — check NAVITIME's fastest transit
-  // option too and use it if it actually beats what Google found.
-  // Skipped once Google's own result is already "good enough" (same
-  // cutoff computeBestLeg applies internally) to avoid spending
-  // NAVITIME's free-tier quota on legs transit was never going to win.
+  // option too and use it if it actually beats what Google found. Only
+  // skipped when WALK ITSELF already won under the cutoff (matching
+  // computeBestLeg's own "walking is good enough" rule) — a DRIVE win
+  // doesn't get the same pass no matter how short, since driving assumes
+  // a car most users planning a trip here don't have; transit is still
+  // worth checking against it regardless of how fast driving looked.
+  const walkAlreadyGoodEnough =
+    !!best && best.mode === "WALK" && best.durationMin <= WALK_GOOD_ENOUGH_MIN;
   if (
     !bothAirports &&
     (from.place!.country ?? "").toUpperCase() === "JP" &&
-    (!best || best.durationMin > WALK_GOOD_ENOUGH_MIN)
+    !walkAlreadyGoodEnough
   ) {
     const hint = await getJapanTransitHint(
       from.place!.lat,
