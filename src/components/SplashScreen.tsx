@@ -55,33 +55,41 @@ export default function SplashScreen() {
   return (
     <div
       aria-hidden="true"
-      className={`fixed inset-0 z-[var(--z-critical)] overflow-hidden transition-opacity motion-reduce:transition-none ${
+      className={`fixed inset-0 z-[var(--z-critical)] overflow-hidden bg-paper transition-opacity motion-reduce:transition-none ${
         phase === "exit"
           ? "opacity-0 duration-500 ease-in"
           : "opacity-100 duration-700 ease-out"
       }`}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        className={`h-full w-full object-cover transition-transform duration-[1400ms] ease-out motion-reduce:transition-none ${
-          phase === "enter" ? "scale-105" : "scale-100"
-        }`}
-      />
-      {/* Light sweep across the artwork while it holds — only during
-          "hold" so it never plays partway through the fade-out. */}
-      {phase === "hold" && (
-        <div
-          aria-hidden="true"
-          className="animate-splash-sheen motion-reduce:hidden pointer-events-none absolute inset-0 mix-blend-soft-light"
-          style={{
-            background:
-              "linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)",
-            backgroundSize: "250% 250%",
-          }}
+      {/* The artwork is drawn for a phone's portrait screen (its own
+          "Trip Planner" wordmark sits near the top). Letting object-cover
+          fill a wide desktop viewport directly crops that wordmark clean
+          off — capping the width to a phone-ish column and letterboxing
+          the rest keeps the whole design intact on any screen instead of
+          only looking right on the one aspect ratio it was drawn for. */}
+      <div className="relative mx-auto h-full w-full max-w-md overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          className={`h-full w-full object-cover transition-transform duration-[1400ms] ease-out motion-reduce:transition-none ${
+            phase === "enter" ? "scale-105" : "scale-100"
+          }`}
         />
-      )}
+        {/* Light sweep across the artwork while it holds — only during
+            "hold" so it never plays partway through the fade-out. */}
+        {phase === "hold" && (
+          <div
+            aria-hidden="true"
+            className="animate-splash-sheen motion-reduce:hidden pointer-events-none absolute inset-0 mix-blend-soft-light"
+            style={{
+              background:
+                "linear-gradient(120deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%)",
+              backgroundSize: "250% 250%",
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
