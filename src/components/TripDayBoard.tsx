@@ -45,6 +45,7 @@ import {
 } from "@/lib/weather";
 import { getNextStop, localTodayStr } from "@/lib/timeline";
 import { formatTime } from "@/lib/labels";
+import { weekdayShortLabel } from "@/lib/businessHours";
 
 export type BoardDay = {
   id: string;
@@ -526,6 +527,7 @@ export default function TripDayBoard({
                 </div>
                 <div className={`mt-0.5 text-xs ${isActive ? "text-brand-600" : "text-ink-500"}`}>
                   {day.date.slice(5)}
+                  {weekdayShortLabel(new Date(`${day.date}T00:00:00`))}
                   {isToday && "・今天"}
                 </div>
               </button>

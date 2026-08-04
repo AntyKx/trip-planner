@@ -88,3 +88,9 @@ const WEEKDAY_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
 export function weekdayLabel(date: Date): string {
   return `週${WEEKDAY_LABEL[date.getDay()]}`;
 }
+
+// "(一)" style, for tight spaces (e.g. next to a Day tab's short date) where
+// weekdayLabel's "週一" would be too wide.
+export function weekdayShortLabel(date: Date): string {
+  return `(${WEEKDAY_LABEL[date.getDay()]})`;
+}
