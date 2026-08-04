@@ -63,6 +63,7 @@ import {
   isAirportPlaceName,
   isGoogleTransitSupported,
   optimizeStopOrder,
+  WALK_GOOD_ENOUGH_MIN,
   type TransitAlternative,
 } from "@/lib/routeMode";
 import PlaceDetailsTrigger from "./PlaceDetailsModal";
@@ -184,6 +185,11 @@ function SortableItemCard({
     useSortable({ id: item.id, disabled: !canEdit });
   const transitSupported = isGoogleTransitSupported(item.place?.country);
   const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
+  // Google itself has no transit data for Japan (see
+  // isGoogleTransitSupported's comment) — NAVITIME covers that one gap
+  // (see getJapanTransitHint), so TRANSIT is only actually unavailable
+  // where neither source has data (currently just India).
+  const transitAvailable = transitSupported || isJapan;
   const TypeIcon = TYPE_ICON[item.type] ?? TYPE_ICON.CUSTOM;
   const typeColor = TYPE_COLOR[item.type] ?? TYPE_COLOR.CUSTOM;
   const ModeIcon = route ? MODE_ICON[route.mode] : null;
@@ -471,7 +477,7 @@ function SortableItemCard({
             >
               {modeOptions.map((opt) => {
                 const disabled =
-                  opt.value === "TRANSIT" && !transitSupported;
+                  opt.value === "TRANSIT" && !transitAvailable;
                 return (
                   <option
                     key={opt.value}
@@ -479,12 +485,12 @@ function SortableItemCard({
                     disabled={disabled}
                     title={
                       disabled
-                        ? "Google 目前沒有這個國家的大眾運輸資料"
+                        ? "目前沒有這個國家的大眾運輸資料"
                         : undefined
                     }
                   >
                     {opt.label}
-                    {disabled ? "（Google 無資料）" : ""}
+                    {disabled ? "（無資料）" : ""}
                   </option>
                 );
               })}
@@ -506,13 +512,12 @@ function SortableItemCard({
               無法自動規劃，請手動選擇交通方式
             </span>
           )}
-          {/* Japan (and India) never get a Google-computed TRANSIT route
-              to begin with (see isGoogleTransitSupported), so this button
-              shows regardless of the currently-picked mode there — it's
-              the only way to see transit options at all. Everywhere else,
-              it only shows once TRANSIT is already picked, matching
-              "查看/change the route Google already gave you". */}
-          {(isJapan || (transitSupported && route?.mode === "TRANSIT")) && (
+          {/* TRANSIT is a normal, selectable mode now for every country
+              with a data source (Google, or NAVITIME for Japan — see
+              transitAvailable) — this only shows once it's actually
+              picked, to see/change which of the several real alternatives
+              is applied. */}
+          {transitAvailable && route?.mode === "TRANSIT" && (
             <button
               type="button"
               onClick={onViewAlternatives}
@@ -708,24 +713,63 @@ export default function DayTimeline({
       const results = await Promise.all(
         missingPairs.map(async ({ from, to, key }): Promise<TimelineRoute | null> => {
           attemptedAutoFillRef.current.add(key);
+          const bothAirports =
+            isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name);
           const leg = await computeBestLeg(
             directionsService,
             { lat: from.place!.lat, lng: from.place!.lng },
             { lat: to.place!.lat, lng: to.place!.lng },
             from.place!.country.toLowerCase(),
-            {
-              bothAirports:
-                isAirportPlaceName(from.place!.name) && isAirportPlaceName(to.place!.name),
-            }
+            { bothAirports }
           );
-          if (!leg) return null;
+
+          let best = leg;
+          let bestProvider = "google";
+
+          // Google has no transit data for Japan at all (see
+          // isGoogleTransitSupported's comment), so computeBestLeg only
+          // ever compared WALK vs. DRIVE there — check NAVITIME's fastest
+          // transit option too and use it if it actually beats what
+          // Google found. Skipped once Google's own result is already
+          // "good enough" (same cutoff computeBestLeg applies internally)
+          // to avoid spending NAVITIME's free-tier quota on legs transit
+          // was never going to win anyway.
+          if (
+            !bothAirports &&
+            (from.place!.country ?? "").toUpperCase() === "JP" &&
+            (!best || best.durationMin > WALK_GOOD_ENOUGH_MIN)
+          ) {
+            const hint = await getJapanTransitHint(
+              from.place!.lat,
+              from.place!.lng,
+              to.place!.lat,
+              to.place!.lng
+            );
+            if (hint.ok && hint.alternatives.length > 0) {
+              const fastest = hint.alternatives.reduce((a, b) =>
+                a.durationMin < b.durationMin ? a : b
+              );
+              if (!best || fastest.durationMin < best.durationMin) {
+                best = {
+                  mode: "TRANSIT",
+                  durationMin: fastest.durationMin,
+                  distanceKm: fastest.distanceKm,
+                };
+                bestProvider = "navitime";
+              }
+            }
+          }
+
+          if (!best) return null;
+          if (best.mode === "FLY") bestProvider = "estimate";
+
           return {
             fromItemId: from.id,
             toItemId: to.id,
-            mode: leg.mode,
-            durationMin: leg.durationMin,
-            distanceKm: leg.distanceKm,
-            provider: "google",
+            mode: best.mode,
+            durationMin: best.durationMin,
+            distanceKm: best.distanceKm,
+            provider: bestProvider,
           };
         })
       );
@@ -800,15 +844,49 @@ export default function DayTimeline({
       });
       return;
     }
-    if (!routesLibrary) return;
-    if (mode === "TRANSIT" && !isGoogleTransitSupported(from.place?.country)) {
-      setRouteError("Google 目前沒有這個國家的大眾運輸資料，請選開車或步行");
-      return;
-    }
     const key = `${from.id}->${to.id}`;
     const requestId = (legModeRequestIdRef.current[key] ?? 0) + 1;
     legModeRequestIdRef.current[key] = requestId;
     const isCurrent = () => legModeRequestIdRef.current[key] === requestId;
+
+    // Google has no transit data for Japan at all (see
+    // isGoogleTransitSupported's comment) — NAVITIME covers that gap, and
+    // unlike Google's single-result Directions call, it returns several
+    // itineraries at once, so this picks the fastest one as "the" TRANSIT
+    // route (opening 路線選項 afterward still shows the rest to choose from).
+    if (mode === "TRANSIT" && (from.place?.country ?? "").toUpperCase() === "JP") {
+      setRecomputingKey(key);
+      setRouteError(null);
+      const hint = await getJapanTransitHint(
+        from.place!.lat,
+        from.place!.lng,
+        to.place!.lat,
+        to.place!.lng
+      );
+      if (!isCurrent()) return;
+      if (hint.ok && hint.alternatives.length > 0) {
+        const fastest = hint.alternatives.reduce((a, b) =>
+          a.durationMin < b.durationMin ? a : b
+        );
+        upsertRoute({
+          fromItemId: from.id,
+          toItemId: to.id,
+          mode: "TRANSIT",
+          durationMin: fastest.durationMin,
+          distanceKm: fastest.distanceKm,
+          provider: "navitime",
+        });
+      } else {
+        setRouteError(hint.ok ? "找不到大眾運輸路線建議" : hint.error);
+      }
+      setRecomputingKey(null);
+      return;
+    }
+    if (!routesLibrary) return;
+    if (mode === "TRANSIT" && !isGoogleTransitSupported(from.place?.country)) {
+      setRouteError("目前沒有這個國家的大眾運輸資料，請選開車或步行");
+      return;
+    }
 
     setRecomputingKey(key);
     setRouteError(null);

@@ -40,8 +40,11 @@ export function isGoogleTransitSupported(country: string | undefined): boolean {
 }
 
 // Below this walking time, walking beats waiting for + riding transit or
-// finding parking, so we don't bother comparing other modes.
-const WALK_GOOD_ENOUGH_MIN = 20;
+// finding parking, so we don't bother comparing other modes. Exported so
+// callers that check an *external* transit source computeBestLeg doesn't
+// know about (e.g. NAVITIME for Japan, see DayTimeline's auto-fill effect)
+// can apply the same "don't bother" cutoff instead of guessing their own.
+export const WALK_GOOD_ENOUGH_MIN = 20;
 
 // Straight-line distance below which two stops are unambiguously "next
 // door" (e.g. two attractions sharing the same complex). We trust this over
