@@ -829,7 +829,29 @@ export default function DayTimeline({
   const [isPending, startTransition] = useTransition();
   const toast = useToast();
   const [routeError, setRouteError] = useState<string | null>(null);
-  const [recomputingKey, setRecomputingKey] = useState<string | null>(null);
+  // A Set (not a single string) — two different legs can genuinely be
+  // recomputing at once (e.g. the mode dropdown on one leg and "重新判斷交
+  // 通方式" on another). A single shared "current key" used to mean
+  // whichever leg finished first cleared it for everyone, silently
+  // dropping the still-in-flight other leg's "計算中…" indicator even
+  // though its own request hadn't resolved yet.
+  const [recomputingKeys, setRecomputingKeys] = useState<Set<string>>(
+    () => new Set()
+  );
+  function markRecomputing(key: string) {
+    setRecomputingKeys((prev) => {
+      if (prev.has(key)) return prev;
+      return new Set(prev).add(key);
+    });
+  }
+  function clearRecomputing(key: string) {
+    setRecomputingKeys((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }
   // Request-token guards for the three async handlers below (mode change,
   // Japan transit hint, transit alternatives) — each only has one active
   // target at a time, so a fresh call bumps its token and a resolving
@@ -1009,7 +1031,7 @@ export default function DayTimeline({
     // itineraries at once, so this picks the fastest one as "the" TRANSIT
     // route (opening 路線選項 afterward still shows the rest to choose from).
     if (mode === "TRANSIT" && (from.place?.country ?? "").toUpperCase() === "JP") {
-      setRecomputingKey(key);
+      markRecomputing(key);
       setRouteError(null);
       const hint = await getJapanTransitHint(
         from.place!.lat,
@@ -1033,7 +1055,7 @@ export default function DayTimeline({
       } else {
         setRouteError(hint.ok ? "找不到大眾運輸路線建議" : hint.error);
       }
-      setRecomputingKey(null);
+      clearRecomputing(key);
       return;
     }
     if (!routesLibrary) return;
@@ -1042,7 +1064,7 @@ export default function DayTimeline({
       return;
     }
 
-    setRecomputingKey(key);
+    markRecomputing(key);
     setRouteError(null);
     try {
       const directionsService = new routesLibrary.DirectionsService();
@@ -1071,7 +1093,7 @@ export default function DayTimeline({
     } catch {
       if (isCurrent()) setRouteError("這段交通方式無法規劃路線，可能兩地之間不支援該方式");
     } finally {
-      if (isCurrent()) setRecomputingKey(null);
+      if (isCurrent()) clearRecomputing(key);
     }
   }
 
@@ -1235,7 +1257,7 @@ export default function DayTimeline({
     legModeRequestIdRef.current[key] = requestId;
     const isCurrent = () => legModeRequestIdRef.current[key] === requestId;
 
-    setRecomputingKey(key);
+    markRecomputing(key);
     setRouteError(null);
     try {
       const directionsService = new routesLibrary.DirectionsService();
@@ -1247,7 +1269,7 @@ export default function DayTimeline({
         setRouteError("無法自動規劃這段路線，請手動選擇交通方式");
       }
     } finally {
-      if (isCurrent()) setRecomputingKey(null);
+      if (isCurrent()) clearRecomputing(key);
     }
   }
 
@@ -1648,7 +1670,7 @@ export default function DayTimeline({
                   isHighlighted={item.id === highlightItemId}
                   isSelected={item.id === selectedItemId}
                   canEdit={canEdit}
-                  isRecomputing={recomputingKey === `${item.id}->${nextId}`}
+                  isRecomputing={recomputingKeys.has(`${item.id}->${nextId}`)}
                   isAutoFilling={isAutoFilling}
                   otherDays={otherDays}
                   onDelete={() => handleDeleteItem(item.id)}
