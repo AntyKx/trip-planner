@@ -120,6 +120,17 @@ export type RouteInput = {
   durationMin: number;
   distanceKm: number;
   provider: string;
+  // The leg's own origin country (e.g. for isGoogleTransitSupported-style
+  // decisions elsewhere) — per-route, not a single value for the whole
+  // batch. This used to be one shared `country` param applied to every
+  // route in a call, which was silently wrong for any day that starts in
+  // one country and crosses into another (e.g. a flight leg): every route
+  // saved in that same call — including ones on the far side of the
+  // border — got the *first* item's country. Nothing in the codebase
+  // currently reads Route.country back, so this had no visible symptom,
+  // but it's exactly the kind of already-wrong data a future feature
+  // would inherit silently.
+  country: string;
 };
 
 // Replaces every Route for this day with a fresh set — called after
@@ -128,7 +139,6 @@ export type RouteInput = {
 export async function saveRoutes(
   tripId: string,
   dayId: string,
-  country: string,
   routes: RouteInput[]
 ) {
   await requireTripEditor(tripId);
@@ -157,7 +167,7 @@ export async function saveRoutes(
           mode: r.mode,
           durationMin: Math.round(r.durationMin),
           distanceKm: Math.round(r.distanceKm * 10) / 10,
-          country,
+          country: r.country,
           provider: r.provider,
         },
       })
@@ -301,10 +311,42 @@ export async function setDayAnchor(
 
   await prisma.$transaction(async (tx) => {
     if (withAnchor.length > 0) {
+      const anchorItemIds = withAnchor.map((d) => d.anchorItemId);
+      // Only items whose place is actually changing need their routes
+      // invalidated below — re-applying the same anchor to more days (the
+      // applyToDayIds multi-day flow, e.g. "Hotel A day1-3, Hotel B
+      // day4-5, Hotel A day6-7") is a no-op for days that already point
+      // at this place, and shouldn't force those legs to recompute.
+      const existingItems = await tx.item.findMany({
+        where: { id: { in: anchorItemIds } },
+        select: { id: true, placeId: true },
+      });
+      const changedItemIds = existingItems
+        .filter((i) => i.placeId !== dbPlace.id)
+        .map((i) => i.id);
+
       await tx.item.updateMany({
-        where: { id: { in: withAnchor.map((d) => d.anchorItemId) } },
+        where: { id: { in: anchorItemIds } },
         data: { placeId: dbPlace.id },
       });
+
+      if (changedItemIds.length > 0) {
+        // This repoints an existing card to a different place (see the
+        // comment above the transaction) rather than creating a new one —
+        // the item id, and therefore every Route referencing it, stays
+        // put even though the coordinates behind it just changed. The
+        // client's auto-fill effect only ever computes a leg that has no
+        // saved Route yet, so a stale one here (still reflecting the old
+        // place's distance/duration) would otherwise never get refreshed.
+        await tx.route.deleteMany({
+          where: {
+            OR: [
+              { fromItemId: { in: changedItemIds } },
+              { toItemId: { in: changedItemIds } },
+            ],
+          },
+        });
+      }
     }
     for (const day of withAnchor) {
       results[day.id] = { id: day.anchorItemId, type: "HOTEL", place: dbPlace };

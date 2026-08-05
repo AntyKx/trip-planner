@@ -31,7 +31,14 @@ const COST_CATEGORY_OPTIONS: { value: CostCategoryValue; label: string }[] = [
   { value: "OTHER", label: "其他" },
 ];
 
-const CURRENCY_OPTIONS = ["TWD", "JPY", "USD"];
+// Matches the app's actual destination coverage — checklistTemplates.ts's
+// per-country templates (TW/JP/KR) plus the splash screen's other
+// featured cities (Paris/Spain -> EUR, Sydney -> AUD, London -> GBP,
+// New York -> USD) — not just the two countries this happened to launch
+// with. A cost entry for any of these previously had no matching option
+// and had to be mislabeled under one of the three, silently corrupting
+// that currency's total in BudgetSummary.
+const CURRENCY_OPTIONS = ["TWD", "JPY", "USD", "KRW", "EUR", "GBP", "AUD"];
 
 const DEFAULT_COST_CATEGORY: Record<ItemTypeValue, CostCategoryValue> = {
   PLACE: "TICKET",

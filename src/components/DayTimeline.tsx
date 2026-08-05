@@ -992,12 +992,10 @@ export default function DayTimeline({
   // legs that share the same from/to pair as an entry already in newRoutes.
   function persistRoutes(newRoutes: TimelineRoute[]) {
     setRoutes(newRoutes);
-    const country = placeItems[0]?.place?.country ?? "TW";
     startTransition(() => {
       saveRoutes(
         tripId,
         dayId,
-        country,
         newRoutes
           .filter((r) => r.durationMin != null && r.distanceKm != null)
           .map((r) => ({
@@ -1007,6 +1005,13 @@ export default function DayTimeline({
             durationMin: r.durationMin!,
             distanceKm: r.distanceKm!,
             provider: r.provider,
+            // This leg's own origin, not the day's first item's country —
+            // a day that starts in one country and flies into another
+            // (see the FLY mode) would otherwise mislabel every route
+            // saved in the same batch, including ones past the border.
+            country:
+              placeItems.find((i) => i.id === r.fromItemId)?.place?.country ??
+              "TW",
           }))
       );
     });
