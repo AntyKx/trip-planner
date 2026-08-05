@@ -8,6 +8,7 @@ import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimelin
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import JournalSharePanel from "./JournalSharePanel";
+import ItinerarySharePanel from "./ItinerarySharePanel";
 import EmergencyInfoCard from "./EmergencyInfoCard";
 import BudgetSummary from "./BudgetSummary";
 import TravelModeView from "./TravelModeView";
@@ -74,6 +75,8 @@ export default function TripDayBoard({
   shareRole,
   journalShareEnabled,
   journalShareToken,
+  itineraryShareEnabled,
+  itineraryShareToken,
   checklistItems,
 }: {
   tripId: string;
@@ -91,6 +94,8 @@ export default function TripDayBoard({
   shareRole: "EDITOR" | "VIEWER" | null;
   journalShareEnabled: boolean;
   journalShareToken: string | null;
+  itineraryShareEnabled: boolean;
+  itineraryShareToken: string | null;
   checklistItems: ChecklistItemView[];
 }) {
   // Starts at days[0] even for a ?mode=travel deep link — localTodayStr()
@@ -707,6 +712,13 @@ export default function TripDayBoard({
           canManage={isOwner}
           journalShareEnabled={journalShareEnabled}
           journalShareToken={journalShareToken}
+        />
+
+        <ItinerarySharePanel
+          tripId={tripId}
+          canManage={isOwner}
+          itineraryShareEnabled={itineraryShareEnabled}
+          itineraryShareToken={itineraryShareToken}
         />
       </aside>
       </div>

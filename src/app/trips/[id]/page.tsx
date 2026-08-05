@@ -223,6 +223,8 @@ export default async function TripDetailPage({
             shareRole={trip.shareRole === "OWNER" ? null : trip.shareRole}
             journalShareEnabled={trip.journalShareEnabled}
             journalShareToken={trip.journalShareToken}
+            itineraryShareEnabled={trip.itineraryShareEnabled}
+            itineraryShareToken={trip.itineraryShareToken}
             checklistItems={trip.checklistItems.map((c) => ({
               id: c.id,
               title: c.title,

@@ -157,6 +157,15 @@ model Trip {
   journalShareEnabled Boolean @default(false)
   journalShareToken   String? @unique
 
+  // A third, separate share surface — a read-only itinerary overview
+  // (upcoming plan: places, times, transport) for people who aren't going
+  // to edit anything and shouldn't need an account, distinct from both the
+  // collaborator invite above (needs sign-in, grants edit access) and the
+  // journal above (retrospective photos/stories, not a day-by-day plan).
+  // Same no-auth, token-only pattern as journalShareToken.
+  itineraryShareEnabled Boolean @default(false)
+  itineraryShareToken   String? @unique
+
   checklistItems ChecklistItem[]
 
   @@index([ownerId])

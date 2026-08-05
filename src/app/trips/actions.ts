@@ -488,6 +488,29 @@ export async function disableJournalShare(tripId: string) {
   revalidatePath(`/trips/${tripId}/settings`);
 }
 
+// Separate token/toggle from both share links above — this one gates the
+// public, no-login itinerary overview page (see src/app/itinerary/[token]).
+// Owner-only, same as the other share settings.
+export async function enableItineraryShare(tripId: string) {
+  await requireTripOwner(tripId);
+  const itineraryShareToken = randomUUID();
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { itineraryShareEnabled: true, itineraryShareToken },
+  });
+  revalidatePath(`/trips/${tripId}/settings`);
+  return itineraryShareToken;
+}
+
+export async function disableItineraryShare(tripId: string) {
+  await requireTripOwner(tripId);
+  await prisma.trip.update({
+    where: { id: tripId },
+    data: { itineraryShareEnabled: false, itineraryShareToken: null },
+  });
+  revalidatePath(`/trips/${tripId}/settings`);
+}
+
 export async function deleteItem(tripId: string, itemId: string) {
   await requireTripEditor(tripId);
   // Journal photo blobs won't be reachable once the cascade removes their
