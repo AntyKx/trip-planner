@@ -1310,7 +1310,21 @@ export default function DayTimeline({
 
     const oldIndex = items.findIndex((i) => i.id === active.id);
     const newIndex = items.findIndex((i) => i.id === over.id);
-    const newItems = arrayMove(items, oldIndex, newIndex);
+    let newItems = arrayMove(items, oldIndex, newIndex);
+
+    // "自動安排最順路線" (handleOrganizeRoute) always keeps the day's
+    // anchor (本日起點) first — manual drag had no equivalent guard, so
+    // dragging the anchor card anywhere else left it stuck out of
+    // position with no way to fix it short of re-running that button
+    // (which itself needs >=3 place-items to even be enabled).
+    if (anchorItemId && newItems[0]?.id !== anchorItemId) {
+      const anchorIndex = newItems.findIndex((i) => i.id === anchorItemId);
+      if (anchorIndex > 0) {
+        const [anchor] = newItems.splice(anchorIndex, 1);
+        newItems = [anchor, ...newItems];
+      }
+    }
+
     setItems(newItems);
     toast.success("已更新排序");
     persistRoutes(pruneRoutesToAdjacency(newItems, routes));
