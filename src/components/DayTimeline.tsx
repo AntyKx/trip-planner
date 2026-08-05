@@ -118,6 +118,31 @@ export type TimelineRoute = {
   provider: string;
 };
 
+// Routes are keyed by an exact fromItemId/toItemId pair, not by position —
+// reordering (drag-and-drop, "自動安排最順路線") only ever calls setItems,
+// never touching `routes`, so a pair that stops being adjacent after a
+// reorder is left behind as a stale row. saveRoutes' own validation only
+// checks that both item ids still exist *somewhere* in the day (see its
+// comment) — not that they're still next to each other — so a stale pair
+// like this doesn't just sit inert, it gets silently re-saved into the DB
+// every time *any* route on the day is next persisted (persistRoutes
+// always re-sends the whole local `routes` array). This is what's behind
+// old routes between now-unrelated items resurfacing in the DB long after
+// a reorder. Call this right after any reorder, before persisting.
+function pruneRoutesToAdjacency(
+  orderedItems: TimelineItem[],
+  currentRoutes: TimelineRoute[]
+): TimelineRoute[] {
+  const placeItems = orderedItems.filter((i) => i.place);
+  const validPairs = new Set<string>();
+  for (let i = 0; i < placeItems.length - 1; i++) {
+    validPairs.add(`${placeItems[i].id}->${placeItems[i + 1].id}`);
+  }
+  return currentRoutes.filter((r) =>
+    validPairs.has(`${r.fromItemId}->${r.toItemId}`)
+  );
+}
+
 const TRAVEL_MODE_OPTIONS: { value: TravelModeValue; label: string }[] = [
   { value: "WALK", label: "步行" },
   { value: "TRANSIT", label: "大眾運輸" },
@@ -1163,6 +1188,7 @@ export default function DayTimeline({
     );
     const newItems = anchorItem ? [anchorItem, ...orderedRest] : orderedRest;
     setItems(newItems);
+    persistRoutes(pruneRoutesToAdjacency(newItems, routes));
     startTransition(() => {
       reorderItems(
         tripId,
@@ -1282,6 +1308,7 @@ export default function DayTimeline({
     const newItems = arrayMove(items, oldIndex, newIndex);
     setItems(newItems);
     toast.success("已更新排序");
+    persistRoutes(pruneRoutesToAdjacency(newItems, routes));
 
     startTransition(() => {
       reorderItems(
