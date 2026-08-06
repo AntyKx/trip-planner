@@ -29,7 +29,13 @@ export default async function ExplorePage({
   const dayInclude = {
     days: {
       orderBy: { dayIndex: "asc" as const },
-      include: { _count: { select: { items: true } } },
+      include: {
+        _count: { select: { items: true } },
+        // Feeds the "which day does this new place fit best" suggestion in
+        // ExploreClient (see suggestDayForPlace) — only lat/lng, nothing
+        // else about existing items is needed for that.
+        items: { select: { place: { select: { lat: true, lng: true } } } },
+      },
     },
   };
 
@@ -67,6 +73,9 @@ export default async function ExplorePage({
           dayIndex: d.dayIndex,
           date: d.date.toISOString().slice(0, 10),
           itemCount: d._count.items,
+          places: d.items
+            .filter((i) => i.place)
+            .map((i) => ({ lat: i.place!.lat, lng: i.place!.lng })),
         })),
       }))}
       initialTripId={tripId}

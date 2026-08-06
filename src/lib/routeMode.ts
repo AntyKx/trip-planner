@@ -56,7 +56,7 @@ const ASSUMED_WALK_KMH = 4.5;
 
 const EARTH_RADIUS_KM = 6371;
 
-function haversineKm(
+export function haversineKm(
   a: google.maps.LatLngLiteral,
   b: google.maps.LatLngLiteral
 ): number {

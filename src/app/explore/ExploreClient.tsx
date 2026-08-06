@@ -5,6 +5,7 @@ import { useRef, useState, useTransition, type FormEvent } from "react";
 import { MapPin, Search, Check, Star, TriangleAlert, Heart } from "lucide-react";
 import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
+import { suggestDayForPlace } from "@/lib/daySuggestion";
 import { addFavorite, removeFavorite } from "@/app/explore/actions";
 import PlaceDetailsTrigger from "@/components/PlaceDetailsModal";
 import PlaceInsightSection from "@/components/PlaceInsightSection";
@@ -26,7 +27,13 @@ import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/business
 export type TripOption = {
   id: string;
   title: string;
-  days: { id: string; dayIndex: number; date: string; itemCount: number }[];
+  days: {
+    id: string;
+    dayIndex: number;
+    date: string;
+    itemCount: number;
+    places: google.maps.LatLngLiteral[];
+  }[];
 };
 
 const WEEKDAY_LABEL = ["日", "一", "二", "三", "四", "五", "六"];
@@ -102,6 +109,21 @@ export default function ExploreClient({
   // Local +1s on top of the server-loaded per-day item counts, so the day
   // picker's「・N 個」updates immediately after each add without refetching.
   const [dayCountBump, setDayCountBump] = useState<Record<string, number>>({});
+  // Mirrors dayCountBump but holds the actual coordinates — without this,
+  // suggestDayForPlace only ever sees each day's places as they were when
+  // this page first loaded, so adding several places to the same new day in
+  // one search session wouldn't let the 2nd/3rd one benefit from the 1st.
+  const [dayPlacesBump, setDayPlacesBump] = useState<
+    Record<string, google.maps.LatLngLiteral[]>
+  >({});
+  // Set while a place's "加入" has opened the day-suggestion confirmation
+  // instead of adding immediately (see handleAddClick) — at most one open
+  // at a time, keyed by externalId so it's obvious which card it belongs to.
+  const [confirmState, setConfirmState] = useState<{
+    externalId: string;
+    suggestedDayId: string;
+    chosenDayId: string;
+  } | null>(null);
   const [isAdding, startAdding] = useTransition();
   // Bumped on every favorite toggle (add or remove) — used as the heart
   // icon's `key` so it remounts and replays the pop-in animation on each
@@ -143,9 +165,9 @@ export default function ExploreClient({
     });
   }
 
-  function handleAdd(place: PlaceResult) {
-    if (!selectedDayId) return;
-    const targetDay = selectedTrip?.days.find((d) => d.id === selectedDayId);
+  function commitAdd(place: PlaceResult, dayId: string) {
+    if (!dayId) return;
+    const targetDay = selectedTrip?.days.find((d) => d.id === dayId);
 
     startAdding(async () => {
       // Fetching hours here (instead of bulk-fetching for every search
@@ -174,13 +196,13 @@ export default function ExploreClient({
       // keep showing even after successfully adding to an open one.
       setClosedWarnings((prev) => {
         const next = { ...prev };
-        const key = dayPlaceKey(selectedDayId, place.externalId);
+        const key = dayPlaceKey(dayId, place.externalId);
         if (warning) next[key] = warning;
         else delete next[key];
         return next;
       });
 
-      const added = await addPlaceToDay(selectedTripId, selectedDayId, place.suggestedType, {
+      const added = await addPlaceToDay(selectedTripId, dayId, place.suggestedType, {
         name: place.name,
         category: place.category || place.suggestedType,
         country: place.country,
@@ -195,10 +217,14 @@ export default function ExploreClient({
         openHours: openHoursJson,
         suggestedType: place.suggestedType,
       });
-      setAddedIds((prev) => new Set(prev).add(dayPlaceKey(selectedDayId, place.externalId)));
+      setAddedIds((prev) => new Set(prev).add(dayPlaceKey(dayId, place.externalId)));
       setDayCountBump((prev) => ({
         ...prev,
-        [selectedDayId]: (prev[selectedDayId] ?? 0) + 1,
+        [dayId]: (prev[dayId] ?? 0) + 1,
+      }));
+      setDayPlacesBump((prev) => ({
+        ...prev,
+        [dayId]: [...(prev[dayId] ?? []), { lat: place.lat, lng: place.lng }],
       }));
       // Handshake with TripDayBoard: on the next visit to this trip's page
       // it selects this day and plays a one-shot highlight on the new card,
@@ -208,7 +234,7 @@ export default function ExploreClient({
           "trip-planner:last-added",
           JSON.stringify({
             tripId: selectedTripId,
-            dayId: selectedDayId,
+            dayId,
             itemId: added.itemId,
           })
         );
@@ -223,6 +249,35 @@ export default function ExploreClient({
           ? `已加入 Day ${targetDay.dayIndex}（${targetDay.date.slice(5).replace("-", "/")}）：${place.name}`
           : `已加入「${place.name}」`
       );
+    });
+  }
+
+  // Entry point for the card's "加入" button — decides whether to add
+  // straight to the currently-selected day (nothing to suggest) or open an
+  // inline confirmation offering a better-fitting day first. Only a
+  // suggestion, never auto-applied: the write only happens once the user
+  // presses "確認加入" in renderAddControl below.
+  function handleAddClick(place: PlaceResult) {
+    if (!selectedDayId || !selectedTrip) return;
+    const daysWithPlaces = selectedTrip.days.map((d) => ({
+      id: d.id,
+      places: [...d.places, ...(dayPlacesBump[d.id] ?? [])],
+    }));
+    const suggestedDayId = suggestDayForPlace(
+      { lat: place.lat, lng: place.lng },
+      daysWithPlaces
+    );
+    // No day has any places yet, or the closest day is already the one
+    // selected — nothing useful to confirm, so keep the interaction to a
+    // single click same as before this feature existed.
+    if (!suggestedDayId || suggestedDayId === selectedDayId) {
+      commitAdd(place, selectedDayId);
+      return;
+    }
+    setConfirmState({
+      externalId: place.externalId,
+      suggestedDayId,
+      chosenDayId: suggestedDayId,
     });
   }
 
@@ -263,6 +318,55 @@ export default function ExploreClient({
   // shows two independent "加入" controls (or two type badges) at once.
   function renderAddControl(place: PlaceResult) {
     const isAdded = addedIds.has(dayPlaceKey(selectedDayId, place.externalId));
+    if (confirmState?.externalId === place.externalId) {
+      const suggestedDay = selectedTrip?.days.find(
+        (d) => d.id === confirmState.suggestedDayId
+      );
+      return (
+        <div className="flex w-full flex-col items-end gap-1.5 text-right">
+          {suggestedDay && (
+            <p className="text-xs text-ink-500">
+              💡 這個景點離 Day {suggestedDay.dayIndex} 的其他景點比較近
+            </p>
+          )}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={confirmState.chosenDayId}
+              onChange={(e) =>
+                setConfirmState((prev) =>
+                  prev ? { ...prev, chosenDayId: e.target.value } : prev
+                )
+              }
+              className="rounded-md border border-line px-2 py-1 text-base"
+            >
+              {selectedTrip?.days.map((d) => (
+                <option key={d.id} value={d.id}>
+                  Day {d.dayIndex}
+                  {d.id === confirmState.suggestedDayId ? "・建議" : ""}
+                </option>
+              ))}
+            </select>
+            <AppButton
+              size="sm"
+              variant="ghost"
+              onClick={() => setConfirmState(null)}
+            >
+              取消
+            </AppButton>
+            <AppButton
+              size="sm"
+              disabled={isAdding}
+              onClick={() => {
+                commitAdd(place, confirmState.chosenDayId);
+                setConfirmState(null);
+              }}
+            >
+              確認加入
+            </AppButton>
+          </div>
+        </div>
+      );
+    }
     if (isAdded) {
       return (
         <AppBadge variant="success" className="animate-pop-in">
@@ -275,7 +379,7 @@ export default function ExploreClient({
       <AppButton
         size="sm"
         disabled={!selectedDayId || isAdding}
-        onClick={() => handleAdd(place)}
+        onClick={() => handleAddClick(place)}
       >
         加入
       </AppButton>
