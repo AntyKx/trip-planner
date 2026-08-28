@@ -120,6 +120,19 @@ model AiUsageLog {
   @@index([userId, createdAt])
 }
 
+// Same rate-limit pattern as AiUsageLog, but for /api/upload — that route
+// only checks that the caller is logged in, so without a cap any account
+// could request unlimited Vercel Blob upload tokens and upload arbitrarily
+// many files, billed to this project's Blob storage. One row per token
+// actually issued (not per completed upload).
+model UploadUsageLog {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model Trip {
   id            String         @id @default(cuid())
   owner         User           @relation(fields: [ownerId], references: [id])
