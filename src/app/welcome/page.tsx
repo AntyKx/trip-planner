@@ -8,8 +8,13 @@ import StartJourneyButton from "@/components/StartJourneyButton";
 // available, and guessing stock-photo URLs risks broken/wrong images).
 const HERO_PHOTO =
   "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/21CBF93B-7130-4D45-B299-4AE6BD66E957-vay3S8u3lnSi9odldGe9lJggCgS03D.png"; // 台北101
+// Was a hardcoded Google Places photo media URL, same as HERO_PHOTO
+// originally was — Places photo reference tokens aren't permanent and this
+// one expired (started 400ing "photo resource ... is invalid"), which is
+// why this image silently disappeared. Re-fetched and re-hosted on Blob so
+// it can't rot the same way again.
 const SECONDARY_PHOTO =
-  "https://places.googleapis.com/v1/places/ChIJ8T1GpMGOGGARDYGSgpooDWw/photos/AaVGc3m-RjVZVn5DfB2KkRbAVIPD_yDb0PuzQNJciJjPoRPXLOcX9lnEdOlRToSYFmEPICnGkXsVlKiVxYUtLvxPbsnfsW6X6dcT8f37cljePblyNcfwQKV9lgUETbNksKVptdnwm5kTemQc0SStjFdPR49hJl0DWG8XWWsqaLa-Evmt0jLygUZp2ZP3SfQmFJY26fm1Ge-LyYgjemT7gZbW71AW9qGrW1B72vD7aQknF0UMtjpd5qWOmkk4vHCL5y6Y9oEMAixduonpsgnN7o3ybjmCYZtzv8IG1wpyx7-ufVOOvw-08sJRGzSpnydoW-KyJEdOgum6XA4PymwM-ATozqAhEGsvk6bdNIkl_xp3iQ489MyXOaAKhgDt-ueehft7dAvekTsL6tIAFykd4SjZ77A-IVWQF7TLlN1P7e4sXAwoVb81/media?key=AIzaSyDzc7zCYaVWmPzr6Px3EanfbTk3VQxL4oo&maxWidthPx=480"; // 淺草寺
+  "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/welcome-asakusa-VX6HlQ5jnIKuNUBH8AFpoHECePlO2w.jpg"; // 淺草寺
 
 export default async function WelcomePage() {
   const user = await getCurrentUser();

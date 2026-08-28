@@ -6,8 +6,14 @@ import GoogleSignInButton from "@/components/GoogleSignInButton";
 // Same real-photo approach as the welcome screen — see src/app/welcome/page.tsx.
 const HERO_PHOTO =
   "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/02C9B644-CB3C-4F42-AFB6-50C0954BE1C0-mWqNYqlZX3IS8b5LT403SxmFfQfz4q.png"; // 福岡7日：夜櫻與天際線
+// Was a hardcoded Google Places photo media URL — Places photo reference
+// tokens aren't permanent and this one expired (started 400ing "photo
+// resource ... is invalid"), which is why this image silently disappeared.
+// Reused the same Blob-hosted 台北101 photo as src/app/welcome/page.tsx's
+// HERO_PHOTO instead of re-fetching a fresh Places one, so it can't rot the
+// same way again.
 const POLAROID_PHOTO =
-  "https://places.googleapis.com/v1/places/ChIJSTLZ6barQjQRMdkCqrP3CNU/photos/AaVGc3m3tgWd6gIilsT8TjxXEa6LFkWmDV8ffhtlW5psRjJS2OF2YIYI-eD9A0spdXCgDFJcvM1G5WBXTW9m4J8exYebDE5laG3dfJpWZVPHY9xh9OJ_NpP1LLCm4mvpzlMI7PwUNJf2AZCKDA3UPW_ZQK9oQnz8hRTAMRFtv6qlB__ug_vp7TtmVJf9YNx8MjFDnkihXknbIyk4OJgwJYkFYbRMwG9QtWnmnKczepR09-yNWpMNwCZ1WMQkb21-yOmVwv9uQCMoRGLWbDH2G2ds4HrLPgHPXxmSglu7ekZicEDOeF6FgyG1eDMUHvkbk7CU8IgtomapcOnZVh2pfJ8cklxUjrN7os7Sxy49ywxJLbS5xT65uk0KQ_NdYb6rJ620Z8NeiLKqo6Ohn2pYQGThw9qtlqKLy204zoJ5Anrb89b4bsZh/media?key=AIzaSyDzc7zCYaVWmPzr6Px3EanfbTk3VQxL4oo&maxWidthPx=480"; // 台北101觀景台
+  "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/21CBF93B-7130-4D45-B299-4AE6BD66E957-vay3S8u3lnSi9odldGe9lJggCgS03D.png"; // 台北101觀景台
 
 // Only a same-origin relative path is ever honored — "next" is untrusted
 // client-controlled input (a query param), so this guards against being
