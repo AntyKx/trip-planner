@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 import { isOwnBlobUrl, deleteBlobsQuietly } from "@/lib/blob";
+import { persistPlacePhoto } from "@/lib/placePhoto";
 import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import type { TransitAlternative, TransitStepSummary } from "@/lib/routeMode";
 import { generateChecklistForTrip } from "./[id]/checklistActions";
@@ -206,6 +207,7 @@ export async function addPlaceToDay(
 ) {
   await requireTripEditor(tripId);
   await requireDayInTrip(tripId, dayId);
+  const photoUrl = await persistPlacePhoto(place.photoUrl);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -214,11 +216,11 @@ export async function addPlaceToDay(
       },
     },
     update: {
-      photoUrl: place.photoUrl,
+      photoUrl,
       ...(place.openHours ? { openHours: place.openHours } : {}),
       ...(place.suggestedType ? { suggestedType: place.suggestedType } : {}),
     },
-    create: place,
+    create: { ...place, photoUrl },
   });
 
   const lastItem = await prisma.item.findFirst({
@@ -274,6 +276,7 @@ export async function setDayAnchor(
   applyToDayIds: string[]
 ): Promise<Record<string, AnchorItemResult>> {
   await requireTripEditor(tripId);
+  const photoUrl = await persistPlacePhoto(place.photoUrl);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -282,11 +285,11 @@ export async function setDayAnchor(
       },
     },
     update: {
-      photoUrl: place.photoUrl,
+      photoUrl,
       ...(place.openHours ? { openHours: place.openHours } : {}),
       ...(place.suggestedType ? { suggestedType: place.suggestedType } : {}),
     },
-    create: place,
+    create: { ...place, photoUrl },
   });
 
   // Bounded regardless of what the UI could ever actually produce (syncing

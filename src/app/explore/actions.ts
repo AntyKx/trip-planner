@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import type { NewPlaceInput } from "@/app/trips/actions";
 import type { PlaceResult } from "@/lib/places";
+import { persistPlacePhoto } from "@/lib/placePhoto";
 
 // "我的收藏" — a personal bucket-list independent of any trip, not shared
 // with collaborators. Lets a place be saved while browsing and added to a
@@ -12,6 +13,7 @@ import type { PlaceResult } from "@/lib/places";
 
 export async function addFavorite(place: NewPlaceInput) {
   const user = await requireUser();
+  const photoUrl = await persistPlacePhoto(place.photoUrl);
   const dbPlace = await prisma.place.upsert({
     where: {
       provider_externalId: {
@@ -20,11 +22,11 @@ export async function addFavorite(place: NewPlaceInput) {
       },
     },
     update: {
-      photoUrl: place.photoUrl,
+      photoUrl,
       ...(place.openHours ? { openHours: place.openHours } : {}),
       ...(place.suggestedType ? { suggestedType: place.suggestedType } : {}),
     },
-    create: place,
+    create: { ...place, photoUrl },
   });
 
   await prisma.favorite.upsert({
