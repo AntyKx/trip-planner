@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useState } from "react";
+import PhotoLightbox from "./PhotoLightbox";
 
 export type JournalPhoto = { id: string; url: string };
 
@@ -18,35 +17,6 @@ export default function JournalPhotoGrid({
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (lightboxIndex === null) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setLightboxIndex(null);
-      if (e.key === "ArrowLeft") {
-        setLightboxIndex((i) => {
-          const next =
-            i === null ? null : (i - 1 + photos.length) % photos.length;
-          if (next !== null) setSelectedIndex(next);
-          return next;
-        });
-      }
-      if (e.key === "ArrowRight") {
-        setLightboxIndex((i) => {
-          const next = i === null ? null : (i + 1) % photos.length;
-          if (next !== null) setSelectedIndex(next);
-          return next;
-        });
-      }
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [lightboxIndex, photos.length]);
 
   if (photos.length === 0) return null;
 
@@ -91,71 +61,17 @@ export default function JournalPhotoGrid({
         </div>
       )}
 
-      {lightboxIndex !== null &&
-        createPortal(
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="fixed inset-0 z-[var(--z-chrome)] flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setLightboxIndex(null)}
-          >
-            <button
-              type="button"
-              onClick={() => setLightboxIndex(null)}
-              aria-label="關閉"
-              className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center text-white/80 hover:text-white sm:right-4 sm:top-4"
-            >
-              <X className="h-6 w-6" />
-            </button>
-
-            {photos.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const next =
-                      (selectedIndex - 1 + photos.length) % photos.length;
-                    setSelectedIndex(next);
-                    setLightboxIndex(next);
-                  }}
-                  aria-label="上一張"
-                  className="absolute left-1 flex h-11 w-11 items-center justify-center text-white/80 hover:text-white sm:left-4"
-                >
-                  <ChevronLeft className="h-7 w-7" />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const next = (selectedIndex + 1) % photos.length;
-                    setSelectedIndex(next);
-                    setLightboxIndex(next);
-                  }}
-                  aria-label="下一張"
-                  className="absolute right-1 flex h-11 w-11 items-center justify-center text-white/80 hover:text-white sm:right-4"
-                >
-                  <ChevronRight className="h-7 w-7" />
-                </button>
-              </>
-            )}
-
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photos[lightboxIndex].url}
-              alt=""
-              onClick={(e) => e.stopPropagation()}
-              className="max-h-full max-w-full rounded-lg object-contain"
-            />
-
-            {photos.length > 1 && (
-              <p className="absolute bottom-4 text-xs text-white/70">
-                {lightboxIndex + 1} / {photos.length}
-              </p>
-            )}
-          </div>,
-          document.body,
-        )}
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={(i) => {
+            setSelectedIndex(i);
+            setLightboxIndex(i);
+          }}
+        />
+      )}
     </>
   );
 }

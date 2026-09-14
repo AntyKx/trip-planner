@@ -11,6 +11,7 @@ import {
 import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { useToast } from "./Toast";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
+import PhotoLightbox from "./PhotoLightbox";
 
 export type JournalPhoto = { id: string; url: string };
 
@@ -35,6 +36,7 @@ export default function JournalEditModal({
   const modalRef = useRef<ModalOverlayHandle>(null);
   const [journalText, setJournalText] = useState(initialJournalText ?? "");
   const [photos, setPhotos] = useState(initialPhotos);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,10 +147,17 @@ export default function JournalEditModal({
         <div>
           <p className="text-xs font-medium text-ink-700">照片</p>
           <div className="mt-1.5 grid grid-cols-3 gap-2">
-            {photos.map((photo) => (
+            {photos.map((photo, i) => (
               <div key={photo.id} className="group relative overflow-hidden rounded-lg">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photo.url} alt="" className="h-24 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setLightboxIndex(i)}
+                  aria-label="放大照片"
+                  className="block h-24 w-full"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo.url} alt="" className="h-24 w-full object-cover" />
+                </button>
                 <button
                   type="button"
                   onClick={() => handleDeletePhoto(photo.id)}
@@ -195,6 +204,15 @@ export default function JournalEditModal({
           {isSaving ? "儲存中…" : "儲存"}
         </button>
       </div>
+
+      {lightboxIndex !== null && (
+        <PhotoLightbox
+          photos={photos}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
+      )}
     </ModalOverlay>
   );
 }

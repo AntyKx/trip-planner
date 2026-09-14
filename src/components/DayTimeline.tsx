@@ -33,6 +33,7 @@ import {
   Route as RouteIcon,
   Search,
   Star,
+  StickyNote,
   Ticket,
   Waypoints,
   X,
@@ -563,6 +564,12 @@ function SortableItemCard({
                 <span className="flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-600">
                   <BookOpen className="h-3 w-3" />
                   遊記{item.photos.length > 0 && ` · ${item.photos.length}張照片`}
+                </span>
+              )}
+              {item.place && item.note && (
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
+                  <StickyNote className="h-3 w-3" />
+                  備註
                 </span>
               )}
               {/* One pill per currency (usually just one) summing that
