@@ -304,7 +304,11 @@ function SortableChecklistItem({
           {item.note && <p className="mt-1 text-xs text-ink-500">{item.note}</p>}
         </div>
         {canEdit && (
-          <div className="flex shrink-0 items-center gap-1">
+          <div
+            className="flex shrink-0 items-center gap-1"
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+          >
             <button
               type="button"
               onClick={onToggleEdit}

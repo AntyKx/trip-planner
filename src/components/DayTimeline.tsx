@@ -599,7 +599,20 @@ function SortableItemCard({
                 sitting centered inside the full 40px tap target, which
                 visually drifted low once the badges started wrapping to a
                 second line (see the spine-gutter width fix above). */}
-            <div className="flex shrink-0 items-start">
+            {/* Stops mousedown/touchstart from bubbling to the card's drag
+                listeners (spread on the outer div above, since the whole
+                card — not just a small grip — is the drag handle). Without
+                this, every click here also registers as a potential drag
+                activation with dnd-kit's MouseSensor (no delay, just an 8px
+                distance check), which on desktop was making the "更多操作"
+                dropdown flicker open/closed and swallowing clicks on its
+                items — TouchSensor's 250ms long-press delay meant touch
+                never hit this, hence a PC-only bug report. */}
+            <div
+              className="flex shrink-0 items-start"
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
               {item.place && (
                 <button
                   type="button"
