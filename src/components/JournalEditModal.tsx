@@ -39,43 +39,68 @@ export default function JournalEditModal({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+    const files = Array.from(e.target.files ?? []);
     e.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("請選擇圖片檔案");
-      return;
-    }
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    const notes: string[] = [];
+    if (images.length < files.length) notes.push("已略過非圖片檔案");
 
     // Checked before paying for the upload — the server enforces the same
     // limit but only after the blob already landed in storage.
-    if (photos.length >= MAX_PHOTOS_PER_ITEM) {
+    const remaining = MAX_PHOTOS_PER_ITEM - photos.length;
+    if (remaining <= 0) {
       setError(`一個項目最多 ${MAX_PHOTOS_PER_ITEM} 張照片`);
+      return;
+    }
+    const batch = images.slice(0, remaining);
+    if (images.length > remaining) {
+      notes.push(`最多 ${MAX_PHOTOS_PER_ITEM} 張，只上傳前 ${remaining} 張`);
+    }
+    if (batch.length === 0) {
+      setError("請選擇圖片檔案");
       return;
     }
 
     setError(null);
     setIsUploading(true);
+    // Sequential on purpose: each addItemPhoto re-checks the per-item cap
+    // and the daily upload quota, so parallel calls could race past them.
+    let done = 0;
     try {
-      const blob = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/upload",
-      });
-      const result = await addItemPhoto(tripId, itemId, blob.url);
-      if (result.ok) {
+      for (const file of batch) {
+        setUploadProgress(`上傳中 ${done + 1}/${batch.length}`);
+        const blob = await upload(file.name, file, {
+          access: "public",
+          handleUploadUrl: "/api/upload",
+        });
+        const result = await addItemPhoto(tripId, itemId, blob.url);
+        if (!result.ok) {
+          notes.push(result.error);
+          break;
+        }
         setPhotos((prev) => [...prev, result.photo]);
-      } else {
-        setError(result.error);
+        done++;
       }
     } catch (err) {
-      setError(err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次");
+      notes.push(
+        err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次",
+      );
     } finally {
       setIsUploading(false);
+      setUploadProgress(null);
+    }
+    if (done < batch.length && notes.length === 0) notes.push("部分照片上傳失敗");
+    if (notes.length > 0) {
+      setError(
+        (done > 0 ? `已上傳 ${done} 張。` : "") + notes.join("；"),
+      );
     }
   }
 
@@ -177,7 +202,7 @@ export default function JournalEditModal({
               <Camera className="h-5 w-5" />
               <span className="text-xs">
                 {isUploading
-                  ? "上傳中…"
+                  ? (uploadProgress ?? "上傳中…")
                   : photos.length >= MAX_PHOTOS_PER_ITEM
                     ? `已達 ${MAX_PHOTOS_PER_ITEM} 張上限`
                     : "新增照片"}
@@ -188,6 +213,7 @@ export default function JournalEditModal({
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             className="hidden"
             onChange={handleFileChange}
           />
