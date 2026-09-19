@@ -173,7 +173,7 @@ export default function JournalEditModal({
           <p className="text-xs font-medium text-ink-700">照片</p>
           <div className="mt-1.5 grid grid-cols-3 gap-2">
             {photos.map((photo, i) => (
-              <div key={photo.id} className="group relative overflow-hidden rounded-lg">
+              <div key={photo.id} className="relative overflow-hidden rounded-lg">
                 <button
                   type="button"
                   onClick={() => setLightboxIndex(i)}
@@ -187,7 +187,7 @@ export default function JournalEditModal({
                   type="button"
                   onClick={() => handleDeletePhoto(photo.id)}
                   aria-label="刪除照片"
-                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
