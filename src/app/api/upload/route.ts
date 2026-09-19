@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // Same daily bucket size as the AI actions' AiUsageLog cap — generous
 // enough for real usage (cover image + a day's worth of journal photos)
 // while bounding worst-case Blob storage cost per account.
-const UPLOADS_PER_DAY = 50;
+const UPLOADS_PER_DAY = 100;
 
 export async function POST(request: Request): Promise<NextResponse> {
   // Without this, anyone who finds this URL (no session needed at all) can
