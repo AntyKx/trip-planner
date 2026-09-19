@@ -839,6 +839,31 @@ export async function deleteItemPhoto(tripId: string, itemId: string, photoId: s
   revalidatePath(`/trips/${tripId}`);
 }
 
+export async function reorderItemPhotos(
+  tripId: string,
+  itemId: string,
+  orderedPhotoIds: string[]
+) {
+  await requireTripEditor(tripId);
+  // Scoped through day.tripId like the other photo actions — ItemPhoto has
+  // no tripId of its own, and updateMany's itemId filter alone would let a
+  // caller reorder photos on an item that belongs to someone else's trip.
+  const item = await prisma.item.findFirst({
+    where: { id: itemId, day: { tripId } },
+    select: { id: true },
+  });
+  if (!item) redirect("/");
+  await prisma.$transaction(
+    orderedPhotoIds.slice(0, MAX_PHOTOS_PER_ITEM).map((id, index) =>
+      prisma.itemPhoto.updateMany({
+        where: { id, itemId },
+        data: { sortOrder: index + 1 },
+      })
+    )
+  );
+  revalidatePath(`/trips/${tripId}`);
+}
+
 export async function updateEmergencyInfo(tripId: string, text: string) {
   await requireTripEditor(tripId);
   await prisma.trip.update({

@@ -1,6 +1,8 @@
 "use client";
 
-import { Wallet } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, Wallet } from "lucide-react";
+import AppModal from "./AppModal";
 import type { BoardDay } from "./TripDayBoard";
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -13,6 +15,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export default function BudgetSummary({ days }: { days: BoardDay[] }) {
+  const [showDetail, setShowDetail] = useState(false);
   const costs = days.flatMap((d) => d.timelineItems).flatMap((i) => i.costs);
 
   if (costs.length === 0) {
@@ -48,10 +51,20 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
 
   return (
     <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
-        <Wallet className="h-4 w-4" />
-        預算統計
-      </h3>
+      <button
+        type="button"
+        onClick={() => setShowDetail(true)}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+          <Wallet className="h-4 w-4" />
+          預算統計
+        </span>
+        <span className="flex items-center text-xs text-brand-600">
+          查看明細
+          <ChevronRight className="h-3.5 w-3.5" />
+        </span>
+      </button>
 
       <div className="mt-3 space-y-4">
         {Array.from(totalsByCurrency.entries()).map(([currency, total]) => (
@@ -75,6 +88,54 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
           </div>
         ))}
       </div>
+
+      {showDetail && (
+        <AppModal titleId="budget-detail-title" title="花費明細" onClose={() => setShowDetail(false)}>
+          <div className="space-y-5">
+            {days
+              .map((day) => ({
+                day,
+                rows: day.timelineItems.filter((i) => i.costs.length > 0),
+              }))
+              .filter(({ rows }) => rows.length > 0)
+              .map(({ day, rows }) => (
+                <section key={day.id}>
+                  <h3 className="text-sm font-semibold text-ink-900">
+                    第 {day.dayIndex} 天
+                    <span className="ml-1.5 text-xs font-normal text-ink-500">
+                      {day.date.slice(0, 10)}
+                    </span>
+                  </h3>
+                  <ul className="mt-2 space-y-3">
+                    {rows.map((item) => (
+                      <li key={item.id} className="rounded-lg border border-line p-3">
+                        <p className="text-sm font-medium text-ink-900">
+                          {item.place?.name ?? item.note ?? "未命名項目"}
+                        </p>
+                        <ul className="mt-1.5 space-y-1">
+                          {item.costs.map((cost, i) => (
+                            <li
+                              key={i}
+                              className="flex items-center justify-between gap-3 text-xs text-ink-700"
+                            >
+                              <span className="min-w-0 truncate">
+                                {CATEGORY_LABEL[cost.category] ?? cost.category}
+                                {cost.label ? `・${cost.label}` : ""}
+                              </span>
+                              <span className="shrink-0 font-medium">
+                                {cost.currency || "TWD"} {cost.amount.toLocaleString()}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+          </div>
+        </AppModal>
+      )}
     </div>
   );
 }

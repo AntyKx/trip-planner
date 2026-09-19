@@ -2,11 +2,12 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { upload } from "@vercel/blob/client";
-import { BookOpen, Camera, Trash2 } from "lucide-react";
+import { BookOpen, Camera, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import {
   updateItemJournalText,
   addItemPhoto,
   deleteItemPhoto,
+  reorderItemPhotos,
 } from "@/app/trips/actions";
 import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { useToast } from "./Toast";
@@ -118,6 +119,27 @@ export default function JournalEditModal({
     }
   }
 
+  // Persisted immediately (like upload/delete) rather than on 儲存, so
+  // closing the modal without saving doesn't silently drop the new order.
+  // Writes are chained so quick successive taps land in the order tapped.
+  const reorderQueueRef = useRef<Promise<unknown>>(Promise.resolve());
+  function handleMovePhoto(index: number, delta: -1 | 1) {
+    const target = index + delta;
+    if (target < 0 || target >= photos.length) return;
+    const previous = photos;
+    const next = [...photos];
+    [next[index], next[target]] = [next[target], next[index]];
+    setPhotos(next);
+    const ids = next.map((p) => p.id);
+    reorderQueueRef.current = reorderQueueRef.current
+      .catch(() => {})
+      .then(() => reorderItemPhotos(tripId, itemId, ids))
+      .catch(() => {
+        setPhotos(previous);
+        setError("調整順序失敗，請再試一次");
+      });
+  }
+
   async function handleSave() {
     setIsSaving(true);
     try {
@@ -183,6 +205,28 @@ export default function JournalEditModal({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={photo.url} alt="" className="h-24 w-full object-cover" />
                 </button>
+                {photos.length > 1 && (
+                  <div className="absolute inset-x-1 bottom-1 flex justify-between">
+                    <button
+                      type="button"
+                      onClick={() => handleMovePhoto(i, -1)}
+                      disabled={i === 0}
+                      aria-label="往前移"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white disabled:invisible"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleMovePhoto(i, 1)}
+                      disabled={i === photos.length - 1}
+                      aria-label="往後移"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white disabled:invisible"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => handleDeletePhoto(photo.id)}
