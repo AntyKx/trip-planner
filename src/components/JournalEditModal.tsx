@@ -25,6 +25,7 @@ import {
   deleteItemPhoto,
   reorderItemPhotos,
 } from "@/app/trips/actions";
+import { compressImage } from "@/lib/compressImage";
 import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { useToast } from "./Toast";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
@@ -137,7 +138,8 @@ export default function JournalEditModal({
     try {
       for (const file of batch) {
         setUploadProgress(`上傳中 ${done + 1}/${batch.length}`);
-        const blob = await upload(file.name, file, {
+        const compressed = await compressImage(file);
+        const blob = await upload(compressed.name, compressed, {
           access: "public",
           handleUploadUrl: "/api/upload",
         });
