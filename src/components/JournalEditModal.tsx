@@ -189,7 +189,17 @@ export default function JournalEditModal({
     useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
   );
 
+  // Enlarge/delete taps are ignored while a drag is in progress and for a
+  // moment after the drop — releasing a long-press (esp. on touch) can
+  // still fire a click on the photo or its delete button underneath.
+  const clickLockedUntilRef = useRef(0);
+  const isClickLocked = () => Date.now() < clickLockedUntilRef.current;
+  function lockClicksAfterDrag() {
+    clickLockedUntilRef.current = Date.now() + 400;
+  }
+
   function handleDragEnd(event: DragEndEvent) {
+    lockClicksAfterDrag();
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     const from = photos.findIndex((p) => p.id === active.id);
@@ -265,15 +275,23 @@ export default function JournalEditModal({
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragStart={() => {
+                clickLockedUntilRef.current = Infinity;
+              }}
               onDragEnd={handleDragEnd}
+              onDragCancel={lockClicksAfterDrag}
             >
               <SortableContext items={photos.map((p) => p.id)} strategy={rectSortingStrategy}>
                 {photos.map((photo, i) => (
                   <SortablePhoto
                     key={photo.id}
                     photo={photo}
-                    onOpen={() => setLightboxIndex(i)}
-                    onDelete={() => handleDeletePhoto(photo.id)}
+                    onOpen={() => {
+                      if (!isClickLocked()) setLightboxIndex(i);
+                    }}
+                    onDelete={() => {
+                      if (!isClickLocked()) handleDeletePhoto(photo.id);
+                    }}
                   />
                 ))}
               </SortableContext>
