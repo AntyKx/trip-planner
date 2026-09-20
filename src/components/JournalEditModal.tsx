@@ -186,7 +186,7 @@ export default function JournalEditModal({
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
     // Long-press on touch so a normal swipe still scrolls the modal.
-    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 120, tolerance: 8 } }),
   );
 
   function handleDragEnd(event: DragEndEvent) {
