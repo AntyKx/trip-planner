@@ -2,7 +2,23 @@
 
 import { useRef, useState, type ChangeEvent } from "react";
 import { upload } from "@vercel/blob/client";
-import { BookOpen, Camera, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { BookOpen, Camera, Trash2 } from "lucide-react";
 import {
   updateItemJournalText,
   addItemPhoto,
@@ -15,6 +31,50 @@ import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./Modal
 import PhotoLightbox from "./PhotoLightbox";
 
 export type JournalPhoto = { id: string; url: string };
+
+function SortablePhoto({
+  photo,
+  onOpen,
+  onDelete,
+}: {
+  photo: JournalPhoto;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: photo.id });
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        zIndex: isDragging ? 10 : undefined,
+      }}
+      className={`relative overflow-hidden rounded-lg ${isDragging ? "opacity-80 shadow-lg" : ""}`}
+      {...attributes}
+      {...listeners}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-label="放大照片"
+        className="block h-24 w-full"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photo.url} alt="" draggable={false} className="h-24 w-full object-cover" />
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label="刪除照片"
+        className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
 
 export default function JournalEditModal({
   tripId,
@@ -123,12 +183,20 @@ export default function JournalEditModal({
   // closing the modal without saving doesn't silently drop the new order.
   // Writes are chained so quick successive taps land in the order tapped.
   const reorderQueueRef = useRef<Promise<unknown>>(Promise.resolve());
-  function handleMovePhoto(index: number, delta: -1 | 1) {
-    const target = index + delta;
-    if (target < 0 || target >= photos.length) return;
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Long-press on touch so a normal swipe still scrolls the modal.
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = photos.findIndex((p) => p.id === active.id);
+    const to = photos.findIndex((p) => p.id === over.id);
+    if (from < 0 || to < 0) return;
     const previous = photos;
-    const next = [...photos];
-    [next[index], next[target]] = [next[target], next[index]];
+    const next = arrayMove(photos, from, to);
     setPhotos(next);
     const ids = next.map((p) => p.id);
     reorderQueueRef.current = reorderQueueRef.current
@@ -194,49 +262,22 @@ export default function JournalEditModal({
         <div>
           <p className="text-xs font-medium text-ink-700">照片</p>
           <div className="mt-1.5 grid grid-cols-3 gap-2">
-            {photos.map((photo, i) => (
-              <div key={photo.id} className="relative overflow-hidden rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setLightboxIndex(i)}
-                  aria-label="放大照片"
-                  className="block h-24 w-full"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo.url} alt="" className="h-24 w-full object-cover" />
-                </button>
-                {photos.length > 1 && (
-                  <div className="absolute inset-x-1 bottom-1 flex justify-between">
-                    <button
-                      type="button"
-                      onClick={() => handleMovePhoto(i, -1)}
-                      disabled={i === 0}
-                      aria-label="往前移"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white disabled:invisible"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMovePhoto(i, 1)}
-                      disabled={i === photos.length - 1}
-                      aria-label="往後移"
-                      className="flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white disabled:invisible"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() => handleDeletePhoto(photo.id)}
-                  aria-label="刪除照片"
-                  className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={photos.map((p) => p.id)} strategy={rectSortingStrategy}>
+                {photos.map((photo, i) => (
+                  <SortablePhoto
+                    key={photo.id}
+                    photo={photo}
+                    onOpen={() => setLightboxIndex(i)}
+                    onDelete={() => handleDeletePhoto(photo.id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
