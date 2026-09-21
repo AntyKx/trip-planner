@@ -44,13 +44,10 @@ export function buildDayCaption(day: JournalBookDay, tripTitle: string): string 
   for (const item of day.items) {
     const text = item.journalText?.trim();
     if (!text) continue;
-    lines.push(`${item.place ? "📍 " : ""}${itemName(item)}
-${text}`);
+    lines.push(`${item.place ? "📍 " : ""}${itemName(item)}\n${text}`);
     if (item.place) placeNames.push(item.place.name);
   }
-  const body = [`✈️ ${tripTitle} Day ${day.dayIndex}`, ...lines].join("
-
-");
+  const body = [`✈️ ${tripTitle} Day ${day.dayIndex}`, ...lines].join("\n\n");
   const tags = uniqueHashtags([tripTitle, ...placeNames, "旅行", "旅遊書"]).join(" ");
   return truncateCaption(body, tags);
 }
