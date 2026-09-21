@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toHashtag, buildItemCaption, buildTripCaption, IG_MAX_CAPTION } from "./igCaption";
+import { toHashtag, buildDayCaption, buildItemCaption, buildTripCaption, IG_MAX_CAPTION } from "./igCaption";
 
 const item = {
   id: "i1",
@@ -58,5 +58,21 @@ describe("buildTripCaption", () => {
     const out = buildTripCaption(long);
     expect(out.length).toBeLessThanOrEqual(IG_MAX_CAPTION);
     expect(out).toContain("#東京");
+  });
+});
+
+describe("buildDayCaption", () => {
+  const day = {
+    id: "d2",
+    dayIndex: 2,
+    date: new Date(),
+    items: [item, { ...item, id: "i3", journalText: null }],
+  };
+  it("has the day header, only stops with text, and hashtags", () => {
+    const out = buildDayCaption(day, "東京");
+    expect(out).toContain("東京 Day 2");
+    expect(out).toContain("人超多但很值得");
+    expect(out.match(/📍/g)?.length).toBe(1);
+    expect(out).toContain("#淺草寺Sensoji");
   });
 });

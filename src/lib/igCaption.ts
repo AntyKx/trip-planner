@@ -1,7 +1,7 @@
 // Rule-based Instagram caption builder for the 旅遊書 — no AI, just the
 // stop name + journal text + a few auto hashtags, ready to paste.
 import { TYPE_LABEL } from "./labels";
-import type { JournalBookItem, JournalBookTrip } from "@/components/JournalBook";
+import type { JournalBookDay, JournalBookItem, JournalBookTrip } from "@/components/JournalBook";
 
 // Instagram's caption cap is 2200 characters and 30 hashtags.
 export const IG_MAX_CAPTION = 2200;
@@ -36,6 +36,23 @@ export function buildItemCaption(item: JournalBookItem, tripTitle: string): stri
   if (item.journalText?.trim()) parts.push(item.journalText.trim());
   const tags = uniqueHashtags([item.place?.name ?? "", tripTitle, "旅行", "旅遊書"]);
   return truncateCaption(parts.join("\n\n"), tags.join(" "));
+}
+
+export function buildDayCaption(day: JournalBookDay, tripTitle: string): string {
+  const lines: string[] = [];
+  const placeNames: string[] = [];
+  for (const item of day.items) {
+    const text = item.journalText?.trim();
+    if (!text) continue;
+    lines.push(`${item.place ? "📍 " : ""}${itemName(item)}
+${text}`);
+    if (item.place) placeNames.push(item.place.name);
+  }
+  const body = [`✈️ ${tripTitle} Day ${day.dayIndex}`, ...lines].join("
+
+");
+  const tags = uniqueHashtags([tripTitle, ...placeNames, "旅行", "旅遊書"]).join(" ");
+  return truncateCaption(body, tags);
 }
 
 export function buildTripCaption(trip: JournalBookTrip): string {

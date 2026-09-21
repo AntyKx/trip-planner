@@ -3,7 +3,7 @@ import { TYPE_LABEL } from "@/lib/labels";
 import { weekdayLabel } from "@/lib/businessHours";
 import JournalPhotoGrid from "./JournalPhotoGrid";
 import CopyCaptionButton from "./CopyCaptionButton";
-import { buildItemCaption, buildTripCaption } from "@/lib/igCaption";
+import { buildDayCaption, buildItemCaption, buildTripCaption } from "@/lib/igCaption";
 
 export type JournalBookItem = {
   id: string;
@@ -118,6 +118,14 @@ export default function JournalBook({
                   {formatDate(day.date)}（{weekdayLabel(day.date)}）
                 </span>
               </div>
+              {showCopy && day.items.some((i) => i.journalText?.trim()) && (
+                <div className="mt-3">
+                  <CopyCaptionButton
+                    text={buildDayCaption(day, trip.title)}
+                    label={`複製 Day ${day.dayIndex} IG 文案`}
+                  />
+                </div>
+              )}
               <div className="mt-4 space-y-6">
                 {day.items.map((item) => (
                   <article
