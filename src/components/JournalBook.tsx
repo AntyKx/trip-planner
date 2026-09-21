@@ -1,8 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { BookOpen, MapPin } from "lucide-react";
 import { TYPE_LABEL } from "@/lib/labels";
 import { weekdayLabel } from "@/lib/businessHours";
 import JournalPhotoGrid from "./JournalPhotoGrid";
 import CopyCaptionButton from "./CopyCaptionButton";
+import DayFilterTabs from "./DayFilterTabs";
 import { buildDayCaption, buildItemCaption, buildTripCaption } from "@/lib/igCaption";
 
 export type JournalBookItem = {
@@ -51,7 +55,13 @@ export default function JournalBook({
   // for readers, not for lifting captions.
   showCopy?: boolean;
 }) {
-  const daysWithEntries = trip.days.filter((day) => day.items.length > 0);
+  const allDaysWithEntries = trip.days.filter((day) => day.items.length > 0);
+  const [selectedDay, setSelectedDay] = useState("all");
+  // Falls back to 全部 if the selected day disappears (e.g. data refresh).
+  const daysWithEntries =
+    selectedDay === "all"
+      ? allDaysWithEntries
+      : allDaysWithEntries.filter((d) => d.id === selectedDay);
 
   return (
     <>
@@ -95,13 +105,30 @@ export default function JournalBook({
         </div>
       </section>
 
-      {showCopy && daysWithEntries.length > 0 && (
+      {showCopy && allDaysWithEntries.length > 0 && (
         <div className="mt-4 flex justify-end">
           <CopyCaptionButton text={buildTripCaption(trip)} label="複製整趟 IG 文案" />
         </div>
       )}
 
-      {daysWithEntries.length === 0 ? (
+      {allDaysWithEntries.length > 1 && (
+        <div className="mt-6">
+          <DayFilterTabs
+            value={selectedDay}
+            onChange={setSelectedDay}
+            tabs={[
+              { id: "all", label: "全部" },
+              ...allDaysWithEntries.map((d) => ({
+                id: d.id,
+                label: `Day ${d.dayIndex}`,
+                sub: formatDate(d.date).slice(5),
+              })),
+            ]}
+          />
+        </div>
+      )}
+
+      {allDaysWithEntries.length === 0 ? (
         <p className="mt-10 text-center text-sm text-ink-500">
           這本旅遊書還沒有內容，敬請期待。
         </p>
