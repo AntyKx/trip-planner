@@ -2,6 +2,8 @@ import { BookOpen, MapPin } from "lucide-react";
 import { TYPE_LABEL } from "@/lib/labels";
 import { weekdayLabel } from "@/lib/businessHours";
 import JournalPhotoGrid from "./JournalPhotoGrid";
+import CopyCaptionButton from "./CopyCaptionButton";
+import { buildItemCaption, buildTripCaption } from "@/lib/igCaption";
 
 export type JournalBookItem = {
   id: string;
@@ -40,7 +42,15 @@ function formatDate(date: Date): string {
 // rotated polaroid-style photo thumbnails) rather than inventing a new
 // direction — this is the one page in the app meant to read as an actual
 // travel journal rather than a planning tool.
-export default function JournalBook({ trip }: { trip: JournalBookTrip }) {
+export default function JournalBook({
+  trip,
+  showCopy = false,
+}: {
+  trip: JournalBookTrip;
+  // Only the signed-in preview turns this on - the public share page is
+  // for readers, not for lifting captions.
+  showCopy?: boolean;
+}) {
   const daysWithEntries = trip.days.filter((day) => day.items.length > 0);
 
   return (
@@ -85,6 +95,12 @@ export default function JournalBook({ trip }: { trip: JournalBookTrip }) {
         </div>
       </section>
 
+      {showCopy && daysWithEntries.length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <CopyCaptionButton text={buildTripCaption(trip)} label="複製整趟 IG 文案" />
+        </div>
+      )}
+
       {daysWithEntries.length === 0 ? (
         <p className="mt-10 text-center text-sm text-ink-500">
           這本旅遊書還沒有內容，敬請期待。
@@ -122,6 +138,15 @@ export default function JournalBook({ trip }: { trip: JournalBookTrip }) {
                       <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink-700">
                         {item.journalText}
                       </p>
+                    )}
+
+                    {showCopy && (
+                      <div className="mt-3">
+                        <CopyCaptionButton
+                          text={buildItemCaption(item, trip.title)}
+                          label="複製 IG 文案"
+                        />
+                      </div>
                     )}
                   </article>
                 ))}

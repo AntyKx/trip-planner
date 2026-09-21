@@ -62,7 +62,7 @@ export default async function JournalPreviewPage({
         <ArrowLeft className="h-3.5 w-3.5" />
         回行程
       </Link>
-      <JournalBook trip={trip} />
+      <JournalBook trip={trip} showCopy />
     </main>
   );
 }
