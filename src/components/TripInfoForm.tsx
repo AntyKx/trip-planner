@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { updateTripInfo } from "@/app/trips/actions";
 import AppButton from "@/components/AppButton";
+import DateRangePicker from "@/components/DateRangePicker";
 
 export default function TripInfoForm({
   tripId,
@@ -27,20 +28,9 @@ export default function TripInfoForm({
   const [isPending, startTransition] = useTransition();
 
   // Once the trip has scheduled items, the span length is locked (see
-  // updateTripInfo) — only the start date is editable, and the end date
-  // always follows it so a day-count change can never even be submitted.
-  function handleStartDateChange(value: string) {
-    setStartDate(value);
-    setSuccess(false);
-    if (hasItems) {
-      const shifted = new Date(
-        new Date(value).getTime() + (dayCount - 1) * 24 * 60 * 60 * 1000
-      );
-      setEndDate(shifted.toISOString().slice(0, 10));
-    } else if (endDate && endDate < value) {
-      setEndDate(value);
-    }
-  }
+  // updateTripInfo) — the picker's lockedDays mode then only lets the
+  // start move, with the end following it, so a day-count change can
+  // never even be submitted.
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -74,58 +64,25 @@ export default function TripInfoForm({
         />
       </div>
 
-      {hasItems ? (
-        <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-ink-700">
-            開始日期
-          </label>
-          <input
-            id="startDate"
-            type="date"
-            required
-            value={startDate}
-            onChange={(e) => handleStartDateChange(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
-          />
+      <div>
+        <DateRangePicker
+          id="tripDates"
+          label="旅行日期"
+          start={startDate}
+          end={endDate}
+          lockedDays={hasItems ? dayCount : undefined}
+          onChange={(start, end) => {
+            setStartDate(start);
+            setEndDate(end);
+            setSuccess(false);
+          }}
+        />
+        {hasItems && (
           <p className="mt-1.5 text-xs text-ink-500">
-            已有排定的景點，天數鎖定為 {dayCount} 天（結束日期會自動跟著移動到{" "}
-            {endDate}）
+            已有排定的景點，天數鎖定為 {dayCount} 天，只能整段往前或往後移
           </p>
-        </div>
-      ) : (
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label htmlFor="startDate" className="block text-sm font-medium text-ink-700">
-              開始日期
-            </label>
-            <input
-              id="startDate"
-              type="date"
-              required
-              value={startDate}
-              onChange={(e) => handleStartDateChange(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
-            />
-          </div>
-          <div className="flex-1">
-            <label htmlFor="endDate" className="block text-sm font-medium text-ink-700">
-              結束日期
-            </label>
-            <input
-              id="endDate"
-              type="date"
-              required
-              min={startDate || undefined}
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setSuccess(false);
-              }}
-              className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && <p className="text-sm text-danger-600">{error}</p>}
       {success && !error && <p className="text-sm text-brand-700">已儲存</p>}

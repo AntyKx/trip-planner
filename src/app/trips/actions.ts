@@ -9,7 +9,7 @@ import { isEncodedPolyline } from "@/lib/polyline";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 import { isOwnBlobUrl, deleteBlobsQuietly } from "@/lib/blob";
 import { persistPlacePhoto } from "@/lib/placePhoto";
-import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
+import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH, MAX_TRIP_DAYS } from "@/lib/limits";
 import type { TransitAlternative, TransitStepSummary } from "@/lib/routeMode";
 import { generateChecklistForTrip } from "./[id]/checklistActions";
 
@@ -963,11 +963,10 @@ export async function deleteTrip(tripId: string) {
   redirect("/");
 }
 
-// A trip's day count is unbounded on the client (a plain <input type="date">
-// pair), and every day becomes a real TripDay row created up front — a
-// typo'd year (2026 -> 2126) would otherwise silently create tens of
-// thousands of rows instead of failing loudly.
-const MAX_TRIP_DAYS = 180;
+// MAX_TRIP_DAYS (see @/lib/limits): every day becomes a real TripDay row
+// created up front — a typo'd year (2026 -> 2126) would otherwise silently
+// create tens of thousands of rows instead of failing loudly. The date
+// picker greys out longer spans too, but this is the authoritative check.
 
 export type UpdateTripInfoResult = { ok: true } | { ok: false; error: string };
 

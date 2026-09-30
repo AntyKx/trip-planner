@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
-import { Luggage } from "lucide-react";
 import { createTrip } from "../actions";
 import AppCard from "@/components/AppCard";
 import AppButton from "@/components/AppButton";
+import DateRangePicker from "@/components/DateRangePicker";
 
 // Mirrors the day-count math in createTrip so the preview and the actual
 // save agree — computed client-side purely for the live "共 N 天" hint,
@@ -28,14 +28,6 @@ export default function NewTripPage() {
   const [isPending, startTransition] = useTransition();
 
   const preview = describeDayCount(startDate, endDate);
-
-  function handleStartDateChange(value: string) {
-    setStartDate(value);
-    // Keep the end date from silently pointing before the new start —
-    // the native date picker's own min= only stops *new* selections, it
-    // doesn't retroactively fix one already chosen.
-    if (endDate && endDate < value) setEndDate(value);
-  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -71,53 +63,25 @@ export default function NewTripPage() {
             />
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label htmlFor="startDate" className="block text-sm font-medium text-ink-700">
-                開始日期
-              </label>
-              <input
-                id="startDate"
-                type="date"
-                required
-                value={startDate}
-                onChange={(e) => handleStartDateChange(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
-              />
-            </div>
-            <div className="flex-1">
-              <label htmlFor="endDate" className="block text-sm font-medium text-ink-700">
-                結束日期
-              </label>
-              <input
-                id="endDate"
-                type="date"
-                required
-                min={startDate || undefined}
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-base"
-              />
-            </div>
-          </div>
-
-          {preview && (
-            <p
-              className={`flex items-center gap-1.5 text-sm ${
-                preview.invalid ? "text-danger-600" : "text-brand-700"
-              }`}
-            >
-              <Luggage className="h-4 w-4" />
-              {preview.text}
-            </p>
-          )}
+          <DateRangePicker
+            id="tripDates"
+            label="旅行日期"
+            start={startDate}
+            end={endDate}
+            onChange={(start, end) => {
+              setStartDate(start);
+              setEndDate(end);
+            }}
+          />
 
           {error && <p className="text-sm text-danger-600">{error}</p>}
 
           <AppButton
             type="submit"
             isLoading={isPending}
-            disabled={preview?.invalid}
+            // The picker is a button, not a required <input>, so the form
+            // can't block an empty range by itself.
+            disabled={!startDate || !endDate || preview?.invalid}
             className="w-full"
           >
             {isPending ? "建立中…" : "建立行程"}
