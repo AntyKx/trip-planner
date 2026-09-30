@@ -119,8 +119,11 @@ export function FavoritesPreview({
           </Link>
         }
       />
-      <div className="grid gap-3 rounded-card-lg border border-line bg-surface p-4">
-        <div className="flex items-center gap-3">
+      {/* flex-col, not grid: a grid item's default min-width is its
+          content, so the long nowrap name list below widened the card (and
+          the whole page) past the screen instead of truncating. */}
+      <div className="flex flex-col gap-3 rounded-card-lg border border-line bg-surface p-4">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex shrink-0">
             {places.map((p, i) => (
               <ImgWithFallback
