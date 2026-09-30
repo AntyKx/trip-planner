@@ -1,5 +1,16 @@
 import Link from "next/link";
-import { BookOpen, Footprints, Heart, Luggage, Map as MapIcon, Plus } from "lucide-react";
+import {
+  BookOpen,
+  ChevronRight,
+  Footprints,
+  Globe,
+  Heart,
+  Images,
+  ListChecks,
+  Luggage,
+  Map as MapIcon,
+  Plus,
+} from "lucide-react";
 import ImgWithFallback from "./ImgWithFallback";
 import SectionHeader from "./SectionHeader";
 import { appButtonClassName } from "./AppButton";
@@ -20,6 +31,7 @@ export function MemoryCard({
     dayCount: number;
     placeCount: number;
     photoCount: number;
+    hasJournal: boolean;
     coverImage?: string;
   };
 }) {
@@ -52,16 +64,20 @@ export function MemoryCard({
         <h2 className="mt-0.5 truncate text-2xl font-bold drop-shadow-sm">{trip.title}</h2>
         <p className="mt-1 text-xs text-white/90">{meta}</p>
         <div className="mt-3 flex gap-2">
-          <Link
-            href={`/trips/${trip.id}/journal`}
-            className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-white px-3.5 text-sm font-medium text-ink-900 transition active:scale-[0.97]"
-          >
-            <BookOpen className="h-4 w-4" />
-            翻翻旅遊書
-          </Link>
+          {trip.hasJournal && (
+            <Link
+              href={`/trips/${trip.id}/journal`}
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-white px-3.5 text-sm font-medium text-ink-900 transition active:scale-[0.97]"
+            >
+              <BookOpen className="h-4 w-4" />
+              翻翻旅遊書
+            </Link>
+          )}
           <Link
             href={`/trips/${trip.id}`}
-            className="inline-flex min-h-10 items-center rounded-xl bg-white/20 px-3.5 text-sm font-medium text-white backdrop-blur transition active:scale-[0.97]"
+            className={`inline-flex min-h-10 items-center rounded-xl px-3.5 text-sm font-medium transition active:scale-[0.97] ${
+              trip.hasJournal ? "bg-white/20 text-white backdrop-blur" : "bg-white text-ink-900"
+            }`}
           >
             看行程
           </Link>
@@ -88,14 +104,18 @@ export function FootprintStats({
   return (
     <section className="mt-10">
       <SectionHeader title="你的旅行足跡" icon={Footprints} className="mb-4" />
-      <div className="grid grid-cols-3 rounded-card-lg border border-line bg-surface py-4">
+      <Link
+        href="/memories"
+        aria-label="你的旅行足跡，查看全部旅行回憶"
+        className="grid grid-cols-3 rounded-card-lg border border-line bg-surface py-4 transition hover:shadow-soft"
+      >
         {stats.map((s) => (
           <div key={s.label} className="border-r border-line text-center last:border-r-0">
             <p className="text-2xl font-bold text-ink-900 tabular-nums">{s.value}</p>
             <p className="text-xs text-ink-500">{s.label}</p>
           </div>
         ))}
-      </div>
+      </Link>
     </section>
   );
 }
@@ -202,6 +222,147 @@ export function InspirationChips() {
             <span className="text-[11px] text-ink-400">{d.country}</span>
           </Link>
         ))}
+      </div>
+    </section>
+  );
+}
+
+export type MemoryTileTrip = {
+  id: string;
+  title: string;
+  startDate: Date;
+  endDate: Date;
+  dayCount: number;
+  placeCount: number;
+  photoCount: number;
+  journalPublic: boolean;
+  hasJournal: boolean;
+  coverImage?: string;
+};
+
+// One finished trip. The tile itself opens the 旅遊書 — after the trip
+// that's what people come back for — and the small corner button is the
+// way into the (editing) trip page. The two links are siblings, not
+// nested, since an <a> inside an <a> is invalid. A trip with no journal
+// entries or photos would open an empty book, so its tile goes straight
+// to the trip page and the corner button is dropped.
+export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "row" | "grid" }) {
+  const tileHref = trip.hasJournal ? `/trips/${trip.id}/journal` : `/trips/${trip.id}`;
+  const cover = (
+    <ImgWithFallback
+      src={trip.coverImage}
+      alt={trip.title}
+      className="absolute inset-0 h-full w-full object-cover"
+      fallback={
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-400 to-brand-700">
+          <Luggage className="h-10 w-10 text-white/25" />
+        </div>
+      }
+    />
+  );
+  const itineraryButton = trip.hasJournal && (
+    <Link
+      href={`/trips/${trip.id}`}
+      aria-label={`看「${trip.title}」的行程`}
+      title="看行程"
+      className="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-sm backdrop-blur hover:bg-white"
+    >
+      <ListChecks className="h-4 w-4" />
+    </Link>
+  );
+
+  if (variant === "row") {
+    return (
+      <div className="relative w-[132px] shrink-0 snap-start">
+        <Link href={tileHref} className="group block">
+          <div className="relative h-[150px] overflow-hidden rounded-2xl bg-paper-alt">
+            {cover}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <p className="absolute inset-x-2.5 bottom-6 truncate text-[15px] font-bold text-white">
+              {trip.title}
+            </p>
+            <p className="absolute left-2.5 bottom-2 text-[11px] text-white/85 tabular-nums">
+              {trip.startDate.toISOString().slice(0, 7).replace("-", "/")}
+            </p>
+          </div>
+          <p className="mt-1.5 flex items-center gap-1 truncate text-[11.5px] text-ink-500">
+            {trip.dayCount} 天
+            {trip.photoCount > 0 && (
+              <>
+                {" · "}
+                <Images className="h-3 w-3 shrink-0" />
+                {trip.photoCount}
+              </>
+            )}
+            {trip.journalPublic && <span className="text-success-700"> · 已公開</span>}
+          </p>
+        </Link>
+        {itineraryButton}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-w-0">
+      <Link
+        href={tileHref}
+        className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:shadow-soft"
+      >
+        <div className="relative h-28 shrink-0 bg-paper-alt">{cover}</div>
+        <div className="flex min-w-0 flex-col gap-0.5 px-2.5 pb-3 pt-2">
+          <p className="truncate text-[14.5px] font-bold text-ink-900">{trip.title}</p>
+          <p className="text-[11.5px] text-ink-500 tabular-nums">
+            {trip.startDate.toISOString().slice(0, 10).replaceAll("-", "/")} –{" "}
+            {trip.endDate.toISOString().slice(5, 10).replace("-", "/")}
+          </p>
+          <p className="text-[11.5px] text-ink-700">
+            {trip.dayCount} 天 · {trip.placeCount} 景點 · {trip.photoCount} 張照片
+          </p>
+          {!trip.hasJournal ? (
+            <p className="text-[11px] text-ink-400">還沒有遊記</p>
+          ) : trip.journalPublic ? (
+            <p className="flex items-center gap-1 text-[11px] text-success-700">
+              <Globe className="h-3 w-3" />
+              旅遊書已公開
+            </p>
+          ) : (
+            <p className="text-[11px] text-ink-400">旅遊書未公開</p>
+          )}
+        </div>
+      </Link>
+      {itineraryButton}
+    </div>
+  );
+}
+
+const ROW_LIMIT = 6;
+
+export function MemoriesRow({ trips, total }: { trips: MemoryTileTrip[]; total: number }) {
+  return (
+    <section className="mt-10">
+      <SectionHeader
+        title="旅行回憶"
+        icon={BookOpen}
+        className="mb-4"
+        action={
+          <Link href="/memories" className="flex items-center text-sm text-brand-600 hover:underline">
+            查看全部
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        }
+      />
+      <div className="-mx-4 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-4 pb-1.5 [scrollbar-width:none] sm:-mx-6 sm:px-6">
+        {trips.slice(0, ROW_LIMIT).map((t) => (
+          <MemoryTile key={t.id} trip={t} variant="row" />
+        ))}
+        <Link
+          href="/memories"
+          className="flex h-[150px] w-[110px] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-line-strong bg-surface text-sm font-medium text-brand-700"
+        >
+          <ListChecks className="h-5 w-5" />
+          查看全部
+          <span className="text-xs font-normal text-ink-500">{total} 趟</span>
+        </Link>
       </div>
     </section>
   );

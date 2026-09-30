@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import {
   Plus,
   Luggage,
-  ChevronRight,
   Compass,
   Heart,
   Stethoscope,
@@ -12,6 +11,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatRelativeTime } from "@/lib/labels";
+import { footprintOf, tripHasJournal, tripPhotoCount, tripPlaceIds } from "@/lib/tripSummary";
 import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
 import ImgWithFallback from "@/components/ImgWithFallback";
@@ -27,6 +27,8 @@ import OnboardingCard, {
 } from "@/components/OnboardingCard";
 import {
   MemoryCard,
+  MemoriesRow,
+  type MemoryTileTrip,
   FootprintStats,
   FavoritesPreview,
   InspirationChips,
@@ -83,6 +85,8 @@ export default async function TripsPage() {
       updatedAt: true,
       // Onboarding step 3 counts an enabled share link as "invited".
       shareEnabled: true,
+      // "已公開" on the memory tiles.
+      journalShareEnabled: true,
       owner: { select: { id: true, name: true, avatarUrl: true } },
       collaborators: {
         select: { role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
@@ -97,6 +101,8 @@ export default async function TripsPage() {
               // id/country feed the 旅行足跡 counts; photos the memory card.
               place: { select: { id: true, photoUrl: true, country: true } },
               _count: { select: { photos: true } },
+              // Only to tell whether the 旅遊書 has anything in it.
+              journalText: true,
             },
           },
         },
@@ -394,14 +400,25 @@ export default async function TripsPage() {
   const onboardingSkipped = cookieStore.get(ONBOARDING_SKIP_COOKIE)?.value === "1";
   const showOnboarding = !onboardingSkipped && onboardingSteps.some((s) => !s.done);
 
-  const pastItems = pastTrips.flatMap((t) => t.days.flatMap((d) => d.items));
-  const footprint = {
-    countries: new Set(
-      pastItems.map((i) => i.place?.country?.toUpperCase()).filter(Boolean)
-    ).size,
-    trips: pastTrips.length,
-    places: new Set(pastItems.map((i) => i.place?.id).filter(Boolean)).size,
-  };
+  const footprint = footprintOf(pastTrips);
+
+  function memoryTileOf(trip: (typeof trips)[number]): MemoryTileTrip {
+    return {
+      id: trip.id,
+      title: trip.title,
+      startDate: trip.startDate,
+      endDate: trip.endDate,
+      dayCount: trip.days.length,
+      placeCount: tripPlaceIds(trip).size,
+      photoCount: tripPhotoCount(trip),
+      journalPublic: trip.journalShareEnabled,
+      hasJournal: tripHasJournal(trip),
+      coverImage: coverImageOf(trip),
+    };
+  }
+  // The last trip already has its own big card when there's no upcoming
+  // trip, so the row starts from the one before it in that case.
+  const rowTrips = (lastTrip ? pastTrips.slice(1) : pastTrips).map(memoryTileOf);
 
   const quickEntries = [
     {
@@ -449,22 +466,7 @@ export default async function TripsPage() {
       {heroTrip && <section className="mt-6">{renderHeroCard(heroTrip)}</section>}
       {lastTrip && (
         <section className="mt-6">
-          <MemoryCard
-            trip={{
-              id: lastTrip.id,
-              title: lastTrip.title,
-              startDate: lastTrip.startDate,
-              endDate: lastTrip.endDate,
-              dayCount: lastTrip.days.length,
-              placeCount: new Set(
-                lastTrip.days.flatMap((d) => d.items).map((i) => i.place?.id).filter(Boolean)
-              ).size,
-              photoCount: lastTrip.days
-                .flatMap((d) => d.items)
-                .reduce((sum, i) => sum + i._count.photos, 0),
-              coverImage: coverImageOf(lastTrip),
-            }}
-          />
+          <MemoryCard trip={memoryTileOf(lastTrip)} />
         </section>
       )}
       {showOnboarding && (
@@ -519,6 +521,8 @@ export default async function TripsPage() {
         )}
       </div>
 
+      {rowTrips.length > 0 && <MemoriesRow trips={rowTrips} total={pastTrips.length} />}
+
       {pastTrips.length > 0 && <FootprintStats {...footprint} />}
 
       {!heroTrip && favoriteCount > 0 && (
@@ -530,21 +534,6 @@ export default async function TripsPage() {
 
       {!heroTrip && <InspirationChips />}
 
-      {/* The last trip already has its own card above when there's no
-          upcoming trip, so it's left out of the fold in that case. */}
-      {(() => {
-        const folded = lastTrip ? pastTrips.slice(1) : pastTrips;
-        if (folded.length === 0) return null;
-        return (
-          <details className="group mt-6">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-700">
-              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-              {lastTrip ? "其他旅行回憶" : "旅行回憶"}（{folded.length}）
-            </summary>
-            <div className="mt-4 grid gap-5">{folded.map(renderTripCard)}</div>
-          </details>
-        );
-      })()}
     </main>
   );
 }
