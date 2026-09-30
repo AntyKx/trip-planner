@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
-import { Move, Check } from "lucide-react";
+import { Move, Check, Maximize2, Hand } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
 
-const START_MARKER_COLOR = "#b45309";
+export const START_MARKER_COLOR = "#b45309";
 
 // Builds a small colored-circle SVG data-URI icon so markers aren't Google's
 // default red pin. Uses plain objects (not `new google.maps.Size/Point`) so
@@ -13,7 +13,7 @@ const START_MARKER_COLOR = "#b45309";
 // necessarily finished loading — the Icon type is only used for annotation.
 // `highlighted` bumps the size and stroke so the currently-selected item
 // (clicked on the map or "located" from a timeline card) stands out.
-function buildMarkerIcon(
+export function buildMarkerIcon(
   label: string,
   hexColor: string,
   highlighted = false
@@ -71,7 +71,7 @@ const TRAVEL_MODE_MAP: Partial<Record<MapRoute["mode"], google.maps.TravelMode>>
   BIKE: "BICYCLING" as google.maps.TravelMode,
 };
 
-function RouteSegment({
+export function RouteSegment({
   from,
   to,
   mode,
@@ -143,7 +143,33 @@ function RouteSegment({
 // AND when an existing stop's position changes (e.g. swapping today's
 // anchor hotel to a different address keeps the same item id) — an id-only
 // key missed that second case and left the map pointed at the old spot.
-function FitBounds({ items }: { items: MapItem[] }) {
+// Shared with MobileMapFullscreen's "顯示全部景點" button so both frame a
+// day's stops the same way. Returns the one-shot idle listener so callers
+// can cancel the zoom cap if they re-fit before it fires.
+export function fitMapToItems(
+  map: google.maps.Map,
+  items: { lat: number; lng: number }[],
+  padding: number | google.maps.Padding = 48
+) {
+  const bounds = new google.maps.LatLngBounds();
+  items.forEach((i) => bounds.extend({ lat: i.lat, lng: i.lng }));
+  map.fitBounds(bounds, padding);
+
+  // A single stop (or a tight cluster) makes fitBounds zoom all the
+  // way in — capping it once the viewport settles avoids a separate
+  // branch for "only one item".
+  return google.maps.event.addListenerOnce(map, "idle", () => {
+    if ((map.getZoom() ?? 0) > 16) map.setZoom(16);
+  });
+}
+
+export function FitBounds({
+  items,
+  padding = 48,
+}: {
+  items: MapItem[];
+  padding?: number | google.maps.Padding;
+}) {
   const map = useMap();
   const itemsKey = items.map((i) => `${i.id}:${i.lat},${i.lng}`).join(",");
 
@@ -151,16 +177,7 @@ function FitBounds({ items }: { items: MapItem[] }) {
     if (!map || items.length === 0) return;
 
     function fit() {
-      const bounds = new google.maps.LatLngBounds();
-      items.forEach((i) => bounds.extend({ lat: i.lat, lng: i.lng }));
-      map!.fitBounds(bounds, 48);
-
-      // A single stop (or a tight cluster) makes fitBounds zoom all the
-      // way in — capping it once the viewport settles avoids a separate
-      // branch for "only one item".
-      return google.maps.event.addListenerOnce(map!, "idle", () => {
-        if ((map!.getZoom() ?? 0) > 16) map!.setZoom(16);
-      });
+      return fitMapToItems(map!, items, padding);
     }
 
     let idleListener = fit();
@@ -203,35 +220,99 @@ function MissingKeyNotice() {
   );
 }
 
+// The day's numbered markers — shared with MobileMapFullscreen so both
+// views number and color stops identically.
+export function DayMarkers({
+  items,
+  selectedItemId,
+  onSelectItem,
+}: {
+  items: MapItem[];
+  selectedItemId: string | null;
+  onSelectItem?: (id: string) => void;
+}) {
+  return (
+    <>
+      {items.map((item, index) => {
+        const isStart = index === 0;
+        const color = isStart
+          ? START_MARKER_COLOR
+          : TYPE_COLOR[item.type]?.hex ?? TYPE_COLOR.PLACE.hex;
+        return (
+          <Marker
+            key={item.id}
+            position={{ lat: item.lat, lng: item.lng }}
+            title={item.name}
+            icon={buildMarkerIcon(
+              isStart ? "S" : String(index + 1),
+              color,
+              item.id === selectedItemId
+            )}
+            // Keeps the selected marker drawn above its neighbours when
+            // stops sit close together.
+            zIndex={item.id === selectedItemId ? 1000 : undefined}
+            onClick={onSelectItem ? () => onSelectItem(item.id) : undefined}
+            clickable={!!onSelectItem}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+export function DayRoutes({ day }: { day: MapDay }) {
+  return (
+    <>
+      {day.routes.map((route) => {
+        const from = day.items.find((i) => i.id === route.fromItemId);
+        const to = day.items.find((i) => i.id === route.toItemId);
+        if (!from || !to) return null;
+        return (
+          <RouteSegment
+            key={`${route.fromItemId}-${route.toItemId}`}
+            from={from}
+            to={to}
+            mode={route.mode}
+          />
+        );
+      })}
+    </>
+  );
+}
+
 export default function TripMap({
   apiKey,
   days,
   selectedDayId,
-  onSelectDay,
   selectedItemId,
   onSelectItem,
+  variant = "panel",
+  onExpand,
 }: {
   apiKey?: string;
   days: MapDay[];
-  // Controlled, not local state — this used to be an internal useState,
-  // but that let the map's own day dropdown drift out of sync with the
-  // main Day Tabs above the timeline (switch day in the map, flip back to
-  // the timeline, and it'd still show the old day). Driven by the same
-  // selectedDayId/setSelectedDayId TripDayBoard already uses for the tabs,
-  // same pattern as selectedItemId/onSelectItem below.
+  // Controlled by TripDayBoard's Day Tabs. The map used to carry its own
+  // day dropdown as well, which only duplicated the tabs — on mobile the
+  // full-screen map (MobileMapFullscreen) has its own day chips instead.
   selectedDayId: string | undefined;
-  onSelectDay: (id: string) => void;
   // "Currently selected" item — set by clicking a marker, or by the
   // timeline card's "定位" button (see TripDayBoard). Drives both the
   // highlighted marker style and the InfoWindow.
   selectedItemId: string | null;
   onSelectItem: (id: string | null) => void;
+  // "panel" — the desktop sidebar map, fully interactive.
+  // "preview" — the mobile in-page map: a static glance at the day that
+  // only opens MobileMapFullscreen when tapped. Taking no gestures at all
+  // is the point — the old 70vh interactive map on mobile either trapped
+  // page scrolling (greedy) or needed two fingers / a lock toggle to pan
+  // (cooperative). Panning now only happens in the full-screen view,
+  // where there's no page behind it to scroll.
+  variant?: "panel" | "preview";
+  onExpand?: () => void;
 }) {
-  // Starts locked (cooperative — one-finger swipe scrolls the page, see the
-  // gestureHandling comment below) so opening the map view never traps
-  // scrolling; the button lets someone who actually wants to pan opt in
-  // without needing two fingers. Reset on day switch so re-opening the map
-  // on a different day doesn't inherit a stale unlocked state.
+  // Desktop panel only: starts locked (cooperative) so scrolling the page
+  // over the map isn't hijacked; the button opts into plain-drag panning.
+  // Reset on day switch so it never inherits a stale unlocked state.
   const [mapEngaged, setMapEngaged] = useState(false);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -253,32 +334,55 @@ export default function TripMap({
   }
 
   const center = { lat: day.items[0].lat, lng: day.items[0].lng };
+
+  if (variant === "preview") {
+    return (
+      <div className="relative h-full overflow-hidden rounded-xl">
+        <Map
+          style={{ width: "100%", height: "100%" }}
+          defaultCenter={center}
+          defaultZoom={14}
+          gestureHandling="none"
+          disableDefaultUI
+          keyboardShortcuts={false}
+          clickableIcons={false}
+        >
+          <FitBounds items={day.items} padding={32} />
+          <DayMarkers items={day.items} selectedItemId={null} />
+          <DayRoutes day={day} />
+        </Map>
+        {/* Covers the whole map so every touch lands on a plain element:
+            a swipe scrolls the page like anywhere else, a tap opens the
+            full-screen map. Google's own map div would otherwise still
+            swallow the touch even with gestureHandling="none". */}
+        <button
+          type="button"
+          onClick={onExpand}
+          aria-label="展開全螢幕地圖"
+          className="absolute inset-0 z-10 cursor-pointer"
+        >
+          <span className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-ink-700 shadow">
+            <Maximize2 className="h-4 w-4" />
+          </span>
+          <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink-700 shadow">
+            <Hand className="h-3.5 w-3.5" />
+            點地圖展開
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   // Only ever non-null when the selection belongs to the day actually
   // being shown — switching days makes this (and the InfoWindow/marker
   // highlight below) fall away on its own, no explicit reset needed.
   const selectedItem = day.items.find((i) => i.id === selectedItemId);
 
   return (
-    <div className="flex h-full flex-col">
-      {days.length > 1 && (
-        <select
-          value={selectedDayId}
-          onChange={(e) => onSelectDay(e.target.value)}
-          className="mb-2 w-full shrink-0 rounded-md border border-line px-2 py-1 text-sm"
-        >
-          {days.map((d) => (
-            <option key={d.id} value={d.id}>
-              Day {d.dayIndex}
-            </option>
-          ))}
-        </select>
-      )}
-
-      <div className="relative min-h-0 flex-1">
+    <div className="relative h-full">
       {/* Lock/unlock toggle — lets someone who actually wants to pan the
-          map do it with one finger (gestureHandling="greedy") without
-          reintroducing the "swipe gets eaten by the map" scroll trap for
-          everyone else, who stays on "cooperative" by default. */}
+          map do it with a plain drag (gestureHandling="greedy") without
+          making page scrolling over the map get eaten by default. */}
       <button
         type="button"
         onClick={() => setMapEngaged((prev) => !prev)}
@@ -307,52 +411,16 @@ export default function TripMap({
         style={{ width: "100%", height: "100%", borderRadius: 12 }}
         defaultCenter={center}
         defaultZoom={14}
-        // "cooperative" by default — a single-finger swipe scrolls the page
-        // like everywhere else; panning/zooming the map needs two fingers
-        // (or ctrl+scroll on desktop). Switches to "greedy" only while the
-        // button above is engaged, so a one-finger drag pans the map on
-        // request instead of always needing two fingers. "greedy" as the
-        // permanent default captured every one-finger touch as a pan, so on
-        // mobile — where the map fills 70vh (see TripDayBoard) — there was
-        // almost no way to scroll past it to reach the overview list below.
         gestureHandling={mapEngaged ? "greedy" : "cooperative"}
         disableDefaultUI={false}
       >
         <FitBounds items={day.items} />
-
-        {day.items.map((item, index) => {
-          const isStart = index === 0;
-          const color = isStart
-            ? START_MARKER_COLOR
-            : TYPE_COLOR[item.type]?.hex ?? TYPE_COLOR.PLACE.hex;
-          return (
-            <Marker
-              key={item.id}
-              position={{ lat: item.lat, lng: item.lng }}
-              title={item.name}
-              icon={buildMarkerIcon(
-                isStart ? "S" : String(index + 1),
-                color,
-                item.id === selectedItemId
-              )}
-              onClick={() => onSelectItem(item.id)}
-            />
-          );
-        })}
-
-        {day.routes.map((route) => {
-          const from = day.items.find((i) => i.id === route.fromItemId);
-          const to = day.items.find((i) => i.id === route.toItemId);
-          if (!from || !to) return null;
-          return (
-            <RouteSegment
-              key={`${route.fromItemId}-${route.toItemId}`}
-              from={from}
-              to={to}
-              mode={route.mode}
-            />
-          );
-        })}
+        <DayMarkers
+          items={day.items}
+          selectedItemId={selectedItemId}
+          onSelectItem={onSelectItem}
+        />
+        <DayRoutes day={day} />
 
         {selectedItem && (
           <InfoWindow
@@ -382,7 +450,6 @@ export default function TripMap({
           </InfoWindow>
         )}
       </Map>
-      </div>
     </div>
   );
 }

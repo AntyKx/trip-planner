@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Stethoscope, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
+import MobileMapFullscreen from "./MobileMapFullscreen";
 import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
 import JournalSharePanel from "./JournalSharePanel";
 import ItinerarySharePanel from "./ItinerarySharePanel";
@@ -45,7 +46,7 @@ import {
   type DailyWeather,
 } from "@/lib/weather";
 import { getNextStop, localTodayStr } from "@/lib/timeline";
-import { formatTime } from "@/lib/labels";
+import { formatTime, TYPE_LABEL } from "@/lib/labels";
 import { weekdayShortLabel } from "@/lib/businessHours";
 
 export type BoardDay = {
@@ -137,30 +138,31 @@ export default function TripDayBoard({
   // side by side via the lg: grid, so this never needs resetting when
   // switching days/modes.
   const [mobileMapView, setMobileMapView] = useState(false);
-  // handleLocateItem flips mobileMapView on to reveal the (until-then
-  // CSS-hidden) map panel — the scroll itself has to wait for that state
-  // update to actually commit, or it runs against a still-`display:none`
-  // element and silently does nothing. Deferred to the effect below,
-  // keyed on mobileMapView, instead of firing in the same tick.
-  const scrollToMapRef = useRef(false);
+  // lg breakpoint, tracked in JS because the map itself differs by layout,
+  // not just its size: desktop gets the interactive sidebar map, mobile a
+  // static preview that opens MobileMapFullscreen. Starts false (mobile)
+  // so SSR and the first client render agree; the map is client-only
+  // anyway, so the post-mount switch on desktop is invisible.
+  const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
-    if (mobileMapView && scrollToMapRef.current) {
-      scrollToMapRef.current = false;
-      document
-        .getElementById("day-map-panel")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [mobileMapView]);
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  // Non-null while the mobile full-screen map is open; itemId is the stop
+  // to open centered on (null = frame the whole day).
+  const [fullscreenMap, setFullscreenMap] = useState<{ itemId: string | null } | null>(
+    null
+  );
 
   function handleLocateItem(itemId: string) {
     setSelectedItemId(itemId);
-    // On mobile the map is hidden behind the toggle unless already
-    // selected — switch to it first so the effect above scrolls once it's
-    // actually visible. A no-op on desktop, where the map is already in
-    // view (mobileMapView flips true in state but every lg: class ignores
-    // it).
-    scrollToMapRef.current = true;
-    setMobileMapView(true);
+    // Desktop's sidebar map is already in view and reacts to the
+    // selection; mobile jumps straight into the full-screen map on that
+    // stop instead of switching tabs and scrolling to a small map.
+    if (!isDesktop) setFullscreenMap({ itemId });
   }
   // One-shot highlight for an item just added from the explore page (see
   // the sessionStorage handshake in ExploreClient's handleAdd) — jump to
@@ -262,6 +264,14 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
+
+  const mapDays = daysWithWeather.map((d) => ({
+    id: d.id,
+    dayIndex: d.dayIndex,
+    date: `${d.date.slice(5).replace("-", "/")} ${weekdayShortLabel(new Date(`${d.date}T00:00:00`))}`,
+    items: d.mapItems,
+    routes: d.mapRoutes,
+  }));
 
   // Day Tabs' sliding underline — was the app's one and only framer-motion
   // usage (a `layoutId`-based shared-element transition), replaced with a
@@ -460,12 +470,8 @@ export default function TripDayBoard({
           alongside 檢查清單/行程健檢. Desktop already shows both side by
           side (see the lg: grid below) and has no size problem, so this
           stays lg:hidden rather than becoming a fifth shared mode.
-          `sticky` (not just static) because the map uses gestureHandling=
-          "greedy" — a one-finger drag anywhere on it pans the map instead
-          of scrolling the page, so once you're a screen-height down inside
-          the map there'd be no way to drag back up to a static toggle.
-          Pinning it to the top of the viewport keeps it one tap away
-          regardless of scroll position. */}
+          `sticky` keeps it one tap away however far down the timeline
+          you've scrolled. */}
       <div className="sticky top-2 z-10 mb-3 inline-flex rounded-lg border border-line bg-surface p-1 text-sm shadow-sm lg:hidden">
         <button
           type="button"
@@ -631,7 +637,20 @@ export default function TripDayBoard({
 
       {/* Map panel — always scoped to the day selected above. Hidden on
           mobile unless the toggle above is on "地圖" (see mobileMapView) —
-          desktop ignores that state and always shows this via lg:block. */}
+          desktop ignores that state and always shows this via lg:block.
+          On mobile the map here is only a tap-to-expand preview; the
+          interactive one is MobileMapFullscreen. */}
+      {fullscreenMap && apiKey && (
+        <MobileMapFullscreen
+          days={mapDays}
+          selectedDayId={selectedDay?.id}
+          onSelectDay={setSelectedDayId}
+          initialItemId={fullscreenMap.itemId}
+          onSelectItem={setSelectedItemId}
+          onClose={() => setFullscreenMap(null)}
+        />
+      )}
+
       <aside className="space-y-4 lg:sticky lg:top-10">
         <div
           id="day-map-panel"
@@ -645,27 +664,17 @@ export default function TripDayBoard({
           </h3>
           <div
             className={
-              mobileMapView ? "mt-3 h-[70vh] lg:h-[480px]" : "mt-3 hidden lg:block lg:h-[480px]"
+              mobileMapView ? "mt-3 h-[240px] lg:h-[480px]" : "mt-3 hidden lg:block lg:h-[480px]"
             }
           >
             <TripMap
               apiKey={apiKey}
               selectedItemId={selectedItemId}
               onSelectItem={setSelectedItemId}
-              // All days now (not just the selected one) — TripMap shows
-              // its own day dropdown when there's more than one, wired to
-              // the same selectedDayId/setSelectedDayId as the Day Tabs
-              // above so switching days from inside the map view (handy
-              // once it's the mobile full-screen view) keeps the timeline
-              // in sync instead of drifting independently.
-              days={daysWithWeather.map((d) => ({
-                id: d.id,
-                dayIndex: d.dayIndex,
-                items: d.mapItems,
-                routes: d.mapRoutes,
-              }))}
+              days={mapDays}
               selectedDayId={selectedDay?.id}
-              onSelectDay={setSelectedDayId}
+              variant={isDesktop ? "panel" : "preview"}
+              onExpand={() => setFullscreenMap({ itemId: null })}
             />
           </div>
           <ul className="mt-4 space-y-2">
@@ -673,7 +682,7 @@ export default function TripDayBoard({
               <li key={item.id}>
                 <button
                   type="button"
-                  onClick={() => setSelectedItemId(item.id)}
+                  onClick={() => handleLocateItem(item.id)}
                   className={`flex w-full items-center gap-2 rounded-md px-1.5 py-1 text-left text-sm transition ${
                     item.id === selectedItemId
                       ? "bg-brand-50 text-brand-700"
@@ -681,9 +690,11 @@ export default function TripDayBoard({
                   }`}
                 >
                   <MapPin className="h-4 w-4 shrink-0 text-ink-500" />
-                  <span className="flex-1">{item.name}</span>
-                  <span className="text-xs text-ink-500">
-                    {item.lat.toFixed(3)}, {item.lng.toFixed(3)}
+                  <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                  <span className="shrink-0 text-xs text-ink-500 tabular-nums">
+                    {[item.startTime ? formatTime(item.startTime) : null, TYPE_LABEL[item.type]]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </span>
                 </button>
               </li>
