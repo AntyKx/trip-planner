@@ -301,6 +301,7 @@ export default async function TripDetailPage({
                 fromItemId: route.fromItemId,
                 toItemId: route.toItemId,
                 mode: route.mode,
+                polyline: route.rawPolyline,
               })),
             }))}
           />

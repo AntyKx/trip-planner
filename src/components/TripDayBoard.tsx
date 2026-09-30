@@ -5,7 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Stethoscope, Plus } from "lucide-react";
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
-import TripMap, { type MapItem, type MapRoute } from "./TripMap";
+import TripMap, { type MapItem, type MapRoute, type RoutePolylineHandler } from "./TripMap";
 import MobileMapFullscreen from "./MobileMapFullscreen";
 import { type Collaborator } from "./CollaboratorsPanel";
 import TripInfoToolbar from "./TripInfoToolbar";
@@ -35,7 +35,7 @@ const TripDoctorTab = dynamic(() => import("./TripDoctorTab"), {
   loading: () => <div className="py-10 text-center text-sm text-ink-500">載入中…</div>,
 });
 import { runTripDoctor, type DoctorDay } from "@/lib/tripDoctor";
-import { fetchDayWeather } from "@/app/trips/actions";
+import { fetchDayWeather, cacheRoutePolyline } from "@/app/trips/actions";
 import {
   weatherLabel,
   getWeatherReminders,
@@ -260,6 +260,14 @@ export default function TripDayBoard({
 
   const selectedDay =
     daysWithWeather.find((d) => d.id === selectedDayId) ?? daysWithWeather[0];
+
+  // Persist a leg's map line the first time any map had to fetch it —
+  // fire-and-forget; if it fails the map just fetches it again next load.
+  const handleRoutePolyline: RoutePolylineHandler = (dayId, route, polyline) => {
+    cacheRoutePolyline(tripId, dayId, route.fromItemId, route.toItemId, route.mode, polyline).catch(
+      () => {}
+    );
+  };
 
   const mapDays = daysWithWeather.map((d) => ({
     id: d.id,
@@ -661,6 +669,7 @@ export default function TripDayBoard({
           initialItemId={fullscreenMap.itemId}
           onSelectItem={setSelectedItemId}
           onClose={() => setFullscreenMap(null)}
+          onRoutePolyline={handleRoutePolyline}
         />
       )}
 
@@ -688,6 +697,7 @@ export default function TripDayBoard({
               selectedDayId={selectedDay?.id}
               variant={isDesktop ? "panel" : "preview"}
               onExpand={() => setFullscreenMap({ itemId: null })}
+              onRoutePolyline={handleRoutePolyline}
             />
           </div>
           <ul className="mt-4 space-y-2">

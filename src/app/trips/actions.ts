@@ -4,7 +4,8 @@ import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser, requireTripEditor, requireTripOwner } from "@/lib/auth";
+import { requireUser, requireTripEditor, requireTripOwner, requireTripRole } from "@/lib/auth";
+import { isEncodedPolyline } from "@/lib/polyline";
 import { getDailyWeather, type DailyWeather } from "@/lib/weather";
 import { isOwnBlobUrl, deleteBlobsQuietly } from "@/lib/blob";
 import { persistPlacePhoto } from "@/lib/placePhoto";
@@ -157,6 +158,20 @@ export async function saveRoutes(
     (r) => dayItemIds.has(r.fromItemId) && dayItemIds.has(r.toItemId)
   );
 
+  // Carry each leg's cached map line (see cacheRoutePolyline) across the
+  // delete-and-recreate below when the leg itself didn't change — this
+  // runs for every auto-fill/recompute of the day, and wiping every cached
+  // line each time would send the map straight back to Google for legs
+  // that are still exactly the same.
+  const cachedPolylines = new Map(
+    (
+      await prisma.route.findMany({
+        where: { dayId, rawPolyline: { not: null } },
+        select: { fromItemId: true, toItemId: true, mode: true, rawPolyline: true },
+      })
+    ).map((r) => [`${r.fromItemId}>${r.toItemId}:${r.mode}`, r.rawPolyline])
+  );
+
   await prisma.$transaction([
     prisma.route.deleteMany({ where: { dayId } }),
     ...validRoutes.map((r) =>
@@ -170,11 +185,44 @@ export async function saveRoutes(
           distanceKm: Math.round(r.distanceKm * 10) / 10,
           country: r.country,
           provider: r.provider,
+          rawPolyline: cachedPolylines.get(`${r.fromItemId}>${r.toItemId}:${r.mode}`) ?? null,
         },
       })
     ),
   ]);
   revalidatePath(`/trips/${tripId}`);
+}
+
+const MAX_POLYLINE_LENGTH = 20000;
+
+// Stores the line the map drew for one leg, so the next time any map
+// shows this day it draws from the database instead of calling Google's
+// DirectionsService again (every map render used to re-request every leg —
+// preview, full-screen, and each day switch). "" records "Google has no
+// route for this" (e.g. Japanese transit) so that isn't retried either.
+// Any trip member may write it: viewers see the map too, and the value is
+// a derived cache of a leg they can already see. Only updates an existing
+// Route row on a day that belongs to this trip, with the same mode — a
+// leg that was re-planned in the meantime simply doesn't match.
+export async function cacheRoutePolyline(
+  tripId: string,
+  dayId: string,
+  fromItemId: string,
+  toItemId: string,
+  mode: TravelModeValue,
+  polyline: string
+) {
+  await requireTripRole(tripId);
+  await requireDayInTrip(tripId, dayId);
+  if (polyline.length > MAX_POLYLINE_LENGTH || !isEncodedPolyline(polyline)) return;
+
+  await prisma.route.updateMany({
+    where: { dayId, fromItemId, toItemId, mode },
+    data: { rawPolyline: polyline },
+  });
+  // No revalidatePath on purpose: nothing on screen changes (the map
+  // already drew this line), and a refresh would re-render the whole trip
+  // page for every leg cached.
 }
 
 export type NewPlaceInput = {

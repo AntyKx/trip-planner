@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { Move, Check, Maximize2, Hand } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
+import { decodePolyline } from "@/lib/polyline";
 
 export const START_MARKER_COLOR = "#b45309";
 
@@ -52,7 +53,25 @@ export type MapRoute = {
   fromItemId: string;
   toItemId: string;
   mode: "WALK" | "TRANSIT" | "DRIVE" | "BIKE" | "FLY";
+  // Cached encoded line for this leg (Route.rawPolyline). null = not
+  // cached yet (fetch once, then report it via onRoutePolyline); "" =
+  // Google has no route for it, don't ask again.
+  polyline?: string | null;
 };
+
+// Called after RouteSegment had to ask Google for a leg's line, so the
+// caller can persist it (TripDayBoard -> cacheRoutePolyline).
+export type RoutePolylineHandler = (dayId: string, route: MapRoute, polyline: string) => void;
+
+// Lines fetched this session, shared by every map instance (panel,
+// preview, full-screen). The server-rendered routes still say "not cached"
+// until the next page load, so without this the full-screen map would
+// re-fetch every leg the preview had just fetched.
+// globalThis.Map — `Map` here is the Google map component imported above.
+const sessionPolylines = new globalThis.Map<string, string>();
+function polylineKey(from: MapItem, to: MapItem, mode: MapRoute["mode"]) {
+  return `${from.id}>${to.id}:${mode}:${from.lat},${from.lng}>${to.lat},${to.lng}`;
+}
 
 export type MapDay = {
   id: string;
@@ -75,10 +94,14 @@ export function RouteSegment({
   from,
   to,
   mode,
+  cachedPolyline,
+  onFetched,
 }: {
   from: MapItem;
   to: MapItem;
   mode: MapRoute["mode"];
+  cachedPolyline?: string | null;
+  onFetched?: (polyline: string) => void;
 }) {
   const map = useMap();
 
@@ -107,29 +130,58 @@ export function RouteSegment({
       return () => polyline.setMap(null);
     }
 
-    const directionsService = new google.maps.DirectionsService();
-    const renderer = new google.maps.DirectionsRenderer({
-      map,
-      suppressMarkers: true,
-      preserveViewport: true,
-      polylineOptions: { strokeColor: "#2b6094", strokeWeight: 4 },
-    });
+    const key = polylineKey(from, to, mode);
+    const known = sessionPolylines.get(key) ?? cachedPolyline;
+    let line: google.maps.Polyline | null = null;
+    function draw(encoded: string) {
+      if (!encoded) return; // "" = no route exists; draw nothing
+      line = new google.maps.Polyline({
+        map,
+        path: decodePolyline(encoded),
+        strokeColor: "#2b6094",
+        strokeOpacity: 0.85,
+        strokeWeight: 4,
+      });
+    }
 
-    directionsService.route(
+    if (known != null) {
+      draw(known);
+      return () => line?.setMap(null);
+    }
+
+    // Not cached anywhere yet — ask Google once, draw it, and hand the
+    // line back so it's stored and never requested again for this leg.
+    let cancelled = false;
+    new google.maps.DirectionsService().route(
       {
         origin: { lat: from.lat, lng: from.lng },
         destination: { lat: to.lat, lng: to.lng },
         travelMode: TRAVEL_MODE_MAP[mode]!,
       },
       (result, status) => {
-        if (status === "OK" && result) {
-          renderer.setDirections(result);
+        let encoded: string | null = null;
+        if (status === "OK" && result?.routes[0]?.overview_polyline) {
+          encoded = result.routes[0].overview_polyline;
+        } else if (status === "ZERO_RESULTS" || status === "NOT_FOUND") {
+          encoded = "";
         }
+        // Anything else (quota, denied, network) is transient — leave it
+        // uncached so a later render can try again.
+        if (encoded == null) return;
+        sessionPolylines.set(key, encoded);
+        onFetched?.(encoded);
+        if (!cancelled) draw(encoded);
       }
     );
 
-    return () => renderer.setMap(null);
-  }, [map, from, to, mode]);
+    return () => {
+      cancelled = true;
+      line?.setMap(null);
+    };
+    // onFetched is a fresh closure each render; the leg itself is what
+    // should retrigger this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, from, to, mode, cachedPolyline]);
 
   return null;
 }
@@ -269,7 +321,13 @@ export function DayMarkers({
   );
 }
 
-export function DayRoutes({ day }: { day: MapDay }) {
+export function DayRoutes({
+  day,
+  onRoutePolyline,
+}: {
+  day: MapDay;
+  onRoutePolyline?: RoutePolylineHandler;
+}) {
   return (
     <>
       {day.routes.map((route) => {
@@ -282,6 +340,10 @@ export function DayRoutes({ day }: { day: MapDay }) {
             from={from}
             to={to}
             mode={route.mode}
+            cachedPolyline={route.polyline}
+            onFetched={
+              onRoutePolyline ? (polyline) => onRoutePolyline(day.id, route, polyline) : undefined
+            }
           />
         );
       })}
@@ -297,6 +359,7 @@ export default function TripMap({
   onSelectItem,
   variant = "panel",
   onExpand,
+  onRoutePolyline,
 }: {
   apiKey?: string;
   days: MapDay[];
@@ -318,6 +381,7 @@ export default function TripMap({
   // where there's no page behind it to scroll.
   variant?: "panel" | "preview";
   onExpand?: () => void;
+  onRoutePolyline?: RoutePolylineHandler;
 }) {
   // Desktop panel only: starts locked (cooperative) so scrolling the page
   // over the map isn't hijacked; the button opts into plain-drag panning.
@@ -358,7 +422,7 @@ export default function TripMap({
         >
           <FitBounds items={day.items} padding={32} />
           <DayMarkers items={day.items} selectedItemId={null} />
-          <DayRoutes day={day} />
+          <DayRoutes day={day} onRoutePolyline={onRoutePolyline} />
         </Map>
         {/* Covers the whole map so every touch lands on a plain element:
             a swipe scrolls the page like anywhere else, a tap opens the
@@ -429,7 +493,7 @@ export default function TripMap({
           selectedItemId={selectedItemId}
           onSelectItem={onSelectItem}
         />
-        <DayRoutes day={day} />
+        <DayRoutes day={day} onRoutePolyline={onRoutePolyline} />
 
         {selectedItem && (
           <InfoWindow

@@ -12,6 +12,7 @@ import {
   stopLabel,
   type MapDay,
   type MapItem,
+  type RoutePolylineHandler,
 } from "./TripMap";
 import { useToast } from "./Toast";
 import { TYPE_COLOR, TYPE_LABEL, formatTime } from "@/lib/labels";
@@ -70,6 +71,7 @@ export default function MobileMapFullscreen({
   initialItemId,
   onSelectItem,
   onClose,
+  onRoutePolyline,
 }: {
   days: FullscreenMapDay[];
   selectedDayId: string | undefined;
@@ -77,6 +79,7 @@ export default function MobileMapFullscreen({
   initialItemId: string | null;
   onSelectItem: (id: string | null) => void;
   onClose: () => void;
+  onRoutePolyline?: RoutePolylineHandler;
 }) {
   const map = useMap(MAP_ID);
   const toast = useToast();
@@ -298,7 +301,7 @@ export default function MobileMapFullscreen({
             if (index >= 0) focusItem(index, true);
           }}
         />
-        {day && <DayRoutes day={day} />}
+        {day && <DayRoutes day={day} onRoutePolyline={onRoutePolyline} />}
         {myPos && <Marker position={myPos} icon={MY_LOCATION_ICON} clickable={false} />}
       </Map>
 
