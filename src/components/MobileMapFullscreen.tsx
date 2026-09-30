@@ -9,6 +9,7 @@ import {
   DayRoutes,
   START_MARKER_COLOR,
   fitMapToItems,
+  stopLabel,
   type MapDay,
   type MapItem,
 } from "./TripMap";
@@ -384,7 +385,6 @@ export default function MobileMapFullscreen({
               key={item.id}
               item={item}
               index={i}
-              total={items.length}
               active={i === activeIndex}
               onClick={() => focusItem(i, true)}
             />
@@ -399,13 +399,11 @@ export default function MobileMapFullscreen({
 function FullscreenCard({
   item,
   index,
-  total,
   active,
   onClick,
 }: {
   item: MapItem;
   index: number;
-  total: number;
   active: boolean;
   onClick: () => void;
 }) {
@@ -431,7 +429,7 @@ function FullscreenCard({
           className="absolute left-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white px-1 text-xs font-bold text-white"
           style={{ background: color }}
         >
-          {index === 0 ? "S" : index}
+          {stopLabel(index)}
         </span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
@@ -439,7 +437,7 @@ function FullscreenCard({
           {[time, TYPE_LABEL[item.type]].filter(Boolean).join(" · ")}
         </p>
         <h3 className="mt-0.5 truncate text-base font-semibold text-ink-900">{item.name}</h3>
-        <div className="mt-auto flex items-center justify-between gap-2">
+        <div className="mt-auto flex items-center gap-2">
           <a
             href={`https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}`}
             target="_blank"
@@ -450,9 +448,6 @@ function FullscreenCard({
             <Navigation className="h-3.5 w-3.5" />
             導航
           </a>
-          <span className="text-xs text-ink-500 tabular-nums">
-            {index + 1} / {total}
-          </span>
         </div>
       </div>
     </article>

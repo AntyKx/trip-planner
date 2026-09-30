@@ -220,6 +220,15 @@ function MissingKeyNotice() {
   );
 }
 
+// The first stop is the day's starting point ("S"), then 1, 2, 3… for the
+// rest. Every place that shows a stop number (markers here, the
+// full-screen map's cards) must go through this — the markers used to
+// compute their own `index + 1` (S, 2, 3…) while the cards used `index`
+// (S, 1, 2…), so the two disagreed by one from the second stop on.
+export function stopLabel(index: number) {
+  return index === 0 ? "S" : String(index);
+}
+
 // The day's numbered markers — shared with MobileMapFullscreen so both
 // views number and color stops identically.
 export function DayMarkers({
@@ -244,7 +253,7 @@ export function DayMarkers({
             position={{ lat: item.lat, lng: item.lng }}
             title={item.name}
             icon={buildMarkerIcon(
-              isStart ? "S" : String(index + 1),
+              stopLabel(index),
               color,
               item.id === selectedItemId
             )}
