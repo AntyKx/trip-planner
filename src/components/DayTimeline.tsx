@@ -25,7 +25,6 @@ import {
   ChevronRight,
   CalendarDays,
   GripVertical,
-  MapPin,
   MapPinned,
   Navigation,
   Pencil,
@@ -653,8 +652,14 @@ function SortableItemCard({
                 <button
                   type="button"
                   onClick={onEdit}
-                  aria-label="編輯項目"
-                  className="flex h-10 w-[30px] items-center justify-center text-ink-500 hover:text-brand-600"
+                  aria-label={hasNote ? "編輯項目（有備註）" : "編輯項目"}
+                  title={hasNote ? "編輯項目・有備註" : "編輯項目"}
+                  // Colored when the stop has a note, the same way the
+                  // journal button above turns rose when there's a journal
+                  // — the row-1 buttons double as "has content" markers.
+                  className={`flex h-10 w-[30px] items-center justify-center hover:text-brand-600 ${
+                    hasNote ? "text-violet-600" : "text-ink-500"
+                  }`}
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -686,11 +691,10 @@ function SortableItemCard({
             </h3>
           )}
 
-          {/* Meta (rating · stay) truncates on the left; status on the
-              right never shrinks. Journal and cost keep the colors their
-              old pills had (rose / amber) so "which stops have entries"
-              still reads at a glance — only the pill background/border
-              went. Note and 本日起點 are quieter on purpose. */}
+          {/* Meta (rating · stay) truncates on the left; cost on the right
+              never shrinks. Journal/note are signalled by the colored
+              row-1 buttons instead — but those buttons only exist for
+              editors, so viewers still get the journal/note icons here. */}
           <div className="flex h-[18px] min-w-0 items-center gap-2 overflow-hidden pr-2 text-xs text-ink-500">
             <span className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
               {item.place?.rating != null && (
@@ -706,15 +710,9 @@ function SortableItemCard({
               )}
               {stayDuration && <span className="truncate">{stayDuration}</span>}
             </span>
-            {(isAnchor || hasJournal || hasNote || costSummary) && (
+            {((!canEdit && (hasJournal || hasNote)) || costSummary) && (
               <span className="ml-auto flex shrink-0 items-center gap-2">
-                {isAnchor && (
-                  <span title="本日起點" className="text-brand-600">
-                    <MapPin className="h-3.5 w-3.5" />
-                    <span className="sr-only">本日起點</span>
-                  </span>
-                )}
-                {hasJournal && (
+                {!canEdit && hasJournal && (
                   <span
                     title={`遊記${item.photos.length > 0 ? `・${item.photos.length}張照片` : ""}`}
                     className="flex items-center gap-0.5 font-medium text-rose-600"
@@ -724,7 +722,7 @@ function SortableItemCard({
                     {item.photos.length > 0 && item.photos.length}
                   </span>
                 )}
-                {hasNote && (
+                {!canEdit && hasNote && (
                   <span title="備註">
                     <StickyNote className="h-3.5 w-3.5" />
                     <span className="sr-only">備註</span>
