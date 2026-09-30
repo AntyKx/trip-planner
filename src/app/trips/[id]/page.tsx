@@ -13,10 +13,10 @@ export default async function TripDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ share?: string; mode?: string }>;
+  searchParams: Promise<{ share?: string; mode?: string; open?: string }>;
 }) {
   const { id } = await params;
-  const { share: shareToken, mode: modeParam } = await searchParams;
+  const { share: shareToken, mode: modeParam, open: openParam } = await searchParams;
   // Deep-link into a specific board mode (home's 行程健檢 hero button uses
   // ?mode=doctor) — whitelist because this feeds a client component prop.
   const initialMode =
@@ -214,6 +214,8 @@ export default async function TripDetailPage({
             tripId={trip.id}
             apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
             initialMode={initialMode}
+            // Home onboarding step 3 (邀請同行的人) links here.
+            initialSheet={openParam === "share" ? "share" : undefined}
             collaborators={collaborators}
             emergencyInfo={trip.emergencyInfo}
             canEdit={canEdit}

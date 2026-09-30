@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { MapPin, Search, Check, Star, TriangleAlert, Heart } from "lucide-react";
 import { searchPlaces, getPlaceDetails, type PlaceResult } from "@/lib/places";
 import { addPlaceToDay } from "@/app/trips/actions";
@@ -57,6 +57,7 @@ export default function ExploreClient({
   initialDayId,
   initialFavorites,
   initialView,
+  initialSearch,
 }: {
   trips: TripOption[];
   initialTripId?: string;
@@ -65,18 +66,21 @@ export default function ExploreClient({
   // Deep-link entry (home page's 我的收藏 quick entry uses
   // /explore?view=favorites) — the tab itself is client state.
   initialView?: "search" | "favorites";
+  // Deep-link search (home page 目的地靈感 chips) — prefilled and run once
+  // on arrival.
+  initialSearch?: { query: string; region: "JP" | "TW" | "OTHER"; customRegion: string };
 }) {
   const defaultTripId = initialTripId ?? trips[0]?.id ?? "";
   const defaultTrip = trips.find((t) => t.id === defaultTripId);
   const toast = useToast();
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialSearch?.query ?? "");
   // "JP"/"TW" get Google's precise geographic-rectangle restriction (see
   // COUNTRY_BOUNDS in src/lib/places.ts); "OTHER" means the user typed a
   // free-text region (customRegion) that just gets appended to the search
   // query instead — no hard filter, so it works for any country/city but
   // relies on Google's own text understanding for accuracy.
-  const [region, setRegion] = useState<"JP" | "TW" | "OTHER">("JP");
-  const [customRegion, setCustomRegion] = useState("");
+  const [region, setRegion] = useState<"JP" | "TW" | "OTHER">(initialSearch?.region ?? "JP");
+  const [customRegion, setCustomRegion] = useState(initialSearch?.customRegion ?? "");
   const effectiveRegion = region === "OTHER" ? customRegion : region;
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -149,12 +153,16 @@ export default function ExploreClient({
 
   function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!query.trim()) return;
+    runSearch(query, effectiveRegion);
+  }
+
+  function runSearch(q: string, searchRegion: string) {
+    if (!q.trim()) return;
     setSearchError(null);
     setHasSearched(true);
     const requestId = ++searchRequestRef.current;
     startSearch(async () => {
-      const res = await searchPlaces(query, effectiveRegion);
+      const res = await searchPlaces(q, searchRegion);
       if (requestId !== searchRequestRef.current) return;
       if (res.ok) {
         setResults(res.results);
@@ -164,6 +172,19 @@ export default function ExploreClient({
       }
     });
   }
+
+  // Runs the deep-linked search once on arrival. Uses the initial values
+  // directly rather than state, which is identical on the first render.
+  const ranInitialSearchRef = useRef(false);
+  useEffect(() => {
+    if (!initialSearch || ranInitialSearchRef.current) return;
+    ranInitialSearchRef.current = true;
+    runSearch(
+      initialSearch.query,
+      initialSearch.region === "OTHER" ? initialSearch.customRegion : initialSearch.region
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function commitAdd(place: PlaceResult, dayId: string) {
     if (!dayId) return;

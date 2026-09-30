@@ -75,6 +75,7 @@ export default function TripDayBoard({
   itineraryShareEnabled,
   itineraryShareToken,
   checklistItems,
+  initialSheet,
 }: {
   tripId: string;
   apiKey?: string;
@@ -94,6 +95,7 @@ export default function TripDayBoard({
   itineraryShareEnabled: boolean;
   itineraryShareToken: string | null;
   checklistItems: ChecklistItemView[];
+  initialSheet?: "share";
 }) {
   // Starts at days[0] even for a ?mode=travel deep link — localTodayStr()
   // reads the viewer's local calendar day, which can disagree with the
@@ -348,6 +350,7 @@ export default function TripDayBoard({
         journalShareToken={journalShareToken}
         itineraryShareEnabled={itineraryShareEnabled}
         itineraryShareToken={itineraryShareToken}
+        initialSheet={initialSheet}
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div

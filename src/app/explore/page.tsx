@@ -6,9 +6,17 @@ import { getFavorites } from "./actions";
 export default async function ExplorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tripId?: string; dayId?: string; view?: string }>;
+  searchParams: Promise<{
+    tripId?: string;
+    dayId?: string;
+    view?: string;
+    // Deep-link search from the home page's 目的地靈感 chips.
+    q?: string;
+    region?: string;
+    area?: string;
+  }>;
 }) {
-  const { tripId, dayId, view } = await searchParams;
+  const { tripId, dayId, view, q, region, area } = await searchParams;
   const user = await requireUser();
 
   const editableBy = {
@@ -82,6 +90,15 @@ export default async function ExplorePage({
       initialDayId={dayId}
       initialFavorites={favorites}
       initialView={view === "favorites" ? "favorites" : undefined}
+      initialSearch={
+        q
+          ? {
+              query: q.slice(0, 100),
+              region: region === "TW" || region === "OTHER" ? region : "JP",
+              customRegion: (area ?? "").slice(0, 50),
+            }
+          : undefined
+      }
     />
   );
 }

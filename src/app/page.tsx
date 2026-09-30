@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   Plus,
   Luggage,
@@ -20,6 +21,16 @@ import { NoTripsIllustration } from "@/components/EmptyStateIllustrations";
 import GreetingHero from "@/components/GreetingHero";
 import SignOutButton from "@/components/SignOutButton";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
+import OnboardingCard, {
+  ONBOARDING_SKIP_COOKIE,
+  type OnboardingStep,
+} from "@/components/OnboardingCard";
+import {
+  MemoryCard,
+  FootprintStats,
+  FavoritesPreview,
+  InspirationChips,
+} from "@/components/HomeSections";
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
@@ -53,7 +64,8 @@ const STATUS_CHIP: Record<TripStatus, { label: string; className: string }> = {
 
 export default async function TripsPage() {
   const user = await requireUser();
-  const trips = await prisma.trip.findMany({
+  const [trips, favoriteCount, recentFavorites, cookieStore] = await Promise.all([
+    prisma.trip.findMany({
     where: {
       OR: [{ ownerId: user.id }, { collaborators: { some: { userId: user.id } } }],
     },
@@ -69,6 +81,8 @@ export default async function TripsPage() {
       endDate: true,
       coverImage: true,
       updatedAt: true,
+      // Onboarding step 3 counts an enabled share link as "invited".
+      shareEnabled: true,
       owner: { select: { id: true, name: true, avatarUrl: true } },
       collaborators: {
         select: { role: true, user: { select: { id: true, name: true, avatarUrl: true } } },
@@ -78,7 +92,12 @@ export default async function TripsPage() {
           dayIndex: true,
           items: {
             orderBy: { sortOrder: "asc" },
-            select: { updatedAt: true, place: { select: { photoUrl: true } } },
+            select: {
+              updatedAt: true,
+              // id/country feed the 旅行足跡 counts; photos the memory card.
+              place: { select: { id: true, photoUrl: true, country: true } },
+              _count: { select: { photos: true } },
+            },
           },
         },
       },
@@ -87,7 +106,16 @@ export default async function TripsPage() {
       checklistItems: { select: { isDone: true } },
     },
     orderBy: { startDate: "asc" },
-  });
+    }),
+    prisma.favorite.count({ where: { userId: user.id } }),
+    prisma.favorite.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+      select: { place: { select: { id: true, name: true, photoUrl: true } } },
+    }),
+    cookies(),
+  ]);
 
   // Trips that haven't ended yet (today or later) surface first, nearest
   // first — otherwise, once a few trips are in the past, they permanently
@@ -322,6 +350,59 @@ export default async function TripsPage() {
     );
   }
 
+  // ---- Home blocks (see the merged-home rules agreed 2026-09-30) ----
+  // One home page for everyone; each block decides for itself whether it
+  // shows from the user's own data:
+  //   top card   — next trip › (no trips at all: onboarding) › last trip
+  //   onboarding — until all three steps are done or 略過 is pressed
+  //   footprint  — whenever there are finished trips
+  //   favourites / destination chips — only with no upcoming trip, where
+  //     they fill in for the missing "next trip" instead of competing with it
+  const lastTrip = !heroTrip ? pastTrips[0] : undefined;
+
+  const ownedTrips = trips.filter((t) => t.owner.id === user.id);
+  const stepTargetTrip = heroTrip ?? ownedTrips[0] ?? trips[0];
+  const shareTargetTrip =
+    (heroTrip && heroTrip.owner.id === user.id ? heroTrip : undefined) ?? ownedTrips[0];
+  const onboardingSteps: OnboardingStep[] = [
+    {
+      title: "建立第一趟旅程",
+      desc: "取個名字、選好日期",
+      done: trips.length > 0,
+      href: "/trips/new",
+      cta: "建立",
+    },
+    {
+      title: "加入景點或餐廳",
+      desc: "從探索頁搜尋，或上傳截圖辨識",
+      feature: "加好景點後，可以一鍵自動排時間、算交通，行程健檢也會幫你抓公休和衝突",
+      done: trips.some((t) => t.days.some((d) => d.items.length > 0)),
+      href: stepTargetTrip ? `/explore?tripId=${stepTargetTrip.id}` : "/explore",
+      cta: "去加景點",
+    },
+    {
+      title: "邀請同行的人",
+      desc: "分享連結，一起編輯同一份行程",
+      feature: "旅行結束後，還能把遊記和照片做成旅遊書分享",
+      // Being on someone else's trip counts too — that's already
+      // travelling with someone.
+      done: trips.some((t) => t.collaborators.length > 0 || t.shareEnabled),
+      href: shareTargetTrip ? `/trips/${shareTargetTrip.id}?open=share` : "/trips/new",
+      cta: "邀請",
+    },
+  ];
+  const onboardingSkipped = cookieStore.get(ONBOARDING_SKIP_COOKIE)?.value === "1";
+  const showOnboarding = !onboardingSkipped && onboardingSteps.some((s) => !s.done);
+
+  const pastItems = pastTrips.flatMap((t) => t.days.flatMap((d) => d.items));
+  const footprint = {
+    countries: new Set(
+      pastItems.map((i) => i.place?.country?.toUpperCase()).filter(Boolean)
+    ).size,
+    trips: pastTrips.length,
+    places: new Set(pastItems.map((i) => i.place?.id).filter(Boolean)).size,
+  };
+
   const quickEntries = [
     {
       href: "/explore",
@@ -366,6 +447,31 @@ export default async function TripsPage() {
       </section>
 
       {heroTrip && <section className="mt-6">{renderHeroCard(heroTrip)}</section>}
+      {lastTrip && (
+        <section className="mt-6">
+          <MemoryCard
+            trip={{
+              id: lastTrip.id,
+              title: lastTrip.title,
+              startDate: lastTrip.startDate,
+              endDate: lastTrip.endDate,
+              dayCount: lastTrip.days.length,
+              placeCount: new Set(
+                lastTrip.days.flatMap((d) => d.items).map((i) => i.place?.id).filter(Boolean)
+              ).size,
+              photoCount: lastTrip.days
+                .flatMap((d) => d.items)
+                .reduce((sum, i) => sum + i._count.photos, 0),
+              coverImage: coverImageOf(lastTrip),
+            }}
+          />
+        </section>
+      )}
+      {showOnboarding && (
+        <section className="mt-6">
+          <OnboardingCard steps={onboardingSteps} />
+        </section>
+      )}
 
       <section className="mt-5 grid grid-cols-3 gap-3">
         {quickEntries.map((entry) => (
@@ -392,7 +498,9 @@ export default async function TripsPage() {
       <div className="grid gap-5">
         {upcomingTrips.slice(1).map(renderTripCard)}
 
-        {trips.length === 0 && (
+        {/* Only once onboarding was skipped — otherwise that card already
+            covers "no trips yet" and this would say the same thing twice. */}
+        {trips.length === 0 && !showOnboarding && (
           <EmptyState
             illustration={<NoTripsIllustration />}
             title="你的下一段旅程，還沒開始書寫"
@@ -411,15 +519,32 @@ export default async function TripsPage() {
         )}
       </div>
 
-      {pastTrips.length > 0 && (
-        <details className="group mt-6">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-700">
-            <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
-            旅行回憶（{pastTrips.length}）
-          </summary>
-          <div className="mt-4 grid gap-5">{pastTrips.map(renderTripCard)}</div>
-        </details>
+      {pastTrips.length > 0 && <FootprintStats {...footprint} />}
+
+      {!heroTrip && favoriteCount > 0 && (
+        <FavoritesPreview
+          count={favoriteCount}
+          places={recentFavorites.map((f) => f.place)}
+        />
       )}
+
+      {!heroTrip && <InspirationChips />}
+
+      {/* The last trip already has its own card above when there's no
+          upcoming trip, so it's left out of the fold in that case. */}
+      {(() => {
+        const folded = lastTrip ? pastTrips.slice(1) : pastTrips;
+        if (folded.length === 0) return null;
+        return (
+          <details className="group mt-6">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-ink-700">
+              <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+              {lastTrip ? "其他旅行回憶" : "旅行回憶"}（{folded.length}）
+            </summary>
+            <div className="mt-4 grid gap-5">{folded.map(renderTripCard)}</div>
+          </details>
+        );
+      })()}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Wallet, ShieldAlert, Share2, type LucideIcon } from "lucide-react";
 import AppModal from "./AppModal";
 import BudgetSummary, { budgetHeadline } from "./BudgetSummary";
@@ -34,6 +34,7 @@ export default function TripInfoToolbar({
   journalShareToken,
   itineraryShareEnabled,
   itineraryShareToken,
+  initialSheet,
 }: {
   tripId: string;
   days: BoardDay[];
@@ -48,8 +49,16 @@ export default function TripInfoToolbar({
   journalShareToken: string | null;
   itineraryShareEnabled: boolean;
   itineraryShareToken: string | null;
+  initialSheet?: Sheet;
 }) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
+  // Opened after mount, not as the initial state — the sheet portals into
+  // document.body, which doesn't exist during server rendering.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (initialSheet) setSheet(initialSheet);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [shareTab, setShareTab] = useState<ShareTab>("collaborators");
 
   const budget = budgetHeadline(days);
