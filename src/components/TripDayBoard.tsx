@@ -39,7 +39,6 @@ import { fetchDayWeather } from "@/app/trips/actions";
 import {
   weatherLabel,
   getWeatherReminders,
-  WEATHER_UNAVAILABLE_MESSAGE,
   type DailyWeather,
 } from "@/lib/weather";
 import { getNextStop, localTodayStr } from "@/lib/timeline";
@@ -293,6 +292,7 @@ export default function TripDayBoard({
   // Mirrors what page.tsx's Trip Hero used to compute from "today's real
   // date" — moved here so it follows whichever Day Tab is selected instead
   // (client state the server-rendered hero can't see).
+  const doctorIssueCount = doctorFindings.filter((f) => f.severity === "issue").length;
   const selectedDayNextStop = selectedDay ? getNextStop(selectedDay.timelineItems) : null;
   const SelectedWeatherIcon = selectedDay?.weather
     ? weatherLabel(selectedDay.weather.weatherCode).icon
@@ -415,7 +415,7 @@ export default function TripDayBoard({
           already are is noise). Dismiss keys carry the salient state so a
           changed situation resurfaces after an earlier dismissal. */}
       {(() => {
-        const issueCount = doctorFindings.filter((f) => f.severity === "issue").length;
+        const issueCount = doctorIssueCount;
         if (issueCount > 0 && mode !== "doctor") {
           return (
             <div className="mb-4">
@@ -567,33 +567,39 @@ export default function TripDayBoard({
 
         {selectedDay ? (
           <section key={selectedDay.id} className="mt-4 animate-fade-in">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-900">
-                <span>
-                  Day {selectedDay.dayIndex} · {selectedDay.date}
-                </span>
+            {/* One line: date, weather, count. Weather reminders live in the
+                SmartBanner above (it used to repeat here as well) — except
+                when a doctor issue has taken the banner's single slot, in
+                which case they fall back to this spot so they aren't lost. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h2 className="text-lg font-semibold text-ink-900">
+                Day {selectedDay.dayIndex} · {selectedDay.date.slice(5).replace("-", "/")}{" "}
+                {weekdayShortLabel(new Date(`${selectedDay.date}T00:00:00`))}
+              </h2>
+              <span className="flex items-center gap-1.5 text-sm text-ink-500">
                 {selectedDay.weather && SelectedWeatherIcon ? (
-                  <span className="flex items-center gap-1 rounded-full bg-info-50 px-2 py-0.5 text-sm font-normal text-info-700">
+                  <span className="flex items-center gap-1 text-info-700">
                     <SelectedWeatherIcon className="h-4 w-4" />
-                    <span>
-                      {Math.round(selectedDay.weather.maxTemp)}° /{" "}
-                      {Math.round(selectedDay.weather.minTemp)}°
-                    </span>
+                    {Math.round(selectedDay.weather.maxTemp)}°/
+                    {Math.round(selectedDay.weather.minTemp)}°
                   </span>
                 ) : (
                   selectedDay.isWeatherLoading && (
-                    <Skeleton className="h-[22px] w-16 rounded-full" />
+                    <Skeleton className="h-[18px] w-14 rounded-full" />
                   )
                 )}
-              </h2>
-              <span className="text-sm text-ink-500">
-                {selectedDay.timelineItems.length} 個景點
+                {(selectedDay.weather || selectedDay.isWeatherLoading) && (
+                  <span aria-hidden="true">·</span>
+                )}
+                <span>{selectedDay.timelineItems.length} 個景點</span>
               </span>
             </div>
             {selectedDay.note && (
               <p className="mt-0.5 text-sm text-ink-500">{selectedDay.note}</p>
             )}
-            {selectedDayNextStop && (
+            {/* Only on the day itself — on any other day "next stop" is
+                just the first card, which the timeline already shows. */}
+            {selectedDayNextStop && todayStr === selectedDay.date && (
               <p className="mt-1 text-sm text-ink-700">
                 <span className="font-medium">下一站</span>{" "}
                 {selectedDayNextStop.place?.name ?? selectedDayNextStop.note ?? "未命名項目"}
@@ -601,8 +607,8 @@ export default function TripDayBoard({
                   ` · ${formatTime(selectedDayNextStop.startTime)}`}
               </p>
             )}
-
-            {selectedDay.weather ? (
+            {doctorIssueCount > 0 &&
+              selectedDay.weather &&
               getWeatherReminders(selectedDay.weather).map((reminder) => (
                 <p
                   key={reminder.text}
@@ -611,12 +617,7 @@ export default function TripDayBoard({
                   <reminder.icon className="h-3.5 w-3.5 shrink-0" />
                   {reminder.text}
                 </p>
-              ))
-            ) : (
-              <p className="mt-1 text-xs text-ink-400">
-                {WEATHER_UNAVAILABLE_MESSAGE}
-              </p>
-            )}
+              ))}
 
             <div className="mt-4">
               <DayTimeline

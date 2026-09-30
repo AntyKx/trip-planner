@@ -22,6 +22,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   BookOpen,
   CalendarClock,
+  ChevronRight,
   CalendarDays,
   GripVertical,
   MapPin,
@@ -340,6 +341,21 @@ function RescanRoutesModal({
   );
 }
 
+const CURRENCY_SYMBOL: Record<string, string> = {
+  JPY: "¥",
+  TWD: "NT$",
+  USD: "US$",
+  KRW: "₩",
+  EUR: "€",
+  GBP: "£",
+  AUD: "A$",
+};
+
+function formatMoney(currency: string, amount: number) {
+  const symbol = CURRENCY_SYMBOL[currency];
+  return symbol ? `${symbol}${amount.toLocaleString()}` : `${currency} ${amount.toLocaleString()}`;
+}
+
 function SortableItemCard({
   tripId,
   dayId,
@@ -406,6 +422,7 @@ function SortableItemCard({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: item.id, disabled: !canEdit });
+  const toast = useToast();
   const transitSupported = isGoogleTransitSupported(item.place?.country);
   const isJapan = (item.place?.country ?? "").toUpperCase() === "JP";
   // Google itself has no transit data for Japan (see
@@ -421,6 +438,23 @@ function SortableItemCard({
     : TRAVEL_MODE_OPTIONS;
 
   const menuItems: ActionMenuItem[] = [
+    // No longer shown on the card itself (fixed three-line layout) —
+    // still one tap away here, and in 旅行模式 / the edit modal.
+    ...(item.confirmationNumber
+      ? [
+          {
+            key: "confirmation",
+            label: "複製確認碼",
+            icon: Ticket,
+            onClick: () => {
+              navigator.clipboard.writeText(item.confirmationNumber!).then(
+                () => toast.success(`已複製確認碼 ${item.confirmationNumber}`),
+                () => toast.error(`複製失敗，確認碼：${item.confirmationNumber}`)
+              );
+            },
+          },
+        ]
+      : []),
     ...(item.place
       ? [
           {
@@ -457,6 +491,38 @@ function SortableItemCard({
   };
 
   const stayDuration = formatStayDuration(item.startTime, item.endTime);
+  const hasJournal = !!item.journalText || item.photos.length > 0;
+  const hasNote = !!item.place && !!item.note;
+  // Per-currency totals, shown as the largest-count currency plus "+N"
+  // for the rest — mixing currencies into one number would be meaningless.
+  const costTotals = [
+    ...item.costs
+      .reduce((totals, c) => {
+        totals.set(c.currency, (totals.get(c.currency) ?? 0) + c.amount);
+        return totals;
+      }, new Map<string, number>())
+      .entries(),
+  ];
+  const costSummary =
+    costTotals.length > 0
+      ? `${formatMoney(costTotals[0][0], costTotals[0][1])}${
+          costTotals.length > 1 ? ` +${costTotals.length - 1}` : ""
+        }`
+      : null;
+  const [showModePicker, setShowModePicker] = useState(false);
+  const legSummary =
+    isRecomputing || (isAutoFilling && !route) ? (
+      <span>計算中…</span>
+    ) : route && route.durationMin != null ? (
+      <span>
+        <span className="font-medium text-ink-700">
+          {MODE_LABEL[route.mode]} {route.durationMin} 分
+        </span>
+        {route.distanceKm != null && ` · ${route.distanceKm} km`}
+      </span>
+    ) : (
+      <span>{canEdit ? "無法自動規劃，點此選擇交通方式" : "尚未規劃交通方式"}</span>
+    );
 
   return (
     <div
@@ -490,7 +556,7 @@ function SortableItemCard({
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
-        className={`group relative flex touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] ${
+        className={`group relative flex h-[92px] touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] sm:h-28 ${
           isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
         } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"} ${
           isSelected ? "ring-2 ring-brand-400" : ""
@@ -512,22 +578,19 @@ function SortableItemCard({
           </span>
         )}
         {item.place && (
-          // Stretches to fill the row's full height (items-stretch on the
-          // parent), min-h only — no max-h. A max-h cap was tried, but any
-          // card with an extra badge line (遊記, multi-line type badges,
-          // ...) pushed the text column past that cap, leaving a visible
-          // gap below the capped photo — worse than the occasional tall
-          // crop this trades for, because it made cards visibly
-          // inconsistent (some full, some gapped) rather than uniformly
-          // "fills, occasionally a bit tall". min-h still guarantees it's
-          // never smaller/more cropped than the original fixed size.
+          // Fixed square, not stretched to the text. Stretching (07-21,
+          // four rounds) made photo size depend on how many badge lines a
+          // card had, so cards with a journal/note/cost came out visibly
+          // taller than their neighbours. The body is now a fixed three
+          // lines (type+actions / name / meta+status), so a fixed photo
+          // lines up with it exactly and every card is the same height.
           <ImgWithFallback
             src={item.place.photoUrl}
             alt={item.place.name}
-            className="w-20 min-h-20 shrink-0 rounded-l-xl object-cover sm:w-28 sm:min-h-28"
+            className="h-full w-[92px] shrink-0 rounded-l-xl object-cover max-[359px]:w-20 sm:w-28"
             fallback={
               <div
-                className={`flex w-20 min-h-20 shrink-0 items-center justify-center rounded-l-xl sm:w-28 sm:min-h-28 ${typeColor.bg}`}
+                className={`flex h-full w-[92px] shrink-0 items-center justify-center rounded-l-xl max-[359px]:w-20 sm:w-28 ${typeColor.bg}`}
               >
                 <TypeIcon className={`h-7 w-7 ${typeColor.text}`} />
               </div>
@@ -535,70 +598,17 @@ function SortableItemCard({
           />
         )}
 
-        <div className="min-w-0 flex-1 p-3">
-          {/* items-start (not items-center) — the badge group wraps to a
-              second line once the spine gutter narrowed this card's
-              available width (住宿/本日起點, or a cost pill, no longer
-              always fit on one line). items-center used to vertically
-              center the button row against that now-taller wrapped badge
-              stack, landing the icons visually inside/between the two
-              badge lines instead of clear of them. */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              {/* Time used to be repeated here as plain bold text — now
-                  shown once, as the handwritten label on the spine gutter
-                  to the card's left, instead of duplicating it inline. */}
-              <span
-                className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
-              >
-                <TypeIcon className="h-3 w-3" />
-                {TYPE_LABEL[item.type]}
-              </span>
-              {isAnchor && (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
-                  <MapPin className="h-3 w-3" />
-                  本日起點
-                </span>
-              )}
-              {(item.journalText || item.photos.length > 0) && (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-rose-50 px-2 py-0.5 text-xs font-medium text-rose-600">
-                  <BookOpen className="h-3 w-3" />
-                  遊記{item.photos.length > 0 && ` · ${item.photos.length}張照片`}
-                </span>
-              )}
-              {item.place && item.note && (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700">
-                  <StickyNote className="h-3 w-3" />
-                  備註
-                </span>
-              )}
-              {/* One pill per currency (usually just one) summing that
-                  currency's entries — mixing currencies into one number
-                  would be meaningless. */}
-              {item.costs.length > 0 &&
-                [...item.costs
-                  .reduce((totals, c) => {
-                    totals.set(c.currency, (totals.get(c.currency) ?? 0) + c.amount);
-                    return totals;
-                  }, new Map<string, number>())
-                  .entries()].map(([currency, total]) => (
-                  <span
-                    key={currency}
-                    className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700"
-                  >
-                    {currency} {total.toLocaleString()}
-                  </span>
-                ))}
-            </div>
-            {/* 40px targets with zero gap — slightly under the 44px
-                guideline as a deliberate density trade-off the user chose
-                (狀態徽章 keep full visibility; only the action buttons
-                tighten up). items-start (not items-center) on both this
-                row and each button's own icon centering — so the icon
-                glyphs line up with the top badge row's text instead of
-                sitting centered inside the full 40px tap target, which
-                visually drifted low once the badges started wrapping to a
-                second line (see the spine-gutter width fix above). */}
+        {/* minmax(0,1fr) — a grid item's default min-width is its content,
+            so without it a long name or meta line widens the column past
+            the card instead of truncating (caught in the preview). */}
+        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] content-between py-2 pl-3 pr-1">
+          <div className="flex h-6 min-w-0 items-center justify-between gap-1">
+            <span
+              className={`flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap text-xs font-medium ${typeColor.text}`}
+            >
+              <TypeIcon className="h-3 w-3 shrink-0" />
+              {TYPE_LABEL[item.type]}
+            </span>
             {/* Stops mousedown/touchstart from bubbling to the card's drag
                 listeners (spread on the outer div above, since the whole
                 card — not just a small grip — is the drag handle). Without
@@ -606,10 +616,10 @@ function SortableItemCard({
                 activation with dnd-kit's MouseSensor (no delay, just an 8px
                 distance check), which on desktop was making the "更多操作"
                 dropdown flicker open/closed and swallowing clicks on its
-                items — TouchSensor's 250ms long-press delay meant touch
-                never hit this, hence a PC-only bug report. */}
+                items. Buttons are 30px wide (40px tall via negative margin)
+                so four of them plus the type label fit a phone-width card. */}
             <div
-              className="flex shrink-0 items-start"
+              className="-my-2 flex shrink-0 items-center"
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
             >
@@ -619,7 +629,7 @@ function SortableItemCard({
                   onClick={onLocate}
                   aria-label="在地圖上定位"
                   title="在地圖上定位"
-                  className={`flex min-h-10 min-w-10 items-start justify-center pt-0.5 hover:text-brand-600 ${
+                  className={`flex h-10 w-[30px] items-center justify-center hover:text-brand-600 ${
                     isSelected ? "text-brand-600" : "text-ink-500"
                   }`}
                 >
@@ -632,10 +642,8 @@ function SortableItemCard({
                   onClick={onOpenJournal}
                   aria-label="編輯遊記"
                   title="遊記與照片"
-                  className={`flex min-h-10 min-w-10 items-start justify-center pt-0.5 hover:text-rose-600 ${
-                    item.journalText || item.photos.length > 0
-                      ? "text-rose-600"
-                      : "text-ink-500"
+                  className={`flex h-10 w-[30px] items-center justify-center hover:text-rose-600 ${
+                    hasJournal ? "text-rose-600" : "text-ink-500"
                   }`}
                 >
                   <BookOpen className="h-4 w-4" />
@@ -646,7 +654,7 @@ function SortableItemCard({
                   type="button"
                   onClick={onEdit}
                   aria-label="編輯項目"
-                  className="flex min-h-10 min-w-10 items-start justify-center pt-0.5 text-ink-500 hover:text-brand-600"
+                  className="flex h-10 w-[30px] items-center justify-center text-ink-500 hover:text-brand-600"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -654,6 +662,7 @@ function SortableItemCard({
               <ActionMenu items={menuItems} />
             </div>
           </div>
+
           {item.place ? (
             <PlaceDetailsTrigger
               provider={item.place.provider}
@@ -667,119 +676,150 @@ function SortableItemCard({
               tripId={tripId}
               dayId={dayId}
             >
-              <h3 className="mt-1 truncate text-lg font-bold text-ink-900 hover:text-brand-700">
+              <h3 className="truncate pr-2 text-base font-bold text-ink-900 hover:text-brand-700">
                 {item.place.name}
               </h3>
-              {/* Rating and stay duration share one line (separated by a
-                  middot when both are present) instead of two — this is
-                  what used to push the card taller once auto-schedule
-                  started giving every item a real stay duration to show. */}
-              {(item.place.rating != null || stayDuration) && (
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-500">
-                  {item.place.rating != null && (
-                    <span className="flex items-center gap-1 text-amber-500">
-                      <Star className="h-3.5 w-3.5 fill-amber-500" />
-                      {item.place.rating.toFixed(1)}
-                    </span>
-                  )}
-                  {item.place.rating != null && stayDuration && (
-                    <span className="text-ink-300" aria-hidden="true">
-                      ·
-                    </span>
-                  )}
-                  {stayDuration && <span>{stayDuration}</span>}
-                </p>
-              )}
             </PlaceDetailsTrigger>
           ) : (
-            <>
-              <h3 className="mt-1 truncate text-lg font-bold text-ink-900">
-                {item.note ?? "未命名項目"}
-              </h3>
-              {stayDuration && (
-                <p className="mt-0.5 text-sm text-ink-500">{stayDuration}</p>
+            <h3 className="truncate pr-2 text-base font-bold text-ink-900">
+              {item.note ?? "未命名項目"}
+            </h3>
+          )}
+
+          {/* Meta (rating · stay) truncates on the left; status on the
+              right never shrinks. Journal and cost keep the colors their
+              old pills had (rose / amber) so "which stops have entries"
+              still reads at a glance — only the pill background/border
+              went. Note and 本日起點 are quieter on purpose. */}
+          <div className="flex h-[18px] min-w-0 items-center gap-2 overflow-hidden pr-2 text-xs text-ink-500">
+            <span className="flex min-w-0 items-center gap-1 overflow-hidden whitespace-nowrap">
+              {item.place?.rating != null && (
+                <span className="flex shrink-0 items-center gap-0.5 text-amber-600">
+                  <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                  {item.place.rating.toFixed(1)}
+                </span>
               )}
-            </>
-          )}
-          {item.confirmationNumber && (
-            <div className="mt-0.5 flex items-center gap-1 truncate text-xs text-ink-500">
-              <Ticket className="h-3 w-3 shrink-0" />
-              {item.confirmationNumber}
-            </div>
-          )}
+              {item.place?.rating != null && stayDuration && (
+                <span className="text-ink-300" aria-hidden="true">
+                  ·
+                </span>
+              )}
+              {stayDuration && <span className="truncate">{stayDuration}</span>}
+            </span>
+            {(isAnchor || hasJournal || hasNote || costSummary) && (
+              <span className="ml-auto flex shrink-0 items-center gap-2">
+                {isAnchor && (
+                  <span title="本日起點" className="text-brand-600">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span className="sr-only">本日起點</span>
+                  </span>
+                )}
+                {hasJournal && (
+                  <span
+                    title={`遊記${item.photos.length > 0 ? `・${item.photos.length}張照片` : ""}`}
+                    className="flex items-center gap-0.5 font-medium text-rose-600"
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span className="sr-only">遊記</span>
+                    {item.photos.length > 0 && item.photos.length}
+                  </span>
+                )}
+                {hasNote && (
+                  <span title="備註">
+                    <StickyNote className="h-3.5 w-3.5" />
+                    <span className="sr-only">備註</span>
+                  </span>
+                )}
+                {costSummary && (
+                  <span title="花費" className="font-medium text-amber-700 tabular-nums">
+                    {costSummary}
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {hasNextStop && (
-        <div className="mt-2 flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-full border border-line bg-paper-alt px-3 py-1.5 text-sm text-ink-700">
-          {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0 text-ink-500" />}
+        // A plain line on the spine instead of a bordered pill with a
+        // <select> inside — the pill competed with the cards around it.
+        // Tapping the line opens the mode picker (editors only).
+        <div className="flex min-h-9 flex-wrap items-center gap-x-1.5 px-1 text-xs text-ink-500">
           {canEdit ? (
-            <select
-              aria-label="交通方式"
-              value={route?.mode ?? "WALK"}
-              onChange={(e) => onModeChange(e.target.value as TravelModeValue)}
+            <button
+              type="button"
+              onClick={() => setShowModePicker(true)}
               disabled={isRecomputing}
-              // w-28 (not w-20): globals.css forces every select/input to
-              // 16px font (fixes iOS auto-zoom-on-focus — see the comment
-              // there), which overrides this text-xs class since Tailwind's
-              // utilities live in a named CSS layer and that override
-              // doesn't. At the resulting 16px, "大眾運輸" plus the native
-              // dropdown arrow no longer fit in a narrower width.
-              className="w-28 shrink-0 rounded-md border border-line bg-surface px-1 py-0.5 text-xs disabled:opacity-50"
+              aria-label={`更換交通方式，目前為${MODE_LABEL[route?.mode ?? "WALK"]}`}
+              className="-mx-1 flex min-h-9 items-center gap-1.5 rounded-md px-1 hover:text-brand-700 disabled:opacity-50"
             >
-              {modeOptions.map((opt) => {
-                const disabled =
-                  opt.value === "TRANSIT" && !transitAvailable;
-                return (
-                  <option
-                    key={opt.value}
-                    value={opt.value}
-                    disabled={disabled}
-                    title={
-                      disabled
-                        ? "目前沒有這個國家的大眾運輸資料"
-                        : undefined
-                    }
-                  >
-                    {opt.label}
-                    {disabled ? "（無資料）" : ""}
-                  </option>
-                );
-              })}
-            </select>
+              {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0" />}
+              {legSummary}
+              <ChevronRight className="h-3.5 w-3.5 text-ink-300" />
+            </button>
           ) : (
-            <span className="shrink-0 text-xs font-medium text-ink-700">
-              {MODE_LABEL[route?.mode ?? "WALK"]}
+            <span className="flex min-h-9 items-center gap-1.5">
+              {ModeIcon && <ModeIcon className="h-3.5 w-3.5 shrink-0" />}
+              {legSummary}
             </span>
           )}
-          {isRecomputing || (isAutoFilling && !route) ? (
-            <span className="text-xs text-ink-500">計算中…</span>
-          ) : route && route.durationMin != null ? (
-            <span className="text-xs text-ink-700">
-              {route.durationMin}分鐘
-              {route.distanceKm != null && `·${route.distanceKm}km`}
-            </span>
-          ) : (
-            <span className="text-xs text-ink-500">
-              無法自動規劃，請手動選擇交通方式
-            </span>
-          )}
-          {/* TRANSIT is a normal, selectable mode now for every country
-              with a data source (Google, or NAVITIME for Japan — see
+          {/* TRANSIT is a normal, selectable mode for every country with
+              a data source (Google, or NAVITIME for Japan — see
               transitAvailable) — this only shows once it's actually
-              picked, to see/change which of the several real alternatives
-              is applied. */}
+              picked, to see/change which of the several real
+              alternatives is applied. */}
           {transitAvailable && route?.mode === "TRANSIT" && (
             <button
               type="button"
               onClick={onViewAlternatives}
-              className="ml-auto flex items-center gap-1 text-xs text-brand-600 hover:underline"
+              className="flex min-h-9 items-center gap-1 text-brand-600 hover:underline"
             >
               <RouteIcon className="h-3.5 w-3.5" />
               路線選項
             </button>
           )}
         </div>
+      )}
+
+      {showModePicker && (
+        <AppModal
+          titleId={`mode-picker-${item.id}`}
+          title="交通方式"
+          onClose={() => setShowModePicker(false)}
+        >
+          <div className="grid gap-2">
+            {modeOptions.map((opt) => {
+              const disabled = opt.value === "TRANSIT" && !transitAvailable;
+              const Icon = MODE_ICON[opt.value];
+              const current = (route?.mode ?? "WALK") === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setShowModePicker(false);
+                    if (!current) onModeChange(opt.value);
+                  }}
+                  className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 ${
+                    current
+                      ? "border-brand-600 bg-brand-50 text-brand-700"
+                      : "border-line bg-surface text-ink-700 hover:bg-paper-alt"
+                  }`}
+                >
+                  {Icon && <Icon className="h-5 w-5 shrink-0" />}
+                  {opt.label}
+                  {disabled && (
+                    <span className="ml-auto text-xs text-ink-500">
+                      目前沒有這個國家的大眾運輸資料
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </AppModal>
       )}
       </div>
     </div>
