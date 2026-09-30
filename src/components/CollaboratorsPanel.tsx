@@ -11,7 +11,7 @@ import {
   updateTripShareRole,
 } from "@/app/trips/actions";
 import { Avatar } from "./Avatar";
-import AppCard from "./AppCard";
+import { PanelShell as Shell } from "./AppCard";
 import AppBadge from "./AppBadge";
 import { useToast } from "./Toast";
 
@@ -36,6 +36,7 @@ export default function CollaboratorsPanel({
   shareEnabled,
   shareToken,
   shareRole,
+  bare = false,
 }: {
   tripId: string;
   collaborators: Collaborator[];
@@ -43,6 +44,9 @@ export default function CollaboratorsPanel({
   shareEnabled: boolean;
   shareToken: string | null;
   shareRole: "EDITOR" | "VIEWER" | null;
+  // true inside TripInfoToolbar's 分享 sheet, which already supplies the
+  // title (and a tab per panel) — drops this card's own frame and heading.
+  bare?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -131,13 +135,15 @@ export default function CollaboratorsPanel({
   }
 
   return (
-    <AppCard className="p-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
-        <Users className="h-4 w-4" />
-        共同協作者
-      </h3>
+    <Shell bare={bare}>
+      {!bare && (
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+          <Users className="h-4 w-4" />
+          共同協作者
+        </h3>
+      )}
 
-      <ul className="mt-3 space-y-2">
+      <ul className={`${bare ? "" : "mt-3 "}space-y-2`}>
         {collaborators.map((c) => (
           <li
             key={c.userId}
@@ -284,6 +290,6 @@ export default function CollaboratorsPanel({
           </div>
         </>
       )}
-    </AppCard>
+    </Shell>
   );
 }

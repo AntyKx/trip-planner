@@ -7,11 +7,8 @@ import { Map as MapIcon, MapPin, Luggage, ListChecks, ClipboardCheck, Stethoscop
 import DayTimeline, { type TimelineItem, type TimelineRoute } from "./DayTimeline";
 import TripMap, { type MapItem, type MapRoute } from "./TripMap";
 import MobileMapFullscreen from "./MobileMapFullscreen";
-import CollaboratorsPanel, { type Collaborator } from "./CollaboratorsPanel";
-import JournalSharePanel from "./JournalSharePanel";
-import ItinerarySharePanel from "./ItinerarySharePanel";
-import EmergencyInfoCard from "./EmergencyInfoCard";
-import BudgetSummary from "./BudgetSummary";
+import { type Collaborator } from "./CollaboratorsPanel";
+import TripInfoToolbar from "./TripInfoToolbar";
 import TravelModeView from "./TravelModeView";
 import type { ChecklistItemView } from "./ChecklistTab";
 import SmartBanner from "./SmartBanner";
@@ -329,6 +326,21 @@ export default function TripDayBoard({
 
   return (
     <div className="pb-24 lg:pb-0">
+      <TripInfoToolbar
+        tripId={tripId}
+        days={daysWithWeather}
+        emergencyInfo={emergencyInfo}
+        canEdit={canEdit}
+        isOwner={isOwner}
+        collaborators={collaborators}
+        shareEnabled={shareEnabled}
+        shareToken={shareToken}
+        shareRole={shareRole}
+        journalShareEnabled={journalShareEnabled}
+        journalShareToken={journalShareToken}
+        itineraryShareEnabled={itineraryShareEnabled}
+        itineraryShareToken={itineraryShareToken}
+      />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div
           role="tablist"
@@ -704,33 +716,6 @@ export default function TripDayBoard({
             )}
           </ul>
         </div>
-
-        <BudgetSummary days={daysWithWeather} />
-
-        <EmergencyInfoCard tripId={tripId} emergencyInfo={emergencyInfo} canEdit={canEdit} />
-
-        <CollaboratorsPanel
-          tripId={tripId}
-          collaborators={collaborators}
-          canManage={isOwner}
-          shareEnabled={shareEnabled}
-          shareToken={shareToken}
-          shareRole={shareRole}
-        />
-
-        <JournalSharePanel
-          tripId={tripId}
-          canManage={isOwner}
-          journalShareEnabled={journalShareEnabled}
-          journalShareToken={journalShareToken}
-        />
-
-        <ItinerarySharePanel
-          tripId={tripId}
-          canManage={isOwner}
-          itineraryShareEnabled={itineraryShareEnabled}
-          itineraryShareToken={itineraryShareToken}
-        />
       </aside>
       </div>
       </div>

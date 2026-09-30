@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 
 export type AppCardSize = "md" | "lg";
 export type AppCardVariant = "flat" | "raised" | "interactive";
@@ -59,4 +59,12 @@ export default function AppCard({
       {children}
     </div>
   );
+}
+
+// A panel that renders as a normal AppCard on the page, or frameless when
+// it's embedded somewhere that already provides the surface (e.g. inside
+// a sheet — see TripInfoToolbar).
+export function PanelShell({ bare, children }: { bare: boolean; children: ReactNode }) {
+  if (bare) return <div>{children}</div>;
+  return <AppCard className="p-4">{children}</AppCard>;
 }

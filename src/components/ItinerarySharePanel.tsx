@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Map, Copy, Check, Eye } from "lucide-react";
 import { enableItineraryShare, disableItineraryShare } from "@/app/trips/actions";
-import AppCard from "./AppCard";
+import { PanelShell as Shell } from "./AppCard";
 import { useToast } from "./Toast";
 
 export default function ItinerarySharePanel({
@@ -13,11 +13,15 @@ export default function ItinerarySharePanel({
   canManage,
   itineraryShareEnabled,
   itineraryShareToken,
+  bare = false,
 }: {
   tripId: string;
   canManage: boolean;
   itineraryShareEnabled: boolean;
   itineraryShareToken: string | null;
+  // true inside TripInfoToolbar's 分享 sheet, which already supplies the
+  // title (and a tab per panel) — drops this card's own frame and heading.
+  bare?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -57,11 +61,13 @@ export default function ItinerarySharePanel({
   if (!canManage) return null;
 
   return (
-    <AppCard className="p-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
-        <Map className="h-4 w-4" />
-        行程總覽分享
-      </h3>
+    <Shell bare={bare}>
+      {!bare && (
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+          <Map className="h-4 w-4" />
+          行程總覽分享
+        </h3>
+      )}
       <p className="mt-1 text-xs text-ink-500">
         把每天的景點、時間、交通方式整理成一頁可分享的行程總覽，讓還沒安裝APP的親友也能看，不含訂房確認碼與花費金額。
       </p>
@@ -112,6 +118,6 @@ export default function ItinerarySharePanel({
           </button>
         </div>
       )}
-    </AppCard>
+    </Shell>
   );
 }

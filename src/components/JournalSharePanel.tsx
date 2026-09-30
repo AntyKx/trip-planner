@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Copy, Check, Eye } from "lucide-react";
 import { enableJournalShare, disableJournalShare } from "@/app/trips/actions";
-import AppCard from "./AppCard";
+import { PanelShell as Shell } from "./AppCard";
 import { useToast } from "./Toast";
 
 export default function JournalSharePanel({
@@ -13,11 +13,15 @@ export default function JournalSharePanel({
   canManage,
   journalShareEnabled,
   journalShareToken,
+  bare = false,
 }: {
   tripId: string;
   canManage: boolean;
   journalShareEnabled: boolean;
   journalShareToken: string | null;
+  // true inside TripInfoToolbar's 分享 sheet, which already supplies the
+  // title (and a tab per panel) — drops this card's own frame and heading.
+  bare?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -57,11 +61,13 @@ export default function JournalSharePanel({
   if (!canManage) return null;
 
   return (
-    <AppCard className="p-4">
-      <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
-        <BookOpen className="h-4 w-4" />
-        旅遊書分享
-      </h3>
+    <Shell bare={bare}>
+      {!bare && (
+        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+          <BookOpen className="h-4 w-4" />
+          旅遊書分享
+        </h3>
+      )}
       <p className="mt-1 text-xs text-ink-500">
         把有寫遊記或上傳照片的景點整理成一頁可分享的旅遊書，任何拿到連結的人都能看，不需要登入帳號。
       </p>
@@ -112,6 +118,6 @@ export default function JournalSharePanel({
           </button>
         </div>
       )}
-    </AppCard>
+    </Shell>
   );
 }

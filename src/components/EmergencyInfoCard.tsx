@@ -10,10 +10,13 @@ export default function EmergencyInfoCard({
   tripId,
   emergencyInfo,
   canEdit,
+  bare = false,
 }: {
   tripId: string;
   emergencyInfo: string | null;
   canEdit: boolean;
+  // true inside TripInfoToolbar's sheet, which already supplies the title.
+  bare?: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -31,26 +34,33 @@ export default function EmergencyInfoCard({
   }
 
   return (
-    <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
+    <div className={bare ? "" : "rounded-xl border border-line bg-surface p-4 shadow-sm"}>
       <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
-          <ShieldAlert className="h-4 w-4" />
-          緊急資訊
-        </h3>
+        {!bare && (
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+            <ShieldAlert className="h-4 w-4" />
+            緊急資訊
+          </h3>
+        )}
         {canEdit && !isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
             aria-label="編輯緊急資訊"
-            className="p-1 text-ink-500 hover:text-brand-600"
+            className={
+              bare
+                ? "ml-auto flex min-h-9 items-center gap-1 rounded-md border border-line px-3 text-sm text-ink-700 hover:bg-paper-alt"
+                : "p-1 text-ink-500 hover:text-brand-600"
+            }
           >
             <Pencil className="h-4 w-4" />
+            {bare && "編輯"}
           </button>
         )}
       </div>
 
       {canEdit && isEditing ? (
-        <div className="mt-3 space-y-2">
+        <div className={`${bare ? "" : "mt-3 "}space-y-2`}>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
