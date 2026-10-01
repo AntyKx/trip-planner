@@ -5,8 +5,6 @@ import {
   Luggage,
   Compass,
   Heart,
-  Stethoscope,
-  CheckCircle2,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
@@ -21,7 +19,6 @@ import ImgWithFallback from "@/components/ImgWithFallback";
 import SectionHeader from "@/components/SectionHeader";
 import EmptyState from "@/components/EmptyState";
 import { NoTripsIllustration } from "@/components/EmptyStateIllustrations";
-import GreetingHero from "@/components/GreetingHero";
 import SignOutButton from "@/components/SignOutButton";
 import PushNotificationToggle from "@/components/PushNotificationToggle";
 import OnboardingCard, {
@@ -31,6 +28,7 @@ import OnboardingCard, {
 import {
   MemoryCard,
   MemoriesRow,
+  NextTripBanner,
   type MemoryTileTrip,
   FootprintStats,
   FavoritesPreview,
@@ -252,17 +250,10 @@ export default async function TripsPage() {
   }
 
   function renderHeroCard(trip: NonNullable<typeof heroTrip>) {
-    const coverImage = coverImageOf(trip);
     const status = statusOf(trip);
     const daysToStart = daysUntilStart(trip);
     const currentDayIndex =
       Math.round((todayMs - trip.startDate.getTime()) / MS_PER_DAY) + 1;
-    const countdown =
-      status === "traveling"
-        ? `旅行中 · Day ${currentDayIndex}`
-        : daysToStart === 0
-          ? "今天出發！"
-          : `距離出發還有 ${daysToStart} 天`;
 
     // Derived facts only — no invented "completion %" (there's no data
     // model for what "complete" means; empty days and unchecked checklist
@@ -278,97 +269,50 @@ export default async function TripsPage() {
       const shown = emptyDays.slice(0, 3).map((i) => `Day ${i}`).join("、");
       const suffix = emptyDays.length > 3 ? "…" : "";
       facts.push(
-        `還有 ${emptyDays.length} 天尚未安排任何景點（${shown}${suffix}）`
+        `${shown}${suffix} 還沒排景點`
       );
     }
     // A trip whose checklist was never seeded (0 rows) has nothing useful
     // to say — only surface a count when items actually exist.
     if (trip.checklistItems.length > 0 && checklistRemaining > 0) {
-      facts.push(`檢查清單還有 ${checklistRemaining} 項未完成`);
+      facts.push(`檢查清單還有 ${checklistRemaining} 項`);
     }
 
-    return (
-      <div className="animate-fade-up overflow-hidden rounded-card-lg border border-line bg-surface shadow-soft [animation-fill-mode:forwards]">
-        <Link
-          href={`/trips/${trip.id}`}
-          className="group relative block h-44 sm:h-52"
-        >
-          <ImgWithFallback
-            src={coverImage}
-            alt={trip.title}
-            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            fallback={
-              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-800 via-brand-500 to-brand-300">
-                <Luggage className="h-16 w-16 text-white/25" />
-              </div>
-            }
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-          <span className="absolute left-4 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-brand-700 backdrop-blur">
-            {countdown}
-          </span>
-          <div className="absolute inset-x-0 bottom-0 p-4">
-            <h2 className="truncate text-2xl font-bold text-white drop-shadow-sm">
-              {trip.title}
-            </h2>
-            <p className="mt-1 text-xs text-white/90">
-              {trip.startDate.toISOString().slice(0, 10)} ~{" "}
-              {trip.endDate.toISOString().slice(0, 10)}・共 {trip.days.length} 天
-            </p>
-          </div>
-        </Link>
+    // 2026-10-01 restyle (B direction): a solid brand-colour banner with
+    // a big countdown number, replacing the photo card. Facts become
+    // orange reminder strips under it.
+    const countdownNumber =
+      status === "traveling" ? `Day ${currentDayIndex}` : daysToStart === 0 ? "今天" : String(daysToStart);
+    const countdownLabel =
+      status === "traveling" ? "旅行中" : daysToStart === 0 ? "出發" : "天後出發";
 
-        <div className="flex flex-col gap-3 p-4">
-          {facts.length > 0 ? (
-            <ul className="flex flex-col gap-1.5">
-              {facts.map((fact) => (
-                <li
-                  key={fact}
-                  className="flex items-start gap-2 text-sm text-ink-700"
-                >
-                  <span
-                    className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent-500"
-                    aria-hidden="true"
-                  />
-                  {fact}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="flex items-center gap-1.5 text-sm text-success-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              行程都排好了，可以出發了！
-            </p>
-          )}
-          <div className="flex gap-2.5">
-            <Link
-              href={`/trips/${trip.id}`}
-              className={appButtonClassName("primary", "md", "flex-1")}
-            >
-              繼續規劃
-            </Link>
-            <Link
-              href={`/trips/${trip.id}?mode=doctor`}
-              className={appButtonClassName("secondary", "md", "gap-1.5")}
-            >
-              <Stethoscope className="h-4 w-4 text-brand-600" />
-              行程健檢
-            </Link>
-          </div>
-          <BookingShortcuts
-            tripId={trip.id}
-            startDate={trip.startDate.toISOString().slice(0, 10)}
-            endDate={trip.endDate.toISOString().slice(0, 10)}
-            detectedCity={
-              detectBookingCity(
-                trip.title,
-                trip.days.flatMap((d) => d.items).map((i) => i.place?.address)
-              )?.name
-            }
-            traveling={status === "traveling"}
-          />
-        </div>
-      </div>
+    return (
+      <NextTripBanner
+        tripId={trip.id}
+        title={trip.title}
+        traveling={status === "traveling"}
+        countdownNumber={countdownNumber}
+        countdownLabel={countdownLabel}
+        dateRange={`${trip.startDate.toISOString().slice(5, 10).replace("-", "/")} – ${trip.endDate
+          .toISOString()
+          .slice(5, 10)
+          .replace("-", "/")}`}
+        dayCount={trip.days.length}
+        facts={facts}
+      >
+        <BookingShortcuts
+          tripId={trip.id}
+          startDate={trip.startDate.toISOString().slice(0, 10)}
+          endDate={trip.endDate.toISOString().slice(0, 10)}
+          detectedCity={
+            detectBookingCity(
+              trip.title,
+              trip.days.flatMap((d) => d.items).map((i) => i.place?.address)
+            )?.name
+          }
+          traveling={status === "traveling"}
+        />
+      </NextTripBanner>
     );
   }
 
@@ -454,26 +398,31 @@ export default async function TripsPage() {
     {
       href: "/explore",
       icon: Compass,
-      title: "探索景點",
+      title: "探索",
       desc: "搜尋並加入行程",
     },
     {
       href: "/trips/new",
       icon: Plus,
-      title: "建立新旅程",
+      title: "新行程",
       desc: "從空白開始",
     },
     {
       href: "/explore?view=favorites",
       icon: Heart,
-      title: "我的收藏",
+      title: "收藏",
       desc: "存過的口袋名單",
     },
   ];
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <div className="flex items-center justify-end gap-3 text-sm text-ink-700">
+      {/* App bar — the old "午安，Anty / 下一段旅程，從這裡開始" greeting
+          was dropped in the 2026-10-01 restyle (slogan copy read as
+          AI-generated). */}
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xl font-black text-brand-600">Trip Planner</span>
+        <div className="flex min-w-0 items-center gap-3 text-sm text-ink-700">
         <PushNotificationToggle />
         <ImgWithFallback
           src={user.avatarUrl}
@@ -485,13 +434,9 @@ export default async function TripsPage() {
             </div>
           }
         />
-        <span className="max-w-[8rem] truncate">{user.name}</span>
         <SignOutButton />
+        </div>
       </div>
-
-      <section className="mt-2">
-        <GreetingHero name={user.name} />
-      </section>
 
       {heroTrip && <section className="mt-6">{renderHeroCard(heroTrip)}</section>}
       {lastTrip && (
@@ -505,20 +450,15 @@ export default async function TripsPage() {
         </section>
       )}
 
-      <section className="mt-5 grid grid-cols-3 gap-3">
+      <section className="mt-5 grid grid-cols-3 gap-2">
         {quickEntries.map((entry) => (
           <Link
             key={entry.href}
             href={entry.href}
-            className="rounded-card-lg bg-brand-50 px-2 py-3.5 text-center transition hover:bg-brand-100 active:scale-[0.97]"
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-2 text-sm font-medium text-ink-900 transition hover:bg-paper-alt active:scale-[0.97]"
           >
-            <entry.icon className="mx-auto h-5 w-5 text-brand-600" />
-            <span className="mt-1.5 block text-xs font-semibold text-brand-700">
-              {entry.title}
-            </span>
-            <span className="mt-0.5 hidden text-[11px] text-ink-500 sm:block">
-              {entry.desc}
-            </span>
+            <entry.icon className="h-4 w-4 shrink-0 text-brand-600" />
+            {entry.title}
           </Link>
         ))}
       </section>

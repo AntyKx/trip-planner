@@ -6,7 +6,7 @@ import { Move, Check, Maximize2, Hand } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
 import { decodePolyline, polylineMatchesEndpoints } from "@/lib/polyline";
 
-export const START_MARKER_COLOR = "#b45309";
+export const START_MARKER_COLOR = "#14171a";
 
 // Builds a small colored-circle SVG data-URI icon so markers aren't Google's
 // default red pin. Uses plain objects (not `new google.maps.Size/Point`) so

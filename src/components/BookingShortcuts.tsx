@@ -75,7 +75,7 @@ export default function BookingShortcuts({
         <button
           type="button"
           onClick={() => setPicking(true)}
-          className="flex min-h-8 min-w-0 items-center gap-1 rounded-full bg-paper-alt px-2.5 text-xs text-ink-700 hover:bg-line"
+          className="flex min-h-8 min-w-0 items-center gap-1 rounded-md bg-paper-alt px-2.5 text-xs text-ink-700 hover:bg-line"
         >
           <MapPin className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">
@@ -176,22 +176,22 @@ function ShortcutTile({
 }) {
   const body = (
     <>
-      <Icon className="h-5 w-5 text-brand-600" />
-      <span className="text-[13px] font-semibold">{label}</span>
+      <Icon className="h-5 w-5 text-accent-500" />
+      <span className="text-[13px] font-bold text-ink-900">{label}</span>
       <span className="max-w-full truncate text-[10.5px] font-normal text-ink-500">{note}</span>
     </>
   );
   const className =
-    "flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-2 text-center";
+    "flex min-h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1 py-2 text-center";
   if (!href) {
-    return <span className={`${className} bg-paper-alt text-ink-400 opacity-70`}>{body}</span>;
+    return <span className={`${className} border-line bg-paper-alt opacity-60`}>{body}</span>;
   }
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={`${className} bg-brand-50 text-brand-700 transition hover:bg-brand-100 active:scale-[0.97]`}
+      className={`${className} border-line bg-surface transition hover:bg-paper-alt active:scale-[0.97]`}
     >
       {body}
     </a>
@@ -212,7 +212,7 @@ function ChoiceChip({
       type="button"
       onClick={onClick}
       aria-pressed={selected}
-      className={`min-h-9 rounded-full border px-3 text-sm ${
+      className={`min-h-9 rounded-md border px-3 text-sm ${
         selected
           ? "border-brand-600 bg-brand-600 text-white"
           : "border-line bg-surface text-ink-700 hover:bg-paper-alt"

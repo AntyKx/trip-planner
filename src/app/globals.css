@@ -59,18 +59,12 @@ textarea {
   font-size: 16px;
 }
 
-/* Site-wide background: warm paper base with two very faint brand glows
-   pinned to the top corners of the document (they scroll away with the
-   page — deliberately a page-top treatment, not a fixed overlay). Applied
-   on <body> in layout.tsx in place of bg-paper; pages that paint their own
-   full-bleed background (login, journal) simply cover it. Opacities are
-   the "加強版" the user picked from the Artifact preview (the spec's 8%
-   was too faint to notice). */
+/* Site-wide background — plain white since the 2026-10-01 restyle (B
+   direction, 海港藍). The old warm paper base with two radial brand glows
+   was one of the "looks AI-generated" tells the user pointed out. Class
+   name kept so layout.tsx doesn't need touching. */
 .app-glow-bg {
-  background:
-    radial-gradient(circle at 10% 0%, rgba(68, 123, 168, 0.14), transparent 34%),
-    radial-gradient(circle at 95% 15%, rgba(216, 138, 36, 0.12), transparent 30%),
-    var(--color-paper);
+  background: var(--color-paper);
 }
 
 /* Removes the ~300ms double-tap-to-zoom delay/gesture on interactive
@@ -100,28 +94,31 @@ input[type="radio"] {
     ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* 旅行藍主色 — 2026-07-08 依「UI Design System 收斂」規格微調，同一個
-     暖藍家族的精修版，不是換色系；新增 brand-300/900 補齊階層。 */
-  --color-brand-50: #f1f6fb;
-  --color-brand-100: #dce9f5;
-  --color-brand-200: #bad3e8;
-  --color-brand-300: #8eb6d6;
-  --color-brand-400: #6295bf;
-  --color-brand-500: #447ba8;
-  --color-brand-600: #32648e;
-  --color-brand-700: #294f72;
-  --color-brand-800: #223f5b;
-  --color-brand-900: #1d354b;
+  /* 海港藍 brand — 2026-10-01 restyle (B direction, picked from an
+     Artifact palette comparison). 600 is the brand colour itself (#0b6bcb):
+     banners, links, primary buttons, selected states. */
+  --color-brand-50: #e7f1fb;
+  --color-brand-100: #cde2f7;
+  --color-brand-200: #9fc6ef;
+  --color-brand-300: #6aa6e4;
+  --color-brand-400: #3a88d8;
+  --color-brand-500: #1d79d0;
+  --color-brand-600: #0b6bcb;
+  --color-brand-700: #0957a6;
+  --color-brand-800: #074584;
+  --color-brand-900: #06396c;
 
-  /* 日落琥珀輔色 */
-  --color-accent-50: #fff8eb;
-  --color-accent-100: #ffedc6;
-  --color-accent-500: #d88a24;
-  --color-accent-600: #b96b13;
+  /* Accent orange — only for prices/costs and "still to do" reminders,
+     never decoration (B direction). */
+  --color-accent-50: #fff3ee;
+  --color-accent-100: #ffe2d5;
+  --color-accent-500: #ff6b35;
+  --color-accent-600: #e5531d;
 
-  /* 暖米白背景 */
-  --color-paper: #f7f6f3;
-  --color-paper-alt: #efede8;
+  /* Neutral background: white page, cool light grey for wells/tracks
+     (was warm cream — another of the AI-look tells). */
+  --color-paper: #ffffff;
+  --color-paper-alt: #f3f5f6;
 
   /* Card, modal, and dropdown surface color — a named token instead of
      each component hardcoding white directly, kept separate from
@@ -132,18 +129,19 @@ input[type="radio"] {
      see CHANGELOG), so this currently only ever resolves to white. */
   --color-surface: #ffffff;
 
-  /* 暖灰文字（取代 slate，避免偏藍冷灰） */
-  --color-ink-400: #a29d96;
-  --color-ink-500: #77716a;
-  --color-ink-700: #49443f;
-  --color-ink-900: #25221f;
+  /* Neutral text greys (were warm/brownish to sit on the cream page). */
+  --color-ink-300: #c3c9cd;
+  --color-ink-400: #98a1a7;
+  --color-ink-500: #5f6b72;
+  --color-ink-700: #3a4248;
+  --color-ink-900: #14171a;
 
   /* Neutral border tokens — replaces ad-hoc border-slate-200/300 usage
      across the app (see AppCard/AppButton below for the first callers);
      the rest of the codebase still uses border-slate-* directly for now,
      that full sweep is a later phase, not done in this pass. */
-  --color-line: #e7e3dd;
-  --color-line-strong: #d9d3ca;
+  --color-line: #e6e9eb;
+  --color-line-strong: #d5dadd;
 
   /* Status tokens — collapse an audited ~70-site sprawl of raw red-500/
      600/700, amber-600/700, emerald-600/700, sky-700 usage (same meaning,
@@ -176,7 +174,10 @@ input[type="radio"] {
   --color-info-700: #0369a1;
 
   /* 手寫風強調字體（開頭/登入畫面的品牌字樣、便條式標語） */
-  --font-script: var(--font-caveat), cursive;
+  /* Handwriting (Caveat) retired in the 2026-10-01 restyle — the token
+     now resolves to the normal sans stack so any remaining font-script
+     use just renders as regular text. */
+  --font-script: var(--font-sans);
 
   /* Design-system tokens (see src/components/App*.tsx). --shadow-soft is
      the older, heavier shadow this design-system pass is moving away from
@@ -184,11 +185,11 @@ input[type="radio"] {
      any leftover callers still using it directly, not applied by default
      anymore. --shadow-raised/--shadow-overlay are the new, lighter shadow
      scale (raised = subtle card lift, overlay = modal/dropdown elevation). */
-  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.08);
-  --shadow-raised: 0 1px 2px rgba(37, 34, 31, 0.04), 0 6px 20px rgba(37, 34, 31, 0.06);
-  --shadow-overlay: 0 20px 50px rgba(37, 34, 31, 0.16);
-  --radius-card: 1rem; /* 16px — regular cards */
-  --radius-card-lg: 1.5rem; /* 24px — hero/large cards */
+  --shadow-soft: 0 1px 3px rgba(20, 23, 26, 0.08);
+  --shadow-raised: 0 1px 2px rgba(20, 23, 26, 0.05), 0 4px 12px rgba(20, 23, 26, 0.06);
+  --shadow-overlay: 0 16px 40px rgba(20, 23, 26, 0.18);
+  --radius-card: 0.625rem; /* 10px — regular cards (was 16px) */
+  --radius-card-lg: 0.875rem; /* 14px — hero/large cards (was 24px) */
 
   /* Simple, dependency-free entrance animations — drag-settle/reorder
      transitions (Timeline/Checklist) are handled by dnd-kit's own

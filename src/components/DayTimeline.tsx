@@ -545,7 +545,7 @@ function SortableItemCard({
           }`}
         />
         {formatTime(item.startTime) && (
-          <span className="mt-1 block -rotate-2 font-script text-lg leading-none text-brand-700">
+          <span className="mt-1.5 block text-xs font-bold leading-none text-brand-600 tabular-nums">
             {formatTime(item.startTime)}
           </span>
         )}
@@ -641,8 +641,8 @@ function SortableItemCard({
                   onClick={onOpenJournal}
                   aria-label="編輯遊記"
                   title="遊記與照片"
-                  className={`flex h-10 w-[30px] items-center justify-center hover:text-rose-600 ${
-                    hasJournal ? "text-rose-600" : "text-ink-500"
+                  className={`flex h-10 w-[30px] items-center justify-center hover:text-brand-600 ${
+                    hasJournal ? "text-brand-600" : "text-ink-500"
                   }`}
                 >
                   <BookOpen className="h-4 w-4" />
@@ -658,7 +658,7 @@ function SortableItemCard({
                   // journal button above turns rose when there's a journal
                   // — the row-1 buttons double as "has content" markers.
                   className={`flex h-10 w-[30px] items-center justify-center hover:text-brand-600 ${
-                    hasNote ? "text-violet-600" : "text-ink-500"
+                    hasNote ? "text-brand-600" : "text-ink-500"
                   }`}
                 >
                   <Pencil className="h-4 w-4" />
@@ -715,7 +715,7 @@ function SortableItemCard({
                 {!canEdit && hasJournal && (
                   <span
                     title={`遊記${item.photos.length > 0 ? `・${item.photos.length}張照片` : ""}`}
-                    className="flex items-center gap-0.5 font-medium text-rose-600"
+                    className="flex items-center gap-0.5 font-medium text-brand-600"
                   >
                     <BookOpen className="h-3.5 w-3.5" />
                     <span className="sr-only">遊記</span>
@@ -729,7 +729,7 @@ function SortableItemCard({
                   </span>
                 )}
                 {costSummary && (
-                  <span title="花費" className="font-medium text-amber-700 tabular-nums">
+                  <span title="花費" className="font-semibold text-accent-600 tabular-nums">
                     {costSummary}
                   </span>
                 )}

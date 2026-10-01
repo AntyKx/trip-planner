@@ -1,6 +1,9 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import {
+  AlertCircle,
   BookOpen,
+  CheckCircle2,
   ChevronRight,
   Footprints,
   Globe,
@@ -10,6 +13,7 @@ import {
   Luggage,
   Map as MapIcon,
   Plus,
+  Stethoscope,
 } from "lucide-react";
 import ImgWithFallback from "./ImgWithFallback";
 import SectionHeader from "./SectionHeader";
@@ -68,7 +72,7 @@ export function MemoryCard({
           {trip.hasJournal && (
             <Link
               href={`/trips/${trip.id}/journal`}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-white px-3.5 text-sm font-medium text-ink-900 transition active:scale-[0.97]"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-bold text-ink-900 transition active:scale-[0.97]"
             >
               <BookOpen className="h-4 w-4" />
               翻翻旅遊書
@@ -76,7 +80,7 @@ export function MemoryCard({
           )}
           <Link
             href={`/trips/${trip.id}`}
-            className={`inline-flex min-h-10 items-center rounded-xl px-3.5 text-sm font-medium transition active:scale-[0.97] ${
+            className={`inline-flex min-h-10 items-center rounded-lg px-3.5 text-sm font-medium transition active:scale-[0.97] ${
               trip.hasJournal ? "bg-white/20 text-white backdrop-blur" : "bg-white text-ink-900"
             }`}
           >
@@ -151,10 +155,10 @@ export function FavoritesPreview({
                 key={p.id}
                 src={p.photoUrl}
                 alt={p.name}
-                className={`h-11 w-11 rounded-xl border-2 border-white object-cover shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
+                className={`h-11 w-11 rounded-lg border-2 border-white object-cover shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
                 fallback={
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-xl border-2 border-white bg-brand-50 shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-white bg-brand-50 shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
                   >
                     <Heart className="h-4 w-4 text-brand-400" />
                   </div>
@@ -215,22 +219,23 @@ export function InspirationChips({
           ? `下個連假：${md(longWeekend.start)}–${md(longWeekend.end)} ${longWeekend.name}（${longWeekend.days} 天）・依季節、連假和你去過的地方排序`
           : "依季節和你去過的地方排序"}
       </p>
-      <div className="flex flex-wrap gap-2">
+      {/* Two-column tiles instead of pill chips (2026-10-01 restyle). */}
+      <div className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-2 sm:grid-cols-[repeat(4,minmax(0,1fr))]">
         {destinations.map((d) => (
           <Link
             key={d.city}
             href={destinationHref(d)}
-            className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1 text-sm text-ink-900 transition hover:border-brand-200 hover:bg-brand-50"
+            className="flex min-w-0 flex-col gap-0.5 rounded-lg border border-line bg-surface px-3 py-2.5 transition hover:border-brand-200 hover:bg-brand-50"
           >
-            <span className="shrink-0">{d.city}</span>
-            <span className="truncate text-[11px] text-ink-500">
-              {d.reason ?? d.country}
+            <span className="flex items-center justify-between gap-1">
+              <span className="truncate text-[15px] font-bold text-ink-900">{d.city}</span>
+              {d.visited && (
+                <span className="shrink-0 rounded bg-paper-alt px-1.5 text-[10.5px] text-ink-500">
+                  去過
+                </span>
+              )}
             </span>
-            {d.visited && (
-              <span className="shrink-0 rounded-full bg-paper-alt px-1.5 text-[10.5px] text-ink-500">
-                去過
-              </span>
-            )}
+            <span className="truncate text-xs text-ink-500">{d.reason ?? d.country}</span>
           </Link>
         ))}
       </div>
@@ -276,7 +281,7 @@ export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "
       href={`/trips/${trip.id}`}
       aria-label={`看「${trip.title}」的行程`}
       title="看行程"
-      className="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-ink-700 shadow-sm backdrop-blur hover:bg-white"
+      className="absolute right-1.5 top-1.5 z-10 flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-ink-700 shadow-sm backdrop-blur hover:bg-white"
     >
       <ListChecks className="h-4 w-4" />
     </Link>
@@ -286,7 +291,7 @@ export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "
     return (
       <div className="relative w-[132px] shrink-0 snap-start">
         <Link href={tileHref} className="group block">
-          <div className="relative h-[150px] overflow-hidden rounded-2xl bg-paper-alt">
+          <div className="relative h-[160px] overflow-hidden rounded-card-lg bg-paper-alt">
             {cover}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             <p className="absolute inset-x-2.5 bottom-6 truncate text-[15px] font-bold text-white">
@@ -317,7 +322,7 @@ export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "
     <div className="relative min-w-0">
       <Link
         href={tileHref}
-        className="flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface transition hover:shadow-soft"
+        className="flex h-full flex-col overflow-hidden rounded-card-lg border border-line bg-surface transition hover:shadow-soft"
       >
         <div className="relative h-28 shrink-0 bg-paper-alt">{cover}</div>
         <div className="flex min-w-0 flex-col gap-0.5 px-2.5 pb-3 pt-2">
@@ -368,7 +373,7 @@ export function MemoriesRow({ trips, total }: { trips: MemoryTileTrip[]; total: 
         ))}
         <Link
           href="/memories"
-          className="flex h-[150px] w-[110px] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-2xl border-[1.5px] border-dashed border-line-strong bg-surface text-sm font-medium text-brand-700"
+          className="flex h-[160px] w-[110px] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-card-lg border border-line bg-paper-alt text-sm font-medium text-brand-700"
         >
           <ListChecks className="h-5 w-5" />
           查看全部
@@ -376,5 +381,81 @@ export function MemoriesRow({ trips, total }: { trips: MemoryTileTrip[]; total: 
         </Link>
       </div>
     </section>
+  );
+}
+
+// The next upcoming (or ongoing) trip at the top of the home page —
+// 2026-10-01 restyle (B direction): a solid brand-colour banner with a big
+// countdown, replacing the old photo card; the derived facts become orange
+// reminder strips under it, followed by `children` (預訂捷徑).
+export function NextTripBanner({
+  tripId,
+  title,
+  traveling,
+  countdownNumber,
+  countdownLabel,
+  dateRange,
+  dayCount,
+  facts,
+  children,
+}: {
+  tripId: string;
+  title: string;
+  traveling: boolean;
+  countdownNumber: string;
+  countdownLabel: string;
+  dateRange: string;
+  dayCount: number;
+  facts: string[];
+  children?: ReactNode;
+}) {
+  return (
+    <div className="animate-fade-up [animation-fill-mode:forwards]">
+      <div className="rounded-card-lg bg-brand-600 p-4 text-white">
+        <p className="text-xs text-white/85">{traveling ? "旅行中" : "下一趟"}</p>
+        <h2 className="mt-0.5 truncate text-[22px] font-black leading-snug">{title}</h2>
+        <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
+          <span className="text-3xl font-black tabular-nums">{countdownNumber}</span>
+          <span className="text-sm text-white/90">
+            {countdownLabel} · {dateRange} · {dayCount} 天
+          </span>
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Link
+            href={`/trips/${tripId}`}
+            className="inline-flex min-h-10 items-center rounded-lg bg-white px-3.5 text-sm font-bold text-brand-700 transition active:scale-[0.97]"
+          >
+            繼續規劃
+          </Link>
+          <Link
+            href={`/trips/${tripId}?mode=doctor`}
+            className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-white/15 px-3.5 text-sm font-medium text-white transition hover:bg-white/25 active:scale-[0.97]"
+          >
+            <Stethoscope className="h-4 w-4" />
+            健檢
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-2.5 flex flex-col gap-2">
+        {facts.length > 0 ? (
+          facts.map((fact) => (
+            <p
+              key={fact}
+              className="flex items-start gap-2 rounded-lg bg-accent-50 px-3 py-2 text-sm font-medium text-accent-600"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {fact}
+            </p>
+          ))
+        ) : (
+          <p className="flex items-center gap-1.5 rounded-lg bg-success-50 px-3 py-2 text-sm text-success-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            行程都排好了
+          </p>
+        )}
+        {children}
+      </div>
+    </div>
   );
 }

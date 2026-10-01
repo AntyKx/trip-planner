@@ -10,7 +10,7 @@ export type AppButtonSize = "sm" | "md";
 // button), so a destructive action never looks equally loud everywhere
 // it appears.
 const VARIANT_CLASSES: Record<AppButtonVariant, string> = {
-  primary: "bg-brand-800 text-white hover:bg-brand-700",
+  primary: "bg-brand-600 text-white hover:bg-brand-700",
   secondary: "border border-line bg-surface text-ink-700 hover:bg-paper-alt",
   ghost: "text-brand-600 hover:bg-brand-50",
   danger: "text-danger-600 hover:bg-danger-50",
