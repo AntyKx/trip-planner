@@ -94,32 +94,30 @@ input[type="radio"] {
     ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* 海港藍 brand — 2026-10-01 restyle (B direction, picked from an
-     Artifact palette comparison). 600 is the brand colour itself:
-     banners, links, primary buttons, selected states. Darkened one step
-     from #0b6bcb to #0a5aa8 the same day — the original looked too bright
-     on the user's phone (the preview was judged on a desktop screen). */
-  --color-brand-50: #e8f0f9;
-  --color-brand-100: #cbdcf0;
-  --color-brand-200: #9dbde3;
-  --color-brand-300: #6a9bd3;
-  --color-brand-400: #3a7cc3;
-  --color-brand-500: #1b68b6;
-  --color-brand-600: #0a5aa8;
-  --color-brand-700: #084a8c;
-  --color-brand-800: #073b70;
-  --color-brand-900: #06315c;
+  /* Brand — 日落橘 since 2026-10-01 (the user found the 海港藍 #de5a14 too
+     close to Facebook's blue; picked from an 8-colour comparison "to try").
+     600 is the brand colour itself: links, primary buttons, selected
+     states. Previous: 海港藍 600 = #0a5aa8 (scale in git history, commit before 日落橘) if reverting. */
+  --color-brand-50: #fdeee5;
+  --color-brand-100: #fbd9c5;
+  --color-brand-200: #f6b48d;
+  --color-brand-300: #f08c55;
+  --color-brand-400: #e8702f;
+  --color-brand-500: #e2641f;
+  --color-brand-600: #de5a14;
+  --color-brand-700: #b8480e;
+  --color-brand-800: #93390c;
+  --color-brand-900: #752f0c;
 
-  /* "Accent" is no longer a second hue (2026-10-01: the user picked
-     "只用藍色" over blue + orange/amber/coral after a side-by-side preview).
-     The tokens stay so existing accent-* classes (AI sections, badges,
-     行程健檢) keep working, but they now resolve to the brand blue family.
-     700 was referenced in several places but never defined before. */
-  --color-accent-50: #e8f0f9;
-  --color-accent-100: #cbdcf0;
-  --color-accent-500: #1b68b6;
-  --color-accent-600: #0a5aa8;
-  --color-accent-700: #084a8c;
+  /* "Accent" is no longer a second hue (2026-10-01: the user picked a
+     single brand colour over brand + a second accent). The tokens stay so
+     existing accent-* classes (AI sections, badges, 行程健檢) keep
+     working, but they resolve to the brand family. */
+  --color-accent-50: #fdeee5;
+  --color-accent-100: #fbd9c5;
+  --color-accent-500: #e2641f;
+  --color-accent-600: #de5a14;
+  --color-accent-700: #b8480e;
 
   /* Neutral background: white page, cool light grey for wells/tracks
      (was warm cream — another of the AI-look tells). */
