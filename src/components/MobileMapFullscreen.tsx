@@ -8,6 +8,7 @@ import {
   DayMarkers,
   DayRoutes,
   START_MARKER_COLOR,
+  START_MARKER_TEXT,
   fitMapToItems,
   stopLabel,
   type MapDay,
@@ -429,8 +430,8 @@ function FullscreenCard({
           <img src={item.photoUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
         )}
         <span
-          className="absolute left-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white px-1 text-xs font-bold text-white"
-          style={{ background: color }}
+          className="absolute left-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white px-1 text-xs font-bold"
+          style={{ background: color, color: index === 0 ? START_MARKER_TEXT : "white" }}
         >
           {stopLabel(index)}
         </span>

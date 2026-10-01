@@ -52,10 +52,12 @@ export const TYPE_COLOR: Record<string, { bg: string; text: string; hex: string 
   // per-type rainbow (blue/amber/violet/sky) — 景點 keeps the brand blue,
   // everything else is neutral ink. hex feeds the map markers.
   PLACE: { bg: "bg-brand-50", text: "text-brand-600", hex: "#1f4257" },
-  RESTAURANT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },
-  HOTEL: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },
-  TRANSPORT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },
-  CUSTOM: { bg: "bg-paper-alt", text: "text-ink-500", hex: "#5f6b72" },
+  // Lighter slate than 景點's brand colour so map markers read as two
+  // clear tiers (start marker is gold — see START_MARKER_COLOR).
+  RESTAURANT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#6b8aa0" },
+  HOTEL: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#6b8aa0" },
+  TRANSPORT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#6b8aa0" },
+  CUSTOM: { bg: "bg-paper-alt", text: "text-ink-500", hex: "#98a1a7" },
 };
 
 // Place.category is a free-text, localized display name from the provider

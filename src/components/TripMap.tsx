@@ -6,7 +6,15 @@ import { Move, Check, Maximize2, Hand } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
 import { decodePolyline, polylineMatchesEndpoints } from "@/lib/polyline";
 
-export const START_MARKER_COLOR = "#14171a";
+// Map markers need to tell three things apart at a glance: the day's
+// starting point, 景點, and everything else. With a single dark brand
+// colour (圖示墨藍) a black start marker and dark-grey others were nearly
+// indistinguishable from the 景點 markers, so (2026-10-01): the start
+// marker borrows the gold of the app icon's location pin, with dark text
+// (white on gold is unreadable); others are a lighter slate (see TYPE_COLOR
+// hex in labels.ts).
+export const START_MARKER_COLOR = "#e0a526";
+export const START_MARKER_TEXT = "#14171a";
 
 // Builds a small colored-circle SVG data-URI icon so markers aren't Google's
 // default red pin. Uses plain objects (not `new google.maps.Size/Point`) so
@@ -17,7 +25,8 @@ export const START_MARKER_COLOR = "#14171a";
 export function buildMarkerIcon(
   label: string,
   hexColor: string,
-  highlighted = false
+  highlighted = false,
+  textColor = "white"
 ): google.maps.Icon {
   const size = highlighted ? 38 : 30;
   const strokeWidth = highlighted ? 3 : 2;
@@ -27,7 +36,7 @@ export function buildMarkerIcon(
     size / 2 - 1.5
   }" fill="${hexColor}" stroke="white" stroke-width="${strokeWidth}"/><text x="${size / 2}" y="${
     size / 2 + 4
-  }" font-family="sans-serif" font-size="12" font-weight="700" fill="white" text-anchor="middle">${label}</text></svg>`;
+  }" font-family="sans-serif" font-size="12" font-weight="700" fill="${textColor}" text-anchor="middle">${label}</text></svg>`;
   return {
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
     scaledSize: { width: size, height: size } as google.maps.Size,
@@ -317,7 +326,8 @@ export function DayMarkers({
             icon={buildMarkerIcon(
               stopLabel(index),
               color,
-              item.id === selectedItemId
+              item.id === selectedItemId,
+              isStart ? START_MARKER_TEXT : "white"
             )}
             // Keeps the selected marker drawn above its neighbours when
             // stops sit close together.
