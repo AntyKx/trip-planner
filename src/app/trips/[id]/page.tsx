@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Settings, CalendarDays, BookOpen } from "lucide-react";
+import { Settings, CalendarDays, BookOpen, ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import TripDayBoard from "@/components/TripDayBoard";
 import GoogleMapsProvider from "@/components/GoogleMapsProvider";
@@ -138,43 +138,13 @@ export default async function TripDetailPage({
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-      <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm text-ink-700 hover:underline">
-          ← 回我的行程
-        </Link>
-        <div className="flex items-center gap-1">
-          <Link
-            href={`/trips/${trip.id}/journal`}
-            aria-label="預覽旅遊書"
-            title="預覽旅遊書"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
-          >
-            <BookOpen className="h-5 w-5" />
-          </Link>
-          <a
-            href={`/trips/${trip.id}/ics`}
-            aria-label="匯出行事曆"
-            title="匯出行事曆（.ics）"
-            className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
-          >
-            <CalendarDays className="h-5 w-5" />
-          </a>
-          {isOwner && (
-            <Link
-              href={`/trips/${trip.id}/settings`}
-              aria-label="行程設定"
-              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-ink-500 hover:bg-paper-alt hover:text-ink-700"
-            >
-              <Settings className="h-5 w-5" />
-            </Link>
-          )}
-        </div>
-      </div>
-
-      <section className="relative mt-3 h-56 overflow-hidden rounded-card-lg shadow-soft sm:h-72">
+    <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-10 sm:px-6 sm:pt-6">
+      {/* 2026-10-01 restyle (B direction): edge-to-edge cover on phones
+          with the back/journal/calendar/settings buttons on top of it,
+          replacing a separate text row above a rounded cover card. */}
+      <section className="relative -mx-4 h-60 overflow-hidden sm:mx-0 sm:h-72 sm:rounded-card-lg">
         {!coverImage && (
-          <div className="absolute inset-0 bg-gradient-to-br from-brand-500 to-brand-700" />
+          <div className="absolute inset-0 bg-gradient-to-br from-brand-500 to-brand-800" />
         )}
         <CoverImagePicker
           tripId={trip.id}
@@ -184,21 +154,57 @@ export default async function TripDetailPage({
           availablePhotos={availablePhotos}
           canEdit={canEdit}
         />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-black/25" />
 
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-5 text-white sm:p-6">
-          <h1 className="text-2xl font-bold drop-shadow-sm sm:text-3xl">
-            {trip.title}
-          </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
-              {trip.startDate.toISOString().slice(0, 10)} ~{" "}
-              {trip.endDate.toISOString().slice(0, 10)}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between p-3">
+          <Link
+            href="/"
+            aria-label="回我的行程"
+            title="回我的行程"
+            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-ink-900 shadow-sm backdrop-blur hover:bg-white"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/trips/${trip.id}/journal`}
+              aria-label="預覽旅遊書"
+              title="預覽旅遊書"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-ink-900 shadow-sm backdrop-blur hover:bg-white"
+            >
+              <BookOpen className="h-[18px] w-[18px]" />
+            </Link>
+            <a
+              href={`/trips/${trip.id}/ics`}
+              aria-label="匯出行事曆"
+              title="匯出行事曆（.ics）"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-ink-900 shadow-sm backdrop-blur hover:bg-white"
+            >
+              <CalendarDays className="h-[18px] w-[18px]" />
+            </a>
+            {isOwner && (
+              <Link
+                href={`/trips/${trip.id}/settings`}
+                aria-label="行程設定"
+                title="行程設定"
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/90 text-ink-900 shadow-sm backdrop-blur hover:bg-white"
+              >
+                <Settings className="h-[18px] w-[18px]" />
+              </Link>
+            )}
+          </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-4 pr-24 text-white sm:p-6">
+          <h1 className="text-2xl font-black drop-shadow-sm sm:text-3xl">{trip.title}</h1>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-sm text-white/90">
+            <span className="tabular-nums">
+              {trip.startDate.toISOString().slice(5, 10).replace("-", "/")} –{" "}
+              {trip.endDate.toISOString().slice(5, 10).replace("-", "/")} · {trip.days.length} 天
             </span>
-            {/* "目前 Day" / 天氣 / 下一站 now live in TripDayBoard instead —
-                they need to follow whichever Day Tab is selected, which is
-                client state this server-rendered hero doesn't have. Static
-                per-trip facts (dates, collaborators) stay here. */}
+            {/* "目前 Day" / 天氣 / 下一站 live in TripDayBoard — they follow
+                the selected Day Tab, client state this server-rendered
+                header doesn't have. Static per-trip facts stay here. */}
             {collaborators.length > 1 && (
               <span className="pointer-events-auto">
                 <AvatarStack members={collaborators} />

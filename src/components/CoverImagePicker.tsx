@@ -127,7 +127,7 @@ export default function CoverImagePicker({
       </button>
 
       {showEditButton && (
-        <div className="absolute right-3 top-3">
+        <div className="absolute bottom-3 right-3 z-20">
           <button
             type="button"
             onClick={() => setIsOpen((v) => !v)}
@@ -139,7 +139,7 @@ export default function CoverImagePicker({
           </button>
 
           {isOpen && (
-            <div className="absolute right-0 top-full z-[var(--z-dropdown)] mt-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
+            <div className="absolute bottom-full right-0 z-[var(--z-dropdown)] mb-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
               <input
                 ref={fileInputRef}
                 type="file"

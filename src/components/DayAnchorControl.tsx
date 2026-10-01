@@ -236,7 +236,7 @@ export default function DayAnchorControl({
             {otherDays.map((day) => (
               <label
                 key={day.id}
-                className={`flex items-center gap-1 rounded-full border px-2 py-1 ${
+                className={`flex items-center gap-1 rounded-md border px-2 py-1 ${
                   applyToDayIds.has(day.id)
                     ? "border-brand-600 bg-brand-50 text-brand-700"
                     : "border-line bg-surface text-ink-600"

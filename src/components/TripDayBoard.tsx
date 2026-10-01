@@ -282,24 +282,15 @@ export default function TripDayBoard({
     routes: d.mapRoutes,
   }));
 
-  // Day Tabs' sliding underline — was the app's one and only framer-motion
-  // usage (a `layoutId`-based shared-element transition), replaced with a
-  // plain measured-position + CSS-transition approach so the trip page no
-  // longer ships that dependency for a single decorative indicator.
+  // Keeps the selected Day box visible in the horizontally scrolling tab
+  // row (e.g. a deep link or "today" landing on Day 6 of 8). The sliding
+  // underline that used to live here went with the 2026-10-01 restyle —
+  // the selected day is now a dark-filled box instead.
   const tabListRef = useRef<HTMLDivElement>(null);
-  const [underlineStyle, setUnderlineStyle] = useState<{
-    left: number;
-    width: number;
-  } | null>(null);
   useEffect(() => {
-    const activeButton = tabListRef.current?.querySelector<HTMLElement>(
-      '[aria-selected="true"]'
-    );
-    setUnderlineStyle(
-      activeButton
-        ? { left: activeButton.offsetLeft, width: activeButton.offsetWidth }
-        : null
-    );
+    tabListRef.current
+      ?.querySelector<HTMLElement>('[aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [selectedDay?.id]);
 
   // Mirrors what page.tsx's Trip Hero used to compute from "today's real
@@ -321,17 +312,17 @@ export default function TripDayBoard({
   // below, so the three modes/labels/icons can't drift out of sync between
   // the two responsive variants of the same control.
   const modeTabs = [
-    { key: "edit" as const, label: "編輯模式", icon: ListChecks, onSelect: () => setMode("edit") },
-    { key: "travel" as const, label: "旅行模式", icon: Luggage, onSelect: switchToTravelMode },
+    { key: "edit" as const, label: "行程", icon: ListChecks, onSelect: () => setMode("edit") },
+    { key: "travel" as const, label: "旅行中", icon: Luggage, onSelect: switchToTravelMode },
     {
       key: "checklist" as const,
-      label: "檢查清單",
+      label: "清單",
       icon: ClipboardCheck,
       onSelect: () => setMode("checklist"),
     },
     {
       key: "doctor" as const,
-      label: "行程健檢",
+      label: "健檢",
       icon: Stethoscope,
       onSelect: () => setMode("doctor"),
     },
@@ -530,7 +521,7 @@ export default function TripDayBoard({
           ref={tabListRef}
           role="tablist"
           aria-label="選擇日期"
-          className="relative flex gap-1 overflow-x-auto border-b border-line pb-0 snap-x snap-mandatory"
+          className="relative -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 snap-x snap-mandatory [scrollbar-width:none] sm:mx-0 sm:px-0"
         >
           {daysWithWeather.map((day) => {
             const isActive = day.id === selectedDay?.id;
@@ -542,17 +533,17 @@ export default function TripDayBoard({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setSelectedDayId(day.id)}
-                className={`relative shrink-0 snap-start rounded-t-lg px-3 py-2 text-left min-w-[76px] transition ${
+                className={`relative min-w-[72px] shrink-0 snap-start rounded-lg border px-3 py-1.5 text-center transition ${
                   isActive
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-ink-700 hover:bg-paper-alt"
+                    ? "border-ink-900 bg-ink-900 text-white"
+                    : "border-line bg-surface text-ink-900 hover:bg-paper-alt"
                 }`}
               >
-                <div className="flex items-center gap-1 text-sm font-semibold">
+                <div className="flex items-center justify-center gap-1 text-sm font-bold">
                   <span>Day {day.dayIndex}</span>
                   {isToday && (
                     <span
-                      className="h-1.5 w-1.5 rounded-full bg-brand-600"
+                      className={`h-1.5 w-1.5 rounded-full ${isActive ? "bg-white" : "bg-brand-600"}`}
                       aria-hidden="true"
                     />
                   )}
@@ -562,7 +553,7 @@ export default function TripDayBoard({
                       return <WeatherIcon className="h-3.5 w-3.5" />;
                     })()}
                 </div>
-                <div className={`mt-0.5 text-xs ${isActive ? "text-brand-600" : "text-ink-500"}`}>
+                <div className={`text-[11px] ${isActive ? "text-white/75" : "text-ink-500"}`}>
                   {day.date.slice(5)}
                   {weekdayShortLabel(new Date(`${day.date}T00:00:00`))}
                   {isToday && "・今天"}
@@ -570,13 +561,6 @@ export default function TripDayBoard({
               </button>
             );
           })}
-          {underlineStyle && (
-            <div
-              aria-hidden="true"
-              className="absolute bottom-0 h-0.5 bg-brand-600 transition-[left,width] duration-200 ease-out motion-reduce:transition-none"
-              style={{ left: underlineStyle.left, width: underlineStyle.width }}
-            />
-          )}
         </div>
 
         {selectedDay ? (

@@ -330,7 +330,7 @@ function RescanRoutesModal({
             key={opt.value}
             type="button"
             onClick={() => onPick(opt.value)}
-            className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50"
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50"
           >
             {opt.label}
           </button>
@@ -851,7 +851,7 @@ function MoveToDayModal({
             type="button"
             disabled={isMoving}
             onClick={() => onPick(day.id)}
-            className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
           >
             Day {day.dayIndex}
           </button>

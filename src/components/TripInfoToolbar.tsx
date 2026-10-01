@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wallet, ShieldAlert, Share2, type LucideIcon } from "lucide-react";
 import AppModal from "./AppModal";
 import BudgetSummary, { budgetHeadline } from "./BudgetSummary";
 import EmergencyInfoCard from "./EmergencyInfoCard";
@@ -80,22 +79,18 @@ export default function TripInfoToolbar({
     <>
       <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0">
         <ToolbarChip
-          icon={Wallet}
-          caption="預算"
-          value={budget ?? "尚未記錄"}
+          label="預算"
+          value={budget ?? "未記錄"}
           onClick={() => setSheet("budget")}
         />
         <ToolbarChip
-          icon={ShieldAlert}
-          tone="danger"
-          caption={emergencyInfo ? "出事時看這裡" : "尚未填寫"}
-          value="緊急資訊"
+          label="緊急資訊"
+          value={emergencyInfo ? undefined : "未填"}
           onClick={() => setSheet("emergency")}
         />
         <ToolbarChip
-          icon={Share2}
-          caption={`${collaborators.length} 人協作`}
-          value={shareTitle}
+          label={shareTitle}
+          value={`${collaborators.length} 人`}
           onClick={() => {
             setShareTab("collaborators");
             setSheet("share");
@@ -185,36 +180,25 @@ export default function TripInfoToolbar({
   );
 }
 
+// 2026-10-01 restyle (B direction): one line, tinted, small radius —
+// replaced the two-line bordered chip with a leading icon.
 function ToolbarChip({
-  icon: Icon,
-  caption,
+  label,
   value,
-  tone = "brand",
   onClick,
 }: {
-  icon: LucideIcon;
-  caption: string;
-  value: string;
-  tone?: "brand" | "danger";
+  label: string;
+  value?: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2 text-left shadow-sm hover:bg-paper-alt"
+      className="flex min-h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-brand-50 px-3 text-sm font-bold text-brand-700 transition hover:bg-brand-100 active:scale-[0.97]"
     >
-      <Icon
-        className={`h-[18px] w-[18px] shrink-0 ${
-          tone === "danger" ? "text-danger-600" : "text-brand-600"
-        }`}
-      />
-      <span>
-        <span className="block text-[11px] leading-tight text-ink-500">{caption}</span>
-        <span className="block whitespace-nowrap text-sm font-medium leading-snug text-ink-900 tabular-nums">
-          {value}
-        </span>
-      </span>
+      {label}
+      {value && <span className="font-medium text-brand-700/80 tabular-nums">{value}</span>}
     </button>
   );
 }
