@@ -13,6 +13,7 @@ import { requireUser } from "@/lib/auth";
 import { formatRelativeTime } from "@/lib/labels";
 import { footprintOf, tripHasJournal, tripPhotoCount, tripPlaceIds } from "@/lib/tripSummary";
 import { detectBookingCity } from "@/lib/bookingLinks";
+import { nextLongWeekend, rankDestinations, taiwanToday } from "@/lib/inspiration";
 import BookingShortcuts from "@/components/BookingShortcuts";
 import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
@@ -417,6 +418,20 @@ export default async function TripsPage() {
 
   const footprint = footprintOf(pastTrips);
 
+  // 目的地靈感 inputs: Taiwan's date (the server runs in UTC), and which
+  // listed cities the user has already been to, recognised the same way
+  // 預訂捷徑 recognises a trip's destination.
+  const inspirationToday = taiwanToday();
+  const visitedCities = new Set(
+    pastTrips.flatMap((t) => {
+      const city = detectBookingCity(
+        t.title,
+        t.days.flatMap((d) => d.items).map((i) => i.place?.address)
+      );
+      return city ? [city.name] : [];
+    })
+  );
+
   function memoryTileOf(trip: (typeof trips)[number]): MemoryTileTrip {
     return {
       id: trip.id,
@@ -547,7 +562,13 @@ export default async function TripsPage() {
         />
       )}
 
-      {!heroTrip && <InspirationChips />}
+      {!heroTrip && (
+        <InspirationChips
+          month={Number(inspirationToday.slice(5, 7))}
+          destinations={rankDestinations({ today: inspirationToday, visitedCities })}
+          longWeekend={nextLongWeekend(inspirationToday)}
+        />
+      )}
 
     </main>
   );

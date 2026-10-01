@@ -15,6 +15,7 @@ import ImgWithFallback from "./ImgWithFallback";
 import SectionHeader from "./SectionHeader";
 import { appButtonClassName } from "./AppButton";
 import { formatRelativeTime } from "@/lib/labels";
+import type { RankedDestination } from "@/lib/inspiration";
 
 // Sections the home page shows when there's no upcoming trip to anchor it
 // (see the block rules in src/app/page.tsx). All figures come from the
@@ -181,45 +182,55 @@ export function FavoritesPreview({
   );
 }
 
-// A fixed, hand-picked list — labelled 精選清單 on screen so it never reads
-// as a personalised recommendation. region/customRegion match the explore
-// page's own region picker (JP/TW get Google's hard bounds; anything else
-// is appended to the query as free text).
-const DESTINATIONS: { city: string; country: string; region: "JP" | "TW" | "OTHER" }[] = [
-  { city: "東京", country: "日本", region: "JP" },
-  { city: "京都", country: "日本", region: "JP" },
-  { city: "大阪", country: "日本", region: "JP" },
-  { city: "首爾", country: "韓國", region: "OTHER" },
-  { city: "釜山", country: "韓國", region: "OTHER" },
-  { city: "曼谷", country: "泰國", region: "OTHER" },
-  { city: "台南", country: "台灣", region: "TW" },
-  { city: "花蓮", country: "台灣", region: "TW" },
-];
-
-function destinationHref(d: (typeof DESTINATIONS)[number]) {
+function destinationHref(d: RankedDestination) {
   const params = new URLSearchParams({ q: `${d.city} 景點`, region: d.region });
   if (d.region === "OTHER") params.set("area", d.country);
   return `/explore?${params.toString()}`;
 }
 
-export function InspirationChips() {
+// The hand-picked destination list, re-ordered by season, the next Taiwan
+// long weekend and the user's own past trips (see @/lib/inspiration).
+// Still labelled 精選清單 — it's a fixed list, just sorted, never a
+// personalised recommendation.
+export function InspirationChips({
+  month,
+  destinations,
+  longWeekend,
+}: {
+  month: number;
+  destinations: RankedDestination[];
+  longWeekend?: { start: string; end: string; name: string; days: number };
+}) {
+  const md = (date: string) => `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
   return (
     <section className="mt-10">
       <SectionHeader
-        title="目的地靈感"
+        title={`${month} 月適合去`}
         icon={MapIcon}
-        className="mb-4"
+        className="mb-1.5"
         action={<span className="text-xs text-ink-400">精選清單</span>}
       />
+      <p className="mb-4 text-xs text-ink-500">
+        {longWeekend
+          ? `下個連假：${md(longWeekend.start)}–${md(longWeekend.end)} ${longWeekend.name}（${longWeekend.days} 天）・依季節、連假和你去過的地方排序`
+          : "依季節和你去過的地方排序"}
+      </p>
       <div className="flex flex-wrap gap-2">
-        {DESTINATIONS.map((d) => (
+        {destinations.map((d) => (
           <Link
             key={d.city}
             href={destinationHref(d)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 text-sm text-ink-900 transition hover:border-brand-200 hover:bg-brand-50"
+            className="inline-flex min-h-9 max-w-full items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1 text-sm text-ink-900 transition hover:border-brand-200 hover:bg-brand-50"
           >
-            {d.city}
-            <span className="text-[11px] text-ink-400">{d.country}</span>
+            <span className="shrink-0">{d.city}</span>
+            <span className="truncate text-[11px] text-ink-500">
+              {d.reason ?? d.country}
+            </span>
+            {d.visited && (
+              <span className="shrink-0 rounded-full bg-paper-alt px-1.5 text-[10.5px] text-ink-500">
+                去過
+              </span>
+            )}
           </Link>
         ))}
       </div>
