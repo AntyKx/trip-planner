@@ -12,6 +12,8 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { formatRelativeTime } from "@/lib/labels";
 import { footprintOf, tripHasJournal, tripPhotoCount, tripPlaceIds } from "@/lib/tripSummary";
+import { detectBookingCity } from "@/lib/bookingLinks";
+import BookingShortcuts from "@/components/BookingShortcuts";
 import { appButtonClassName } from "@/components/AppButton";
 import { AvatarStack } from "@/components/Avatar";
 import ImgWithFallback from "@/components/ImgWithFallback";
@@ -99,7 +101,8 @@ export default async function TripsPage() {
             select: {
               updatedAt: true,
               // id/country feed the 旅行足跡 counts; photos the memory card.
-              place: { select: { id: true, photoUrl: true, country: true } },
+              // address: 預訂捷徑 guesses the destination city from it.
+              place: { select: { id: true, photoUrl: true, country: true, address: true } },
               _count: { select: { photos: true } },
               // Only to tell whether the 旅遊書 has anything in it.
               journalText: true,
@@ -351,6 +354,18 @@ export default async function TripsPage() {
               行程健檢
             </Link>
           </div>
+          <BookingShortcuts
+            tripId={trip.id}
+            startDate={trip.startDate.toISOString().slice(0, 10)}
+            endDate={trip.endDate.toISOString().slice(0, 10)}
+            detectedCity={
+              detectBookingCity(
+                trip.title,
+                trip.days.flatMap((d) => d.items).map((i) => i.place?.address)
+              )?.name
+            }
+            traveling={status === "traveling"}
+          />
         </div>
       </div>
     );
