@@ -36,3 +36,34 @@ export function decodePolyline(encoded: string): { lat: number; lng: number }[] 
 export function isEncodedPolyline(value: string): boolean {
   return /^[\x3f-\x7e]*$/.test(value);
 }
+
+const ENDPOINT_TOLERANCE_KM = 0.5;
+
+// Whether a cached line still belongs to these two stops. The cache is
+// keyed by item ids + mode (Route rows), but a stop can change its place
+// while keeping the same item id (e.g. swapping 本日起點 to a different
+// hotel) — without this check the map kept drawing the old route. Google
+// snaps a route's ends to the nearest road, so they're compared with some
+// slack rather than exactly.
+export function polylineMatchesEndpoints(
+  encoded: string,
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): boolean {
+  const points = decodePolyline(encoded);
+  if (points.length < 2) return false;
+  return (
+    distanceKm(points[0], from) <= ENDPOINT_TOLERANCE_KM &&
+    distanceKm(points[points.length - 1], to) <= ENDPOINT_TOLERANCE_KM
+  );
+}
+
+function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+}

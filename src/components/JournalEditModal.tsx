@@ -195,6 +195,9 @@ export default function JournalEditModal({
   // moment after the drop — releasing a long-press (esp. on touch) can
   // still fire a click on the photo or its delete button underneath.
   const clickLockedUntilRef = useRef(0);
+  // Only ever called from click handlers, never during render — the
+  // purity rule can't tell that from an arrow defined in the body.
+  // eslint-disable-next-line react-hooks/purity
   const isClickLocked = () => Date.now() < clickLockedUntilRef.current;
   function lockClicksAfterDrag() {
     clickLockedUntilRef.current = Date.now() + 400;

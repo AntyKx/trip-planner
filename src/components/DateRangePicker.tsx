@@ -5,6 +5,7 @@ import { CalendarDays } from "lucide-react";
 import AppModal from "./AppModal";
 import AppButton from "./AppButton";
 import { MAX_TRIP_DAYS } from "@/lib/limits";
+import { localTodayStr } from "@/lib/timeline";
 import {
   addDays,
   daySpan,
@@ -94,8 +95,10 @@ function RangeCalendar({
   onClose: () => void;
 }) {
   const [draft, setDraft] = useState({ start: initialStart, end: initialEnd });
-  // Captured once — the calendar doesn't need to tick over midnight.
-  const [today] = useState(() => new Date().toISOString().slice(0, 10));
+  // The viewer's own calendar day, not UTC — toISOString() put "today" a
+  // day early in Taiwan between midnight and 8am. Captured once; the
+  // calendar doesn't need to tick over midnight.
+  const [today] = useState(() => localTodayStr());
   const listRef = useRef<HTMLDivElement>(null);
 
   // A year back (to log a trip already taken) through two years ahead —

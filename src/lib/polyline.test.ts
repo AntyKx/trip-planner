@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decodePolyline, isEncodedPolyline } from "./polyline";
+import { decodePolyline, isEncodedPolyline, polylineMatchesEndpoints } from "./polyline";
 
 describe("decodePolyline", () => {
   it("decodes Google's documented example", () => {
@@ -30,5 +30,32 @@ describe("isEncodedPolyline", () => {
     expect(isEncodedPolyline("abc def")).toBe(false);
     expect(isEncodedPolyline("<script>")).toBe(false);
     expect(isEncodedPolyline("中文")).toBe(false);
+  });
+});
+
+describe("polylineMatchesEndpoints", () => {
+  // Google's example line: (38.5,-120.2) -> (40.7,-120.95) -> (43.252,-126.453)
+  const line = "_p~iF~ps|U_ulLnnqC_mqNvxq`@";
+
+  it("accepts a line whose ends are at the two stops", () => {
+    expect(
+      polylineMatchesEndpoints(line, { lat: 38.5, lng: -120.2 }, { lat: 43.252, lng: -126.453 })
+    ).toBe(true);
+  });
+
+  it("allows a little slack for road snapping", () => {
+    expect(
+      polylineMatchesEndpoints(line, { lat: 38.502, lng: -120.2 }, { lat: 43.252, lng: -126.45 })
+    ).toBe(true);
+  });
+
+  it("rejects a cached line once a stop has moved to a different place", () => {
+    expect(
+      polylineMatchesEndpoints(line, { lat: 38.6, lng: -120.2 }, { lat: 43.252, lng: -126.453 })
+    ).toBe(false);
+  });
+
+  it("rejects an empty or one-point line", () => {
+    expect(polylineMatchesEndpoints("", { lat: 0, lng: 0 }, { lat: 0, lng: 0 })).toBe(false);
   });
 });

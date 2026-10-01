@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Map, Marker, InfoWindow, useMap } from "@vis.gl/react-google-maps";
 import { Move, Check, Maximize2, Hand } from "lucide-react";
 import { TYPE_COLOR, formatTime } from "@/lib/labels";
-import { decodePolyline } from "@/lib/polyline";
+import { decodePolyline, polylineMatchesEndpoints } from "@/lib/polyline";
 
 export const START_MARKER_COLOR = "#b45309";
 
@@ -131,7 +131,17 @@ export function RouteSegment({
     }
 
     const key = polylineKey(from, to, mode);
-    const known = sessionPolylines.get(key) ?? cachedPolyline;
+    // A DB-cached line is only trusted if it still starts and ends at these
+    // stops — a stop can change place under the same item id (see
+    // polylineMatchesEndpoints). "" (no route exists) can't be checked that
+    // way and is kept as-is. A stale line falls through to a fresh fetch,
+    // which also overwrites the cache.
+    const dbLine =
+      cachedPolyline === "" ||
+      (cachedPolyline && polylineMatchesEndpoints(cachedPolyline, from, to))
+        ? cachedPolyline
+        : null;
+    const known = sessionPolylines.get(key) ?? dbLine;
     let line: google.maps.Polyline | null = null;
     function draw(encoded: string) {
       if (!encoded) return; // "" = no route exists; draw nothing

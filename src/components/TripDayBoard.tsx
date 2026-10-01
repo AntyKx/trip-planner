@@ -141,7 +141,10 @@ export default function TripDayBoard({
   // static preview that opens MobileMapFullscreen. Starts false (mobile)
   // so SSR and the first client render agree; the map is client-only
   // anyway, so the post-mount switch on desktop is invisible.
-  const [isDesktop, setIsDesktop] = useState(false);
+  // null until measured — the map isn't rendered before that, otherwise
+  // desktop mounted the mobile preview map first and then swapped it for
+  // the panel map, paying for two Google map loads on every visit.
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
     const update = () => setIsDesktop(mq.matches);
@@ -692,6 +695,10 @@ export default function TripDayBoard({
               mobileMapView ? "mt-3 h-[240px] lg:h-[480px]" : "mt-3 hidden lg:block lg:h-[480px]"
             }
           >
+            {/* Mobile only mounts the map once the 地圖 tab is opened —
+                a hidden preview still counted as a Google map load on every
+                trip page view, even for people who never looked at it. */}
+            {isDesktop !== null && (isDesktop || mobileMapView) && (
             <TripMap
               apiKey={apiKey}
               selectedItemId={selectedItemId}
@@ -702,6 +709,7 @@ export default function TripDayBoard({
               onExpand={() => setFullscreenMap({ itemId: null })}
               onRoutePolyline={handleRoutePolyline}
             />
+            )}
           </div>
           <ul className="mt-4 space-y-2">
             {selectedDay?.mapItems.map((item) => (
