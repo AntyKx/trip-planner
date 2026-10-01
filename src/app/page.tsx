@@ -205,14 +205,14 @@ export default async function TripsPage() {
 
         <div className="absolute left-3 top-3">
           <span
-            className={`rounded-full bg-white/90 px-3 py-1 text-xs font-medium backdrop-blur ${chip.className}`}
+            className={`rounded-md bg-white/90 px-2.5 py-1 text-xs font-bold backdrop-blur ${chip.className}`}
           >
             {chip.label}
           </span>
         </div>
         {collabRole && (
           <div className="absolute right-3 top-3 flex gap-1.5">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-medium text-brand-700 backdrop-blur">
+            <span className="rounded-md bg-white/90 px-2.5 py-1 text-xs font-bold text-brand-700 backdrop-blur">
               共同編輯 · {COLLAB_ROLE_LABEL[collabRole]}
             </span>
           </div>
@@ -223,14 +223,14 @@ export default async function TripsPage() {
             {trip.title}
           </h2>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/90">
-            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+            <span className="rounded-md bg-white/20 px-2 py-0.5 backdrop-blur">
               {trip.startDate.toISOString().slice(0, 10)} ~{" "}
               {trip.endDate.toISOString().slice(0, 10)}
             </span>
-            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+            <span className="rounded-md bg-white/20 px-2 py-0.5 backdrop-blur">
               共 {trip.days.length} 天
             </span>
-            <span className="rounded-full bg-white/20 px-2.5 py-1 backdrop-blur">
+            <span className="rounded-md bg-white/20 px-2 py-0.5 backdrop-blur">
               {itemCount} 個景點
             </span>
           </div>

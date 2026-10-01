@@ -20,7 +20,7 @@ export type AppBadgeProps = HTMLAttributes<HTMLSpanElement> & {
 export default function AppBadge({ variant = "neutral", className, children, ...props }: AppBadgeProps) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${VARIANT_CLASSES[variant]} ${className ?? ""}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${VARIANT_CLASSES[variant]} ${className ?? ""}`}
       {...props}
     >
       {children}

@@ -18,7 +18,7 @@ export default function StartJourneyButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-600 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-900/20 hover:bg-brand-700"
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3.5 text-base font-bold text-white hover:bg-brand-700"
     >
       開始旅程
       <ArrowRight className="h-5 w-5" />

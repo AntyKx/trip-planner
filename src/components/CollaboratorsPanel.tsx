@@ -164,7 +164,7 @@ export default function CollaboratorsPanel({
                   onChange={(e) =>
                     handleRoleChange(c.email, e.target.value as "EDITOR" | "VIEWER")
                   }
-                  className="rounded-full border border-line bg-paper-alt px-2 py-0.5 text-xs text-ink-700 disabled:opacity-50"
+                  className="rounded-md border border-line bg-paper-alt px-2 py-0.5 text-xs text-ink-700 disabled:opacity-50"
                 >
                   <option value="EDITOR">可編輯</option>
                   <option value="VIEWER">僅檢視</option>

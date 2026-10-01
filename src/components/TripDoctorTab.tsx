@@ -146,12 +146,12 @@ export default function TripDoctorTab({
                 pill stays put at the end of the row; it's state, not
                 decoration, so it's untouched. */}
             <div className="flex items-center gap-2.5">
-              <span className="font-script text-3xl leading-none text-brand-600">
+              <span className="text-3xl font-black leading-none text-brand-600">
                 Day {dayIndex}
               </span>
               <div className="h-0 flex-1 border-t border-dashed border-brand-200" />
               <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${
                   dayHasIssue
                     ? "bg-danger-50 text-danger-600"
                     : "bg-warning-50 text-warning-700"

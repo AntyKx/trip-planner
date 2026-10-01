@@ -99,7 +99,7 @@ export default function JournalBook({
           <h1 className="mt-1 text-2xl font-bold drop-shadow-sm sm:text-3xl">
             {trip.title}
           </h1>
-          <p className="mt-1 font-script text-xl text-white/90">
+          <p className="mt-1 text-base text-white/90">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
           </p>
         </div>
@@ -137,7 +137,7 @@ export default function JournalBook({
           {daysWithEntries.map((day) => (
             <section key={day.id}>
               <div className="flex items-center gap-3">
-                <span className="font-script text-3xl leading-none text-brand-600">
+                <span className="text-3xl font-black leading-none text-brand-600">
                   Day {day.dayIndex}
                 </span>
                 <div className="h-0 flex-1 border-t border-dashed border-brand-200" />

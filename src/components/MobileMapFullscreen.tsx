@@ -312,7 +312,7 @@ export default function MobileMapFullscreen({
             type="button"
             onClick={requestClose}
             aria-label="關閉地圖"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-surface text-ink-700 shadow-sm"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-700 shadow-sm"
           >
             <X className="h-5 w-5" />
           </button>
@@ -333,9 +333,9 @@ export default function MobileMapFullscreen({
                 type="button"
                 onClick={() => handleSelectDay(d.id)}
                 aria-pressed={d.id === day?.id}
-                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm shadow-sm ${
+                className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-sm shadow-sm ${
                   d.id === day?.id
-                    ? "border-brand-600 bg-brand-600 text-white"
+                    ? "border-ink-900 bg-ink-900 text-white"
                     : "border-line bg-surface text-ink-700"
                 }`}
               >
@@ -352,7 +352,7 @@ export default function MobileMapFullscreen({
           type="button"
           onClick={handleLocate}
           aria-label="我的位置"
-          className={`flex h-11 w-11 items-center justify-center rounded-full bg-surface shadow-md ${
+          className={`flex h-11 w-11 items-center justify-center rounded-lg bg-surface shadow-md ${
             myPos ? "text-[#1a73e8]" : "text-ink-700"
           }`}
         >
@@ -366,7 +366,7 @@ export default function MobileMapFullscreen({
           type="button"
           onClick={() => map && items.length > 0 && fitMapToItems(map, items, FIT_PADDING)}
           aria-label="顯示全部景點"
-          className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-ink-700 shadow-md"
+          className="flex h-11 w-11 items-center justify-center rounded-lg bg-surface text-ink-700 shadow-md"
         >
           <Scan className="h-5 w-5" />
         </button>
@@ -446,7 +446,7 @@ function FullscreenCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-brand-50 px-3 text-sm font-medium text-brand-700"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-brand-50 px-3 text-sm font-bold text-brand-700"
           >
             <Navigation className="h-3.5 w-3.5" />
             導航

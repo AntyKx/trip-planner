@@ -73,7 +73,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
           <h1 className="mt-1 text-2xl font-bold drop-shadow-sm sm:text-3xl">
             {trip.title}
           </h1>
-          <p className="mt-1 font-script text-xl text-white/90">
+          <p className="mt-1 text-base text-white/90">
             {formatDate(trip.startDate)} ~ {formatDate(trip.endDate)}
           </p>
         </div>
@@ -85,7 +85,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
             <a
               key={day.id}
               href={`#day-${day.dayIndex}`}
-              className="shrink-0 rounded-full border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-700 hover:border-brand-300 hover:text-brand-700"
+              className="shrink-0 rounded-md border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-700 hover:border-brand-300 hover:text-brand-700"
             >
               Day {day.dayIndex}
             </a>
@@ -102,7 +102,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
           {daysWithStops.map((day) => (
             <section key={day.id} id={`day-${day.dayIndex}`} className="scroll-mt-16">
               <div className="flex items-center gap-3">
-                <span className="font-script text-3xl leading-none text-brand-600">
+                <span className="text-3xl font-black leading-none text-brand-600">
                   Day {day.dayIndex}
                 </span>
                 <div className="h-0 flex-1 border-t border-dashed border-brand-200" />
@@ -130,7 +130,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
                         }`}
                       />
                       {formatTime(item.startTime) && (
-                        <span className="absolute -left-[42px] top-9 -rotate-2 font-script text-sm leading-none text-brand-700">
+                        <span className="absolute -left-[42px] top-9 text-xs font-bold leading-none text-brand-600 tabular-nums">
                           {formatTime(item.startTime)}
                         </span>
                       )}
@@ -157,13 +157,13 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span
-                              className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
+                              className={`flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${typeColor.bg} ${typeColor.text}`}
                             >
                               <TypeIcon className="h-3 w-3" />
                               {TYPE_LABEL[item.type]}
                             </span>
                             {isAnchor && (
-                              <span className="flex shrink-0 items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
+                              <span className="flex shrink-0 items-center gap-1 rounded-md bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">
                                 <MapPin className="h-3 w-3" />
                                 本日起點
                               </span>
@@ -187,7 +187,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
                       </div>
 
                       {item.leg && index < day.items.length - 1 && (
-                        <div className="ml-1 mt-2 inline-flex items-center gap-1.5 rounded-full bg-paper-alt px-3 py-1 text-xs text-ink-700">
+                        <div className="ml-1 mt-2 inline-flex items-center gap-1.5 rounded-md bg-paper-alt px-3 py-1 text-xs text-ink-700">
                           {ModeIcon && <ModeIcon className="h-3.5 w-3.5 text-ink-500" />}
                           {MODE_LABEL[item.leg.mode] ?? item.leg.mode}
                           {item.leg.durationMin != null && (

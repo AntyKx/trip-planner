@@ -117,7 +117,7 @@ export default function AutoScheduleModal({
             <div className="flex items-center justify-between gap-2">
               <span className="min-w-0 truncate font-medium text-ink-900">{p.name}</span>
               {p.fixed && (
-                <span className="flex shrink-0 items-center gap-1 rounded-full bg-paper-alt px-2 py-0.5 text-xs text-ink-500">
+                <span className="flex shrink-0 items-center gap-1 rounded-md bg-paper-alt px-2 py-0.5 text-xs text-ink-500">
                   <Lock className="h-3 w-3" />
                   已固定
                 </span>

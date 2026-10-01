@@ -95,20 +95,20 @@ function dueDateBadge(dueDate: string | null, isDone: boolean, today: string | n
   const displayDate = `${due.slice(5, 7)}/${due.slice(8, 10)}`;
   if (status === "overdue") {
     return (
-      <span className="rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-600">
+      <span className="rounded-md bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-600">
         已逾期 · {displayDate}
       </span>
     );
   }
   if (status === "soon") {
     return (
-      <span className="rounded-full bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
+      <span className="rounded-md bg-warning-50 px-2 py-0.5 text-xs font-medium text-warning-700">
         即將到期 · {displayDate}
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-paper-alt px-2 py-0.5 text-xs text-ink-500">
+    <span className="rounded-md bg-paper-alt px-2 py-0.5 text-xs text-ink-500">
       {displayDate}
     </span>
   );
@@ -295,7 +295,7 @@ function SortableChecklistItem({
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {dueDateBadge(item.dueDate, item.isDone, today)}
             {item.assignedToName && (
-              <span className="flex items-center gap-1 rounded-full bg-paper-alt py-0.5 pr-2 pl-0.5 text-xs text-ink-700">
+              <span className="flex items-center gap-1 rounded-md bg-paper-alt py-0.5 pr-2 pl-0.5 text-xs text-ink-700">
                 <Avatar name={item.assignedToName} avatarUrl={item.assignedToAvatarUrl} size="sm" />
                 {item.assignedToName}
               </span>
@@ -528,7 +528,7 @@ export default function ChecklistTab({
             className="rounded-xl border border-line bg-surface p-4 shadow-sm"
           >
             <h3
-              className={`flex w-fit items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
+              className={`flex w-fit items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
             >
               <Icon className="h-3.5 w-3.5" />
               {CHECKLIST_CATEGORY_LABEL[category]}

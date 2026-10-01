@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { Camera, Luggage, MapPin, Plane } from "lucide-react";
+import { BookOpen, MapPin, Users } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import StartJourneyButton from "@/components/StartJourneyButton";
 
@@ -8,111 +8,51 @@ import StartJourneyButton from "@/components/StartJourneyButton";
 // available, and guessing stock-photo URLs risks broken/wrong images).
 const HERO_PHOTO =
   "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/21CBF93B-7130-4D45-B299-4AE6BD66E957-vay3S8u3lnSi9odldGe9lJggCgS03D.png"; // 台北101
-// Was a hardcoded Google Places photo media URL, same as HERO_PHOTO
-// originally was — Places photo reference tokens aren't permanent and this
-// one expired (started 400ing "photo resource ... is invalid"), which is
-// why this image silently disappeared. Re-fetched and re-hosted on Blob so
-// it can't rot the same way again.
-const SECONDARY_PHOTO =
-  "https://a9xyigfuupqgvmso.public.blob.vercel-storage.com/welcome-asakusa-VX6HlQ5jnIKuNUBH8AFpoHECePlO2w.jpg"; // 淺草寺
-
 export default async function WelcomePage() {
   const user = await getCurrentUser();
   if (user) redirect("/");
 
+  // 2026-10-01 restyle (B direction): one full-bleed photo, the brand
+  // name, a plain description of what the app does and the CTA. Replaced
+  // the scrapbook collage (tilted polaroids, sticky note, dashed route,
+  // handwritten wordmark), which read as AI-generated.
   return (
     <main className="relative flex min-h-screen w-full flex-col overflow-hidden bg-paper">
-      {/* Hero photo */}
-      <div className="relative h-[42vh] min-h-[280px] w-full shrink-0 overflow-hidden">
+      <div className="relative h-[46vh] min-h-[280px] w-full shrink-0 overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={HERO_PHOTO}
           alt="台北101"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-paper" />
-
-        <svg
-          className="pointer-events-none absolute inset-0 h-full w-full"
-          viewBox="0 0 400 300"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M40 60 Q 180 20 260 90 T 360 70"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            strokeDasharray="6 7"
-            opacity="0.85"
-          />
-        </svg>
-        <Plane className="absolute right-10 top-10 h-7 w-7 -rotate-12 text-white drop-shadow" />
-        <MapPin className="absolute bottom-10 left-8 h-6 w-6 fill-accent-500 text-white drop-shadow" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
       </div>
 
-      {/* Sticky-note tagline, overlapping the hero */}
-      <div className="relative -mt-8 px-8">
-        <div className="mx-auto w-fit -rotate-2 rounded-sm bg-[#fdf6e3] px-5 py-3 shadow-md ring-1 ring-black/5">
-          <p className="font-script text-2xl leading-tight text-ink-900">
-            每段旅程，
-            <br />
-            都是生活的收藏。
-          </p>
-        </div>
-      </div>
+      <div className="flex flex-1 flex-col px-6 pt-7">
+        <h1 className="text-[34px] font-black leading-tight text-brand-600">Trip Planner</h1>
+        <p className="mt-2 text-base text-ink-700">排行程、算交通、寫旅遊書，和同行的人一起編輯。</p>
 
-      {/* Mini collage: polaroid photo + travel-map card */}
-      <div className="mt-6 flex justify-center gap-3 px-8">
-        <div className="w-28 rotate-[-3deg] rounded bg-white p-1.5 shadow-md ring-1 ring-black/5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={SECONDARY_PHOTO}
-            alt="淺草寺"
-            className="h-20 w-full rounded-sm object-cover"
-          />
-          <p className="mt-1 text-center text-[10px] text-ink-500">
-            Asakusa, Japan
-          </p>
-        </div>
-        <div className="w-28 rotate-2 rounded-lg bg-[#f4efe0] p-2.5 shadow-md ring-1 ring-black/5">
-          <div className="flex items-center gap-1 text-brand-700">
-            <MapPin className="h-3.5 w-3.5" />
-            <span className="text-[10px] font-medium">Travel Map</span>
-          </div>
-          <svg className="mt-1.5 h-16 w-full" viewBox="0 0 100 60">
-            <circle cx="15" cy="45" r="3" fill="#0a5aa8" />
-            <circle cx="55" cy="15" r="3" fill="#0a5aa8" />
-            <circle cx="85" cy="35" r="3" fill="#b45309" />
-            <path
-              d="M15 45 L55 15 L85 35"
-              fill="none"
-              stroke="#0a5aa8"
-              strokeWidth="1.5"
-              strokeDasharray="3 3"
-            />
-          </svg>
-        </div>
-      </div>
+        <ul className="mt-6 space-y-3.5">
+          {[
+            { icon: MapPin, title: "每天的行程與地圖", desc: "加景點、自動排時間，交通時間一起算好" },
+            { icon: Users, title: "和朋友一起規劃", desc: "分享連結，同一份行程大家都能改" },
+            { icon: BookOpen, title: "旅行後的旅遊書", desc: "遊記和照片整理成一本，可以公開分享" },
+          ].map(({ icon: Icon, title, desc }) => (
+            <li key={title} className="flex gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[15px] font-bold text-ink-900">{title}</span>
+                <span className="block text-sm text-ink-500">{desc}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
 
-      {/* Wordmark */}
-      <div className="mt-8 px-6 text-center">
-        <h1 className="font-script text-6xl leading-none text-brand-700">
-          Trip Planner
-        </h1>
-        <div className="mx-auto mt-2 h-1 w-24 rounded-full bg-accent-500" />
-        <p className="mt-4 text-sm text-ink-500">
-          你的旅行手帳與行程規劃助手
-        </p>
-      </div>
-
-      <div className="flex-1" />
-
-      {/* CTA */}
-      <div className="px-6 pb-10 pt-8">
-        <StartJourneyButton />
-        <div className="mt-5 flex items-center justify-center gap-6 text-ink-500/60">
-          <Luggage className="h-6 w-6" />
-          <Camera className="h-6 w-6" />
+        <div className="flex-1" />
+        <div className="pb-10 pt-8">
+          <StartJourneyButton />
         </div>
       </div>
     </main>

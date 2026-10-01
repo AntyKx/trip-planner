@@ -80,7 +80,7 @@ export default function TransitAlternativesModal({
                           </span>
                         ) : (
                           <span
-                            className={`flex items-center gap-1 rounded-full px-2 py-0.5 ${
+                            className={`flex items-center gap-1 rounded-md px-2 py-0.5 ${
                               step.color ? "" : "bg-paper-alt"
                             }`}
                             style={

@@ -56,7 +56,7 @@ export function MemoryCard({
         alt={trip.title}
         className="absolute inset-0 h-full w-full object-cover"
         fallback={
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-accent-500 to-brand-700">
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-brand-500 to-brand-800">
             <Luggage className="h-16 w-16 text-white/25" />
           </div>
         }

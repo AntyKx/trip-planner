@@ -444,10 +444,10 @@ export default function TripMap({
           aria-label="展開全螢幕地圖"
           className="absolute inset-0 z-10 cursor-pointer"
         >
-          <span className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-ink-700 shadow">
+          <span className="absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-lg bg-white/95 text-ink-700 shadow">
             <Maximize2 className="h-4 w-4" />
           </span>
-          <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-ink-700 shadow">
+          <span className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-white/95 px-3 py-1.5 text-xs font-medium text-ink-700 shadow">
             <Hand className="h-3.5 w-3.5" />
             點地圖展開
           </span>
@@ -472,7 +472,7 @@ export default function TripMap({
         // bottom-left — Google's default UI (disableDefaultUI={false} below)
         // already occupies the other three corners: map type top-left,
         // fullscreen top-right, zoom + street view pegman bottom-right.
-        className={`absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur ${
+        className={`absolute bottom-2 left-2 z-10 flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium shadow-sm backdrop-blur ${
           mapEngaged
             ? "bg-brand-600 text-white"
             : "bg-white/90 text-ink-700 hover:bg-white"
