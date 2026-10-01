@@ -94,30 +94,31 @@ input[type="radio"] {
     ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", "Noto Color Emoji";
 
-  /* Brand — 日落橘 since 2026-10-01 (the user found the 海港藍 #de5a14 too
-     close to Facebook's blue; picked from an 8-colour comparison "to try").
-     600 is the brand colour itself: links, primary buttons, selected
-     states. Previous: 海港藍 600 = #0a5aa8 (scale in git history, commit before 日落橘) if reverting. */
-  --color-brand-50: #fdeee5;
-  --color-brand-100: #fbd9c5;
-  --color-brand-200: #f6b48d;
-  --color-brand-300: #f08c55;
-  --color-brand-400: #e8702f;
-  --color-brand-500: #e2641f;
-  --color-brand-600: #de5a14;
-  --color-brand-700: #b8480e;
-  --color-brand-800: #93390c;
-  --color-brand-900: #752f0c;
+  /* Brand — 圖示墨藍 (trialled 2026-10-01): the deep slate blue sampled
+     from the app's own PWA icon, so the splash, home-screen icon and UI
+     share one palette. History the same day: 海港藍 #0a5aa8 (too close to
+     Facebook's blue) → 日落橘 #1f4257 (tried) → this. 600 is the brand
+     colour itself: links, primary buttons, selected states. */
+  --color-brand-50: #e8eef2;
+  --color-brand-100: #cbd8e1;
+  --color-brand-200: #9cb2c2;
+  --color-brand-300: #6b8aa0;
+  --color-brand-400: #45677f;
+  --color-brand-500: #2f526a;
+  --color-brand-600: #1f4257;
+  --color-brand-700: #193649;
+  --color-brand-800: #142b3a;
+  --color-brand-900: #10232f;
 
   /* "Accent" is no longer a second hue (2026-10-01: the user picked a
      single brand colour over brand + a second accent). The tokens stay so
      existing accent-* classes (AI sections, badges, 行程健檢) keep
      working, but they resolve to the brand family. */
-  --color-accent-50: #fdeee5;
-  --color-accent-100: #fbd9c5;
-  --color-accent-500: #e2641f;
-  --color-accent-600: #de5a14;
-  --color-accent-700: #b8480e;
+  --color-accent-50: #e8eef2;
+  --color-accent-100: #cbd8e1;
+  --color-accent-500: #2f526a;
+  --color-accent-600: #1f4257;
+  --color-accent-700: #193649;
 
   /* Neutral background: white page, cool light grey for wells/tracks
      (was warm cream — another of the AI-look tells). */

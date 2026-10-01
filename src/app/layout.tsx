@@ -46,7 +46,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#de5a14",
+  themeColor: "#1f4257",
   // Without an explicit width/initialScale, mobile browsers fall back to
   // treating this as a desktop-width page and scale the whole thing down
   // to fit — the "everything looks zoomed out" complaint. Deliberately
