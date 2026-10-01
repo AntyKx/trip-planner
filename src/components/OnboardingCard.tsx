@@ -92,7 +92,7 @@ export default function OnboardingCard({ steps }: { steps: OnboardingStep[] }) {
                   <>
                     <span className="mt-0.5 block text-xs text-ink-500">{step.desc}</span>
                     {step.feature && (
-                      <span className="mt-1 flex items-start gap-1 text-[11.5px] text-accent-600">
+                      <span className="mt-1 flex items-start gap-1 text-[11.5px] text-brand-600">
                         <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
                         {step.feature}
                       </span>

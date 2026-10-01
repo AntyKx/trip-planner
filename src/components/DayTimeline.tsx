@@ -729,7 +729,7 @@ function SortableItemCard({
                   </span>
                 )}
                 {costSummary && (
-                  <span title="花費" className="font-semibold text-accent-600 tabular-nums">
+                  <span title="花費" className="font-bold text-ink-900 tabular-nums">
                     {costSummary}
                   </span>
                 )}

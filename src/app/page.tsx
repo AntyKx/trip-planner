@@ -37,8 +37,8 @@ import {
 
 const FALLBACK_GRADIENTS = [
   "from-brand-500 to-brand-700",
-  "from-accent-500 to-brand-600",
-  "from-brand-400 to-accent-600",
+  "from-brand-600 to-brand-800",
+  "from-brand-400 to-brand-600",
 ];
 
 // Keyed by the full Role enum for type-safety even though this only ever
@@ -60,8 +60,8 @@ const SOON_THRESHOLD_DAYS = 14;
 
 const STATUS_CHIP: Record<TripStatus, { label: string; className: string }> = {
   planning: { label: "規劃中", className: "text-brand-700" },
-  soon: { label: "即將出發", className: "text-accent-600" },
-  traveling: { label: "旅行中", className: "text-emerald-700" },
+  soon: { label: "即將出發", className: "text-brand-600" },
+  traveling: { label: "旅行中", className: "text-success-700" },
   done: { label: "已完成", className: "text-ink-500" },
 };
 

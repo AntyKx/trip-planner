@@ -110,12 +110,16 @@ input[type="radio"] {
   --color-brand-800: #073b70;
   --color-brand-900: #06315c;
 
-  /* Accent orange — only for prices/costs and "still to do" reminders,
-     never decoration (B direction). */
-  --color-accent-50: #fff3ee;
-  --color-accent-100: #ffe2d5;
-  --color-accent-500: #ff6b35;
-  --color-accent-600: #e5531d;
+  /* "Accent" is no longer a second hue (2026-10-01: the user picked
+     "只用藍色" over blue + orange/amber/coral after a side-by-side preview).
+     The tokens stay so existing accent-* classes (AI sections, badges,
+     行程健檢) keep working, but they now resolve to the brand blue family.
+     700 was referenced in several places but never defined before. */
+  --color-accent-50: #e8f0f9;
+  --color-accent-100: #cbdcf0;
+  --color-accent-500: #1b68b6;
+  --color-accent-600: #0a5aa8;
+  --color-accent-700: #084a8c;
 
   /* Neutral background: white page, cool light grey for wells/tracks
      (was warm cream — another of the AI-look tells). */

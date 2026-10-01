@@ -386,7 +386,7 @@ export function MemoriesRow({ trips, total }: { trips: MemoryTileTrip[]; total: 
 
 // The next upcoming (or ongoing) trip at the top of the home page —
 // 2026-10-01 restyle (B direction): a banner with a big countdown; the
-// derived facts become orange reminder strips under it, followed by
+// derived facts become grey reminder strips under it, followed by
 // `children` (預訂捷徑). The trip's cover photo (or first stop photo) fills
 // the banner behind a dark gradient so the white text stays readable — a
 // plain brand-blue block was judged ugly; blue is only the no-photo fallback.
@@ -459,9 +459,9 @@ export function NextTripBanner({
           facts.map((fact) => (
             <p
               key={fact}
-              className="flex items-start gap-2 rounded-lg bg-accent-50 px-3 py-2 text-sm font-medium text-accent-600"
+              className="flex items-start gap-2 rounded-lg border border-line bg-paper-alt px-3 py-2 text-sm font-medium text-ink-900"
             >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
               {fact}
             </p>
           ))

@@ -3,7 +3,7 @@ import {
   agodaUrl,
   detectBookingCity,
   findBookingCity,
-  googleFlightsUrl,
+  skyscannerUrl,
   klookUrl,
   nightsBetween,
 } from "./bookingLinks";
@@ -46,10 +46,15 @@ describe("booking URLs", () => {
   });
 
   // The exact formats that were opened and checked in a browser.
-  it("builds the verified Google Flights URL", () => {
-    expect(googleFlightsUrl({ en: "Taipei" }, seoul, "2026-12-20", "2026-12-24")).toBe(
-      "https://www.google.com/travel/flights?q=Flights%20to%20Seoul%20from%20Taipei%20on%202026-12-20%20through%202026-12-24&hl=zh-TW&curr=TWD"
+  it("builds the verified Skyscanner URL", () => {
+    expect(skyscannerUrl({ skyscanner: "tpet" }, seoul, "2026-12-20", "2026-12-24")).toBe(
+      "https://www.skyscanner.com.tw/transport/flights/tpet/sela/261220/261224/?adultsv2=1&cabinclass=economy"
     );
+  });
+
+  it("flies cities without an airport to the nearest one, and skips domestic", () => {
+    expect(skyscannerUrl({ skyscanner: "tpet" }, findBookingCity("京都")!, "2026-12-20", "2026-12-24")).toContain("/tpet/osaa/");
+    expect(skyscannerUrl({ skyscanner: "tpet" }, findBookingCity("台南")!, "2026-12-20", "2026-12-24")).toBeUndefined();
   });
 
   it("builds the verified Agoda URL", () => {

@@ -8,7 +8,7 @@ import {
   BOOKING_ORIGINS,
   agodaUrl,
   findBookingCity,
-  googleFlightsUrl,
+  skyscannerUrl,
   klookUrl,
   nightsBetween,
   type BookingCity,
@@ -92,14 +92,14 @@ export default function BookingShortcuts({
             className={`mt-2.5 grid gap-2 ${showFlights ? "grid-cols-[repeat(3,minmax(0,1fr))]" : "grid-cols-[repeat(2,minmax(0,1fr))]"}`}
           >
             {showFlights &&
-              (city.domestic || city.name === origin.name ? (
+              (city.domestic || city.name === origin.name || !city.skyscanner ? (
                 <ShortcutTile icon={Plane} label="找機票" note="國內不用飛" />
               ) : (
                 <ShortcutTile
                   icon={Plane}
                   label="找機票"
-                  note="Google 機票"
-                  href={googleFlightsUrl(origin, city, startDate, endDate)}
+                  note="Skyscanner 比價"
+                  href={skyscannerUrl(origin, city, startDate, endDate)}
                 />
               ))}
             {nights > 0 ? (
@@ -176,7 +176,7 @@ function ShortcutTile({
 }) {
   const body = (
     <>
-      <Icon className="h-5 w-5 text-accent-500" />
+      <Icon className="h-5 w-5 text-brand-600" />
       <span className="text-[13px] font-bold text-ink-900">{label}</span>
       <span className="max-w-full truncate text-[10.5px] font-normal text-ink-500">{note}</span>
     </>

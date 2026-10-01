@@ -485,7 +485,7 @@ export default function EditItemModal({
                       <span className="truncate">
                         {row.label.trim() || categoryLabel}
                       </span>
-                      <span className="ml-auto shrink-0 font-medium text-amber-700">
+                      <span className="ml-auto shrink-0 font-bold text-ink-900">
                         {row.amount.trim()
                           ? `${row.currency} ${Number(row.amount).toLocaleString()}`
                           : "未填金額"}

@@ -249,7 +249,7 @@ export default function JournalEditModal({
           id="journal-edit-modal-title"
           className="flex items-center gap-1.5 text-lg font-bold text-ink-900"
         >
-          <BookOpen className="h-5 w-5 text-rose-600" />
+          <BookOpen className="h-5 w-5 text-brand-600" />
           {itemTitle}
         </h2>
         <ModalCloseButton />
