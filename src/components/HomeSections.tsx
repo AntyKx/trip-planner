@@ -385,9 +385,11 @@ export function MemoriesRow({ trips, total }: { trips: MemoryTileTrip[]; total: 
 }
 
 // The next upcoming (or ongoing) trip at the top of the home page —
-// 2026-10-01 restyle (B direction): a solid brand-colour banner with a big
-// countdown, replacing the old photo card; the derived facts become orange
-// reminder strips under it, followed by `children` (預訂捷徑).
+// 2026-10-01 restyle (B direction): a banner with a big countdown; the
+// derived facts become orange reminder strips under it, followed by
+// `children` (預訂捷徑). The trip's cover photo (or first stop photo) fills
+// the banner behind a dark gradient so the white text stays readable — a
+// plain brand-blue block was judged ugly; blue is only the no-photo fallback.
 export function NextTripBanner({
   tripId,
   title,
@@ -397,6 +399,7 @@ export function NextTripBanner({
   dateRange,
   dayCount,
   facts,
+  coverImage,
   children,
 }: {
   tripId: string;
@@ -407,11 +410,24 @@ export function NextTripBanner({
   dateRange: string;
   dayCount: number;
   facts: string[];
+  coverImage?: string;
   children?: ReactNode;
 }) {
   return (
     <div className="animate-fade-up [animation-fill-mode:forwards]">
-      <div className="rounded-card-lg bg-brand-600 p-4 text-white">
+      <div className="relative overflow-hidden rounded-card-lg bg-brand-600 text-white">
+        {coverImage && (
+          <>
+            <ImgWithFallback
+              src={coverImage}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              fallback={null}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-black/10" />
+          </>
+        )}
+        <div className={`relative p-4 ${coverImage ? "pt-24" : ""}`}>
         <p className="text-xs text-white/85">{traveling ? "旅行中" : "下一趟"}</p>
         <h2 className="mt-0.5 truncate text-[22px] font-black leading-snug">{title}</h2>
         <p className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
@@ -434,6 +450,7 @@ export function NextTripBanner({
             <Stethoscope className="h-4 w-4" />
             健檢
           </Link>
+        </div>
         </div>
       </div>
 

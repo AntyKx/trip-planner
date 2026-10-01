@@ -299,6 +299,7 @@ export default async function TripsPage() {
           .replace("-", "/")}`}
         dayCount={trip.days.length}
         facts={facts}
+        coverImage={coverImageOf(trip)}
       >
         <BookingShortcuts
           tripId={trip.id}
