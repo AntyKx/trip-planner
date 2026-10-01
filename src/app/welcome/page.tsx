@@ -80,13 +80,13 @@ export default async function WelcomePage() {
             <span className="text-[10px] font-medium">Travel Map</span>
           </div>
           <svg className="mt-1.5 h-16 w-full" viewBox="0 0 100 60">
-            <circle cx="15" cy="45" r="3" fill="#2b6094" />
-            <circle cx="55" cy="15" r="3" fill="#2b6094" />
+            <circle cx="15" cy="45" r="3" fill="#0a5aa8" />
+            <circle cx="55" cy="15" r="3" fill="#0a5aa8" />
             <circle cx="85" cy="35" r="3" fill="#b45309" />
             <path
               d="M15 45 L55 15 L85 35"
               fill="none"
-              stroke="#2b6094"
+              stroke="#0a5aa8"
               strokeWidth="1.5"
               strokeDasharray="3 3"
             />

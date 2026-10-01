@@ -124,7 +124,7 @@ export function RouteSegment({
           { lat: to.lat, lng: to.lng },
         ],
         strokeOpacity: 0,
-        strokeColor: "#2b6094",
+        strokeColor: "#0a5aa8",
         icons: [{ icon: dash, offset: "0", repeat: "14px" }],
       });
       return () => polyline.setMap(null);
@@ -148,7 +148,7 @@ export function RouteSegment({
       line = new google.maps.Polyline({
         map,
         path: decodePolyline(encoded),
-        strokeColor: "#2b6094",
+        strokeColor: "#0a5aa8",
         strokeOpacity: 0.85,
         strokeWeight: 4,
       });

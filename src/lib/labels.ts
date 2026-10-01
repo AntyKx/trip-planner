@@ -51,7 +51,7 @@ export const TYPE_COLOR: Record<string, { bg: string; text: string; hex: string 
   // 2026-10-01 restyle: one brand colour plus neutrals instead of a
   // per-type rainbow (blue/amber/violet/sky) — 景點 keeps the brand blue,
   // everything else is neutral ink. hex feeds the map markers.
-  PLACE: { bg: "bg-brand-50", text: "text-brand-600", hex: "#0b6bcb" },
+  PLACE: { bg: "bg-brand-50", text: "text-brand-600", hex: "#0a5aa8" },
   RESTAURANT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },
   HOTEL: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },
   TRANSPORT: { bg: "bg-paper-alt", text: "text-ink-700", hex: "#3a4248" },

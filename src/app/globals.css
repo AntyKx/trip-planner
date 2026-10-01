@@ -95,18 +95,20 @@ input[type="radio"] {
     "Segoe UI Symbol", "Noto Color Emoji";
 
   /* 海港藍 brand — 2026-10-01 restyle (B direction, picked from an
-     Artifact palette comparison). 600 is the brand colour itself (#0b6bcb):
-     banners, links, primary buttons, selected states. */
-  --color-brand-50: #e7f1fb;
-  --color-brand-100: #cde2f7;
-  --color-brand-200: #9fc6ef;
-  --color-brand-300: #6aa6e4;
-  --color-brand-400: #3a88d8;
-  --color-brand-500: #1d79d0;
-  --color-brand-600: #0b6bcb;
-  --color-brand-700: #0957a6;
-  --color-brand-800: #074584;
-  --color-brand-900: #06396c;
+     Artifact palette comparison). 600 is the brand colour itself:
+     banners, links, primary buttons, selected states. Darkened one step
+     from #0b6bcb to #0a5aa8 the same day — the original looked too bright
+     on the user's phone (the preview was judged on a desktop screen). */
+  --color-brand-50: #e8f0f9;
+  --color-brand-100: #cbdcf0;
+  --color-brand-200: #9dbde3;
+  --color-brand-300: #6a9bd3;
+  --color-brand-400: #3a7cc3;
+  --color-brand-500: #1b68b6;
+  --color-brand-600: #0a5aa8;
+  --color-brand-700: #084a8c;
+  --color-brand-800: #073b70;
+  --color-brand-900: #06315c;
 
   /* Accent orange — only for prices/costs and "still to do" reminders,
      never decoration (B direction). */
