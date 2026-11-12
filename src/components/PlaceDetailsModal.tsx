@@ -124,7 +124,7 @@ function PlaceDetailsModal({
         <ImgWithFallback
           src={photoUrl}
           alt={displayName}
-          className="mt-3 h-40 w-full rounded-xl object-cover"
+          className="mt-3 h-40 w-full rounded-card object-cover"
           fallback={null}
         />
 
@@ -232,7 +232,7 @@ function PlaceDetailsModal({
                       <span className="font-medium text-ink-700">
                         {r.authorName}
                       </span>
-                      <span className="shrink-0 text-xs text-ink-400">
+                      <span className="shrink-0 text-xs text-ink-500">
                         {r.relativeTime}
                       </span>
                     </div>

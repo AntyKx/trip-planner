@@ -313,7 +313,7 @@ export default function MobileMapFullscreen({
             type="button"
             onClick={requestClose}
             aria-label="關閉地圖"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-700 shadow-sm"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-700"
           >
             <X className="h-5 w-5" />
           </button>
@@ -334,7 +334,7 @@ export default function MobileMapFullscreen({
                 type="button"
                 onClick={() => handleSelectDay(d.id)}
                 aria-pressed={d.id === day?.id}
-                className={`shrink-0 rounded-lg border px-3.5 py-1.5 text-sm shadow-sm ${
+                className={`min-h-9 shrink-0 rounded-lg border px-3.5 py-1.5 text-sm ${
                   d.id === day?.id
                     ? "border-ink-900 bg-ink-900 text-white"
                     : "border-line bg-surface text-ink-700"
@@ -375,7 +375,7 @@ export default function MobileMapFullscreen({
 
       {/* Bottom card carousel */}
       {items.length === 0 ? (
-        <div className="absolute inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 rounded-2xl bg-surface p-4 text-center text-sm text-ink-500 shadow-lg">
+        <div className="absolute inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-10 rounded-card-lg bg-surface p-4 text-center text-sm text-ink-500 shadow-lg">
           這天還沒有地點可顯示
         </div>
       ) : (
@@ -417,12 +417,12 @@ function FullscreenCard({
   return (
     <article
       onClick={onClick}
-      className={`flex w-[calc(100vw-4.5rem)] max-w-sm shrink-0 cursor-pointer snap-center gap-3 rounded-2xl border-2 bg-surface p-2.5 shadow-lg transition-colors ${
+      className={`flex w-[calc(100vw-4.5rem)] max-w-sm shrink-0 cursor-pointer snap-center gap-3 rounded-card-lg border-2 bg-surface p-2.5 shadow-lg transition-colors ${
         active ? "border-brand-600" : "border-transparent"
       }`}
     >
       <div
-        className="relative h-[84px] w-[84px] shrink-0 overflow-hidden rounded-xl"
+        className="relative h-[84px] w-[84px] shrink-0 overflow-hidden rounded-card"
         style={{ background: color }}
       >
         {item.photoUrl && (

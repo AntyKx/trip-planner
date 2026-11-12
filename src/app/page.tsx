@@ -240,7 +240,7 @@ export default async function TripsPage() {
             ) : (
               <span />
             )}
-            <span className="text-[11px] text-white/70">
+            <span className="text-xs text-white/70">
               {formatRelativeTime(new Date(lastUpdatedMs))}更新
             </span>
           </div>

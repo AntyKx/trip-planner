@@ -30,6 +30,7 @@ import { MAX_PHOTOS_PER_ITEM, MAX_JOURNAL_TEXT_LENGTH } from "@/lib/limits";
 import { useToast } from "./Toast";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 import PhotoLightbox from "./PhotoLightbox";
+import { appButtonClassName } from "./AppButton";
 
 export type JournalPhoto = { id: string; url: string };
 
@@ -152,9 +153,8 @@ export default function JournalEditModal({
         done++;
       }
     } catch (err) {
-      notes.push(
-        err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次",
-      );
+      console.error("Journal photo upload failed:", err);
+      notes.push("上傳失敗，請確認網路後再試一次");
     } finally {
       setIsUploading(false);
       setUploadProgress(null);
@@ -333,7 +333,7 @@ export default function JournalEditModal({
           type="button"
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className={appButtonClassName("primary", "md", "w-full")}
         >
           {isSaving ? "儲存中…" : "儲存"}
         </button>

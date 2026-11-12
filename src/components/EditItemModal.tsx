@@ -13,6 +13,7 @@ import { extractConfirmationFromImage } from "@/app/trips/aiActions";
 import { isTimeOutsideHours, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 const TYPE_OPTIONS: { value: ItemTypeValue; label: string }[] = [
   { value: "PLACE", label: "景點" },
@@ -376,7 +377,7 @@ export default function EditItemModal({
         <ModalCloseButton />
       </div>
 
-      <div className="mt-4 rounded-lg border border-dashed border-line p-3">
+      <div className="mt-4 rounded-card border border-dashed border-line p-3">
         <input
           ref={scanInputRef}
           type="file"
@@ -473,7 +474,7 @@ export default function EditItemModal({
                 return (
                   <div
                     key={row.key}
-                    className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5"
+                    className="min-h-9 flex items-center gap-2 rounded-lg border border-line px-2.5 py-1.5"
                   >
                     <button
                       type="button"
@@ -522,7 +523,7 @@ export default function EditItemModal({
                       maxLength={30}
                       placeholder="名稱（選填），例如 午餐"
                       aria-label="花費名稱"
-                      className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                      className="min-h-9 min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
                     />
                     <button
                       type="button"
@@ -545,7 +546,7 @@ export default function EditItemModal({
                       }
                       placeholder="金額"
                       aria-label="金額"
-                      className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                      className="min-h-9 min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
                     />
                     <select
                       value={row.currency}
@@ -553,7 +554,7 @@ export default function EditItemModal({
                         updateCostRow(row.key, { currency: e.target.value })
                       }
                       aria-label="幣別"
-                      className="w-20 rounded-md border border-line px-2 py-1.5 text-sm"
+                      className="min-h-9 w-20 rounded-md border border-line px-2 py-1.5 text-sm"
                     >
                       {CURRENCY_OPTIONS.map((c) => (
                         <option key={c} value={c}>
@@ -569,7 +570,7 @@ export default function EditItemModal({
                         })
                       }
                       aria-label="費用類型"
-                      className="w-24 rounded-md border border-line px-2 py-1.5 text-sm"
+                      className="min-h-9 w-24 rounded-md border border-line px-2 py-1.5 text-sm"
                     >
                       {COST_CATEGORY_OPTIONS.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -627,7 +628,7 @@ export default function EditItemModal({
         <button
           type="submit"
           disabled={isSaving}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+          className={appButtonClassName("primary", "md", "w-full")}
         >
           {isSaving ? "儲存中…" : "儲存"}
         </button>

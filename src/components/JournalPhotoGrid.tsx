@@ -25,7 +25,7 @@ export default function JournalPhotoGrid({
       <button
         type="button"
         onClick={() => setLightboxIndex(selectedIndex)}
-        className="mt-3 block w-full overflow-hidden rounded-xl"
+        className="mt-3 block w-full overflow-hidden rounded-card"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -44,17 +44,17 @@ export default function JournalPhotoGrid({
               onClick={() => setSelectedIndex(i)}
               aria-label={`顯示第 ${i + 1} 張照片`}
               aria-current={i === selectedIndex}
-              className={`w-16 shrink-0 rounded bg-white p-1 shadow-md transition hover:z-[var(--z-dropdown)] hover:scale-105 ${
+              className={`w-16 shrink-0 overflow-hidden rounded-md transition ${
                 i === selectedIndex
-                  ? "ring-2 ring-brand-500"
-                  : "ring-1 ring-black/5"
-              } ${i % 2 === 0 ? "-rotate-3" : "rotate-2"}`}
+                  ? "ring-2 ring-brand-600 ring-offset-2"
+                  : "opacity-80 hover:opacity-100"
+              }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={photo.url}
                 alt=""
-                className="aspect-square w-full rounded-sm object-cover"
+                className="aspect-square w-full object-cover"
               />
             </button>
           ))}

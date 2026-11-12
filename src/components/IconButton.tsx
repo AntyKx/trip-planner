@@ -30,7 +30,7 @@ const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconB
     <button
       ref={ref}
       type="button"
-      className={`flex min-h-11 min-w-11 items-center justify-center rounded-xl transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${className ?? ""}`}
+      className={`flex min-h-11 min-w-11 items-center justify-center rounded-card transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${className ?? ""}`}
       {...props}
     >
       {icon}

@@ -41,11 +41,8 @@ function formatDate(date: Date): string {
 // signed-in preview (src/app/trips/[id]/journal) — same rendering either
 // way, so a preview is a true WYSIWYG of what a public viewer would see.
 //
-// Visual language deliberately borrows from the login/welcome screens
-// (font-script for handwritten accents, the dashed "route line" motif,
-// rotated polaroid-style photo thumbnails) rather than inventing a new
-// direction — this is the one page in the app meant to read as an actual
-// travel journal rather than a planning tool.
+// Uses the same cover-photo hero + dashed "route line" motif as the trip
+// and itinerary pages, so the journal reads as part of the same app.
 export default function JournalBook({
   trip,
   showCopy = false,
@@ -157,7 +154,7 @@ export default function JournalBook({
                 {day.items.map((item) => (
                   <article
                     key={item.id}
-                    className="rounded-card-lg border border-line bg-surface p-4 shadow-sm"
+                    className="rounded-card-lg border border-line bg-surface p-4"
                   >
                     <h3 className="flex items-center gap-1.5 text-lg font-bold text-ink-900">
                       {item.place && <MapPin className="h-4 w-4 shrink-0 text-brand-500" />}

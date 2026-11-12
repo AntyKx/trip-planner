@@ -212,7 +212,7 @@ const ModalOverlay = forwardRef<
         aria-labelledby={titleId}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className={`max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-t-2xl bg-surface outline-none transition-[opacity,transform] motion-reduce:transition-none sm:max-h-[85vh] sm:rounded-2xl ${
+        className={`max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-t-2xl bg-surface outline-none transition-[opacity,transform] motion-reduce:transition-none sm:max-h-[85vh] sm:rounded-card-lg ${
           visible
             ? "translate-y-0 opacity-100 sm:scale-100"
             : "translate-y-8 opacity-0 sm:translate-y-0 sm:scale-95"

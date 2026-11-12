@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireTripRole } from "@/lib/auth";
 import JournalBook from "@/components/JournalBook";
+import BackLink from "@/components/BackLink";
 
 // Signed-in preview of the "旅遊書" — same query/rendering as the public
 // /journal/[token] page, just reached by tripId + session instead of the
@@ -55,13 +54,9 @@ export default async function JournalPreviewPage({
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-2xl bg-paper px-4 pb-16 pt-8 sm:px-6">
-      <Link
-        href={`/trips/${id}`}
-        className="mb-3 flex items-center gap-1 text-sm text-ink-700 hover:underline"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
+      <BackLink href={`/trips/${id}`} className="mb-2">
         回行程
-      </Link>
+      </BackLink>
       <JournalBook trip={trip} showCopy />
     </main>
   );

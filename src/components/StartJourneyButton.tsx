@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { appButtonClassName } from "./AppButton";
 
 const SPLASH_SEEN_COOKIE_NAME = "tp_seen_splash";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
@@ -18,7 +19,7 @@ export default function StartJourneyButton() {
     <button
       type="button"
       onClick={handleClick}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-3.5 text-base font-bold text-white hover:bg-brand-700"
+      className={appButtonClassName("primary", "lg", "w-full")}
     >
       開始旅程
       <ArrowRight className="h-5 w-5" />

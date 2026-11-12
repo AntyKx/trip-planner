@@ -53,7 +53,7 @@ export default function DateRangePicker({
         type="button"
         aria-labelledby={`${id}-label ${id}`}
         onClick={() => setOpen(true)}
-        className="mt-1 flex w-full min-w-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2.5 text-left text-base hover:border-brand-300"
+        className="mt-1 flex w-full min-w-0 items-center gap-2 rounded-card border border-line bg-surface px-3 py-2.5 text-left text-base hover:border-brand-300"
       >
         <CalendarDays className="h-4 w-4 shrink-0 text-brand-600" />
         {hasRange ? (
@@ -246,12 +246,12 @@ function SummaryBox({
 }) {
   return (
     <div
-      className={`rounded-xl border px-3 py-2 ${
+      className={`rounded-card border px-3 py-2 ${
         active ? "border-brand-600 bg-brand-50" : "border-line bg-surface"
       }`}
     >
-      <p className="text-[11px] text-ink-500">{caption}</p>
-      <p className={`text-sm font-semibold ${date ? "text-ink-900" : "text-ink-400"}`}>
+      <p className="text-xs text-ink-500">{caption}</p>
+      <p className={`text-sm font-semibold ${date ? "text-ink-900" : "text-ink-500"}`}>
         {date ? shortLabel(date) : "未選擇"}
       </p>
     </div>

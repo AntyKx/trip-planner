@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 import { createTrip } from "../actions";
 import AppCard from "@/components/AppCard";
 import AppButton from "@/components/AppButton";
 import DateRangePicker from "@/components/DateRangePicker";
+import BackLink from "@/components/BackLink";
 
 // Mirrors the day-count math in createTrip so the preview and the actual
 // save agree — computed client-side purely for the live "共 N 天" hint,
@@ -42,10 +42,8 @@ export default function NewTripPage() {
 
   return (
     <main className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
-      <Link href="/" className="text-sm text-ink-700 hover:underline">
-        ← 回我的行程
-      </Link>
-      <h1 className="mt-2 text-2xl font-bold text-ink-900">建立新行程</h1>
+      <BackLink href="/">首頁</BackLink>
+      <h1 className="mt-1 text-2xl font-bold text-ink-900">建立新行程</h1>
 
       <AppCard className="mt-6 p-5">
         <form onSubmit={handleSubmit} className="space-y-4">

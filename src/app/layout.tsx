@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Caveat } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import InstallPrompt from "@/components/InstallPrompt";
 import UpdateChecker from "@/components/UpdateChecker";
 import VersionBadge from "@/components/VersionBadge";
 import ToastProvider from "@/components/Toast";
+import ConfirmProvider from "@/components/ConfirmDialog";
 import ServiceWorkerCleanup from "@/components/ServiceWorkerCleanup";
 import SplashScreen from "@/components/SplashScreen";
 import "./globals.css";
@@ -16,14 +17,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-// Handwritten-style accent font for the splash/login wordmark and taglines —
-// matches the travel-journal art direction (see 開頭畫面/登入畫面 references).
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  weight: ["600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -71,9 +64,9 @@ export default function RootLayout({
   return (
     <html
       lang="zh-TW"
-      className={`${geistSans.variable} ${geistMono.variable} ${caveat.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col app-glow-bg pt-[env(safe-area-inset-top)] text-ink-900">
+      <body className="min-h-full flex flex-col bg-paper pt-[env(safe-area-inset-top)] text-ink-900">
         {/* Solid strip behind the notch/status bar — with statusBarStyle
             "black-translucent" the webview draws full-bleed under it, so
             without this the status bar icons (always white/light) would
@@ -91,10 +84,12 @@ export default function RootLayout({
         />
         <ServiceWorkerCleanup />
         <ToastProvider>
+          <ConfirmProvider>
           <UpdateChecker />
           {children}
           <InstallPrompt />
           <VersionBadge />
+          </ConfirmProvider>
         </ToastProvider>
         {/* Last in the DOM so it wins any z-index tie with the update
             banner (both z-critical) — while it's up, nothing else should

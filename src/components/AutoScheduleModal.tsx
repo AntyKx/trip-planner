@@ -10,6 +10,7 @@ import {
 } from "@/lib/autoSchedule";
 import ModalOverlay, { ModalCloseButton, type ModalOverlayHandle } from "./ModalOverlay";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 export type AppliedTimeUpdate = {
   itemId: string;
@@ -104,7 +105,7 @@ export default function AutoScheduleModal({
           type="time"
           value={dayStart}
           onChange={(e) => e.target.value && setDayStart(e.target.value)}
-          className="rounded-md border border-line px-3 py-1.5 text-sm"
+          className="min-h-9 rounded-md border border-line px-3 py-1.5 text-sm"
         />
       </div>
       <p className="mt-1.5 text-xs text-ink-500">
@@ -152,7 +153,7 @@ export default function AutoScheduleModal({
         type="button"
         onClick={handleApply}
         disabled={isApplying || proposals.every((p) => p.fixed)}
-        className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        className={appButtonClassName("primary", "md", "mt-4 w-full")}
       >
         {isApplying ? "套用中…" : "套用這份時間表"}
       </button>

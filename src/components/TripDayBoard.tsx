@@ -533,7 +533,7 @@ export default function TripDayBoard({
                 role="tab"
                 aria-selected={isActive}
                 onClick={() => setSelectedDayId(day.id)}
-                className={`relative min-w-[72px] shrink-0 snap-start rounded-lg border px-3 py-1.5 text-center transition ${
+                className={`min-h-9 relative min-w-[72px] shrink-0 snap-start rounded-lg border px-3 py-1.5 text-center transition ${
                   isActive
                     ? "border-ink-900 bg-ink-900 text-white"
                     : "border-line bg-surface text-ink-900 hover:bg-paper-alt"
@@ -553,7 +553,7 @@ export default function TripDayBoard({
                       return <WeatherIcon className="h-3.5 w-3.5" />;
                     })()}
                 </div>
-                <div className={`text-[11px] ${isActive ? "text-white/75" : "text-ink-500"}`}>
+                <div className={`text-xs ${isActive ? "text-white/75" : "text-ink-500"}`}>
                   {day.date.slice(5)}
                   {weekdayShortLabel(new Date(`${day.date}T00:00:00`))}
                   {isToday && "・今天"}
@@ -666,7 +666,7 @@ export default function TripDayBoard({
       <aside className="space-y-4 lg:sticky lg:top-10">
         <div
           id="day-map-panel"
-          className={`h-fit rounded-xl border border-line bg-surface p-4 shadow-sm ${
+          className={`h-fit rounded-card border border-line bg-surface p-4 ${
             mobileMapView ? "" : "hidden lg:block"
           }`}
         >

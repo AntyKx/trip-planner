@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
 export type AppButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "dangerFilled";
-export type AppButtonSize = "sm" | "md";
+export type AppButtonSize = "sm" | "md" | "lg";
 
 // danger is the ghost-style destructive action (safe to show inline,
 // e.g. next to other actions); dangerFilled is reserved for the actual
@@ -18,8 +18,13 @@ const VARIANT_CLASSES: Record<AppButtonVariant, string> = {
 };
 
 const SIZE_CLASSES: Record<AppButtonSize, string> = {
-  sm: "gap-1 px-3 py-1.5 text-xs",
-  md: "gap-1.5 px-4 py-2 text-sm",
+  // min-h instead of py so every button of a size is the same height
+  // regardless of icon/text content. sm (36px) is for inline/secondary
+  // actions inside cards; md (40px) is the default; lg (48px) is the one
+  // full-width primary CTA of a screen (e.g. 開始旅程).
+  sm: "min-h-9 gap-1 px-3 text-sm",
+  md: "min-h-10 gap-1.5 px-4 text-sm",
+  lg: "min-h-12 gap-2 px-6 text-base font-semibold",
 };
 
 export type AppButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -38,7 +43,7 @@ export function appButtonClassName(
   size: AppButtonSize = "md",
   className?: string
 ): string {
-  return `inline-flex shrink-0 items-center justify-center rounded-xl font-medium whitespace-nowrap transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-card font-medium whitespace-nowrap transition active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${SIZE_CLASSES[size]} ${className ?? ""}`;
 }
 
 // Shared button primitive — see 功能擴充建議.txt's design-system request.

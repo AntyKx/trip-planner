@@ -14,6 +14,7 @@ import { Avatar } from "./Avatar";
 import { PanelShell as Shell } from "./AppCard";
 import AppBadge from "./AppBadge";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 export type Collaborator = {
   userId: string;
@@ -164,7 +165,7 @@ export default function CollaboratorsPanel({
                   onChange={(e) =>
                     handleRoleChange(c.email, e.target.value as "EDITOR" | "VIEWER")
                   }
-                  className="rounded-md border border-line bg-paper-alt px-2 py-0.5 text-xs text-ink-700 disabled:opacity-50"
+                  className="min-h-9 rounded-md border border-line bg-paper-alt px-2 py-0.5 text-xs text-ink-700 disabled:opacity-50"
                 >
                   <option value="EDITOR">可編輯</option>
                   <option value="VIEWER">僅檢視</option>
@@ -205,12 +206,12 @@ export default function CollaboratorsPanel({
               type="email"
               required
               placeholder="邀請夥伴的 email"
-              className="flex-1 rounded-md border border-line px-2 py-1 text-sm"
+              className="min-h-9 flex-1 rounded-md border border-line px-2 py-1 text-sm"
             />
             <select
               name="role"
               defaultValue="EDITOR"
-              className="rounded-md border border-line px-2 py-1 text-sm"
+              className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
             >
               <option value="EDITOR">可編輯</option>
               <option value="VIEWER">僅檢視</option>
@@ -218,7 +219,7 @@ export default function CollaboratorsPanel({
             <button
               type="submit"
               disabled={isPending}
-              className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+              className={appButtonClassName("primary", "sm")}
             >
               邀請
             </button>
@@ -236,11 +237,7 @@ export default function CollaboratorsPanel({
                 type="button"
                 disabled={isSharePending}
                 onClick={shareEnabled ? handleDisableShare : handleEnableShare}
-                className={`rounded-md px-2.5 py-1 text-xs disabled:opacity-50 ${
-                  shareEnabled
-                    ? "border border-line text-ink-700 hover:bg-paper-alt"
-                    : "bg-brand-600 text-white hover:bg-brand-700"
-                }`}
+                className={appButtonClassName(shareEnabled ? "secondary" : "primary", "sm")}
               >
                 {shareEnabled ? "關閉分享" : "開啟分享連結"}
               </button>
@@ -256,7 +253,7 @@ export default function CollaboratorsPanel({
                     onChange={(e) =>
                       handleShareRoleChange(e.target.value as "EDITOR" | "VIEWER")
                     }
-                    className="rounded-md border border-line px-2 py-1 text-xs"
+                    className="min-h-9 rounded-md border border-line px-2 py-1 text-xs"
                   >
                     <option value="EDITOR">可編輯</option>
                     <option value="VIEWER">僅檢視</option>
@@ -267,12 +264,12 @@ export default function CollaboratorsPanel({
                     readOnly
                     value={shareUrl}
                     onFocus={(e) => e.target.select()}
-                    className="min-w-0 flex-1 rounded-md border border-line bg-paper-alt px-2 py-1 text-xs text-ink-700"
+                    className="min-h-9 min-w-0 flex-1 rounded-md border border-line bg-paper-alt px-2 py-1 text-xs text-ink-700"
                   />
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
+                    className="min-h-9 flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
                   >
                     {copied ? (
                       <Check className="h-3.5 w-3.5 text-success-700" />

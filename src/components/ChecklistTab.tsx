@@ -50,6 +50,8 @@ import EmptyState from "./EmptyState";
 import { NoChecklistItemsIllustration } from "./EmptyStateIllustrations";
 import { useToast } from "./Toast";
 import { localTodayStr } from "@/lib/timeline";
+import { appButtonClassName } from "./AppButton";
+import { useConfirm } from "./ConfirmDialog";
 
 export type ChecklistItemView = {
   id: string;
@@ -152,19 +154,19 @@ function ItemEditForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="mt-2 flex flex-col gap-2 rounded-lg border border-line bg-paper-alt p-3"
+      className="mt-2 flex flex-col gap-2 rounded-card border border-line bg-paper-alt p-3"
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="項目名稱"
-        className="rounded-md border border-line px-2 py-1 text-sm"
+        className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
       />
       <div className="flex flex-wrap gap-2">
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value as ChecklistCategoryValue)}
-          className="rounded-md border border-line px-2 py-1 text-sm"
+          className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
         >
           {CHECKLIST_CATEGORY_ORDER.map((c) => (
             <option key={c} value={c}>
@@ -176,12 +178,12 @@ function ItemEditForm({
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="rounded-md border border-line px-2 py-1 text-sm"
+          className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
         />
         <select
           value={assignedToId}
           onChange={(e) => setAssignedToId(e.target.value)}
-          className="rounded-md border border-line px-2 py-1 text-sm"
+          className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
         >
           <option value="">未指派</option>
           {members.map((m) => (
@@ -196,13 +198,13 @@ function ItemEditForm({
         onChange={(e) => setNote(e.target.value)}
         rows={2}
         placeholder="備註"
-        className="rounded-md border border-line px-2 py-1 text-sm"
+        className="min-h-9 rounded-md border border-line px-2 py-1 text-sm"
       />
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={isPending}
-          className="rounded-md bg-brand-600 px-3 py-1 text-xs text-white hover:bg-brand-700 disabled:opacity-50"
+          className={appButtonClassName("primary", "sm")}
         >
           {isPending ? "儲存中…" : "儲存"}
         </button>
@@ -210,7 +212,7 @@ function ItemEditForm({
           type="button"
           onClick={onCancel}
           disabled={isPending}
-          className="rounded-md border border-line px-3 py-1 text-xs text-ink-700 hover:bg-paper-alt"
+          className={appButtonClassName("secondary", "sm")}
         >
           取消
         </button>
@@ -287,7 +289,7 @@ function SortableChecklistItem({
         <div className="min-w-0 flex-1">
           <p
             className={`text-sm font-medium ${
-              item.isDone ? "text-ink-400 line-through" : "text-ink-900"
+              item.isDone ? "text-ink-500 line-through" : "text-ink-900"
             }`}
           >
             {item.title}
@@ -378,6 +380,7 @@ export default function ChecklistTab({
     setItems(initialItems);
   }, [initialItems]);
 
+  const confirm = useConfirm();
   const toast = useToast();
   const [isPending, startTransition] = useTransition();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -414,8 +417,16 @@ export default function ChecklistTab({
     });
   }
 
-  function handleDelete(item: ChecklistItemView) {
-    if (!confirm(`確定要刪除「${item.title}」嗎？`)) return;
+  async function handleDelete(item: ChecklistItemView) {
+    if (
+      !(await confirm({
+        title: "刪除這個項目？",
+        message: `「${item.title}」會從清單移除。`,
+        confirmLabel: "刪除",
+        danger: true,
+      }))
+    )
+      return;
     startTransition(async () => {
       await deleteChecklistItem(item.id);
       toast.success("已刪除");
@@ -482,7 +493,7 @@ export default function ChecklistTab({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
+      <div className="rounded-card border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-medium text-ink-700">
             已完成 {doneCount} / {total}
@@ -525,7 +536,7 @@ export default function ChecklistTab({
         return (
           <div
             key={category}
-            className="rounded-xl border border-line bg-surface p-4 shadow-sm"
+            className="rounded-card border border-line bg-surface p-4"
           >
             <h3
               className={`flex w-fit items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${color.bg} ${color.text}`}
@@ -577,7 +588,7 @@ export default function ChecklistTab({
       )}
 
       {canEdit && (
-        <div className="rounded-xl border border-line bg-surface p-4 shadow-sm">
+        <div className="rounded-card border border-line bg-surface p-4">
           {showAddForm ? (
             <form onSubmit={handleAddSubmit} className="flex flex-col gap-2">
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -585,12 +596,12 @@ export default function ChecklistTab({
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="新增項目名稱"
-                  className="flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
+                  className="min-h-9 flex-1 rounded-md border border-line px-2 py-1.5 text-sm"
                 />
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as ChecklistCategoryValue)}
-                  className="rounded-md border border-line px-2 py-1.5 text-sm"
+                  className="min-h-9 rounded-md border border-line px-2 py-1.5 text-sm"
                 >
                   {CHECKLIST_CATEGORY_ORDER.map((c) => (
                     <option key={c} value={c}>
@@ -603,14 +614,14 @@ export default function ChecklistTab({
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+                  className={appButtonClassName("primary", "sm")}
                 >
                   新增
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="flex items-center gap-1 rounded-md border border-line px-3 py-1.5 text-sm text-ink-700 hover:bg-paper-alt"
+                  className={appButtonClassName("secondary", "sm")}
                 >
                   <X className="h-3.5 w-3.5" />
                   取消

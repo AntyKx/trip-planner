@@ -3,6 +3,7 @@
 import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import { deleteTrip } from "@/app/trips/actions";
+import { useConfirm } from "./ConfirmDialog";
 
 export default function DeleteTripButton({
   tripId,
@@ -13,8 +14,18 @@ export default function DeleteTripButton({
 }) {
   const [isPending, startTransition] = useTransition();
 
-  function handleDelete() {
-    if (!confirm(`確定要刪除行程「${tripTitle}」嗎？這個動作無法復原。`)) return;
+  const confirm = useConfirm();
+
+  async function handleDelete() {
+    if (
+      !(await confirm({
+        title: "刪除整個行程？",
+        message: `「${tripTitle}」的所有天數、景點、花費與遊記都會刪除，無法復原。`,
+        confirmLabel: "刪除行程",
+        danger: true,
+      }))
+    )
+      return;
     startTransition(() => {
       deleteTrip(tripId);
     });

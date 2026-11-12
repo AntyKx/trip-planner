@@ -7,6 +7,7 @@ import { BookOpen, Copy, Check, Eye } from "lucide-react";
 import { enableJournalShare, disableJournalShare } from "@/app/trips/actions";
 import { PanelShell as Shell } from "./AppCard";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 export default function JournalSharePanel({
   tripId,
@@ -86,11 +87,7 @@ export default function JournalSharePanel({
           type="button"
           disabled={isPending}
           onClick={journalShareEnabled ? handleDisable : handleEnable}
-          className={`rounded-md px-2.5 py-1 text-xs disabled:opacity-50 ${
-            journalShareEnabled
-              ? "border border-line text-ink-700 hover:bg-paper-alt"
-              : "bg-brand-600 text-white hover:bg-brand-700"
-          }`}
+          className={appButtonClassName(journalShareEnabled ? "secondary" : "primary", "sm")}
         >
           {journalShareEnabled ? "關閉分享" : "開啟分享連結"}
         </button>
@@ -102,12 +99,12 @@ export default function JournalSharePanel({
             readOnly
             value={journalUrl}
             onFocus={(e) => e.target.select()}
-            className="min-w-0 flex-1 rounded-md border border-line bg-paper-alt px-2 py-1 text-xs text-ink-700"
+            className="min-h-9 min-w-0 flex-1 rounded-md border border-line bg-paper-alt px-2 py-1 text-xs text-ink-700"
           />
           <button
             type="button"
             onClick={handleCopyLink}
-            className="flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
+            className="min-h-9 flex shrink-0 items-center gap-1 rounded-md border border-line px-2 py-1 text-xs hover:bg-paper-alt"
           >
             {copied ? (
               <Check className="h-3.5 w-3.5 text-success-700" />

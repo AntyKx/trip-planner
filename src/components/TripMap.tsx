@@ -430,7 +430,7 @@ export default function TripMap({
 
   if (variant === "preview") {
     return (
-      <div className="relative h-full overflow-hidden rounded-xl">
+      <div className="relative h-full overflow-hidden rounded-card">
         <Map
           style={{ width: "100%", height: "100%" }}
           defaultCenter={center}

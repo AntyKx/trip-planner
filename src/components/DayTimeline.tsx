@@ -80,6 +80,8 @@ import EmptyState from "./EmptyState";
 import { NoItemsTodayIllustration } from "./EmptyStateIllustrations";
 import ActionMenu, { type ActionMenuItem } from "./ActionMenu";
 import AppModal from "./AppModal";
+import { appButtonClassName } from "./AppButton";
+import { useConfirm } from "./ConfirmDialog";
 
 export type TimelineItem = {
   id: string;
@@ -330,7 +332,7 @@ function RescanRoutesModal({
             key={opt.value}
             type="button"
             onClick={() => onPick(opt.value)}
-            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50"
+            className="min-h-9 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50"
           >
             {opt.label}
           </button>
@@ -531,12 +533,8 @@ function SortableItemCard({
       id={`timeline-item-${item.id}`}
     >
       {/* Spine gutter — the dot marks this stop on the shared dashed line
-          drawn by the list wrapper (see DayTimeline's items.map below);
-          the handwritten time replaces the old plain-text time badge that
-          used to sit in the card's top row. This app's journal page
-          already uses this dashed-line + font-script language (see
-          JournalBook.tsx) — this extends it to the timeline itself
-          instead of leaving it only on the post-trip recap. */}
+          drawn by the list wrapper (see DayTimeline's items.map below),
+          with the stop's time above it. */}
       <div className="w-8 shrink-0 pt-4 text-center">
         <span
           aria-hidden="true"
@@ -555,8 +553,8 @@ function SortableItemCard({
       <div
         {...(canEdit ? attributes : {})}
         {...(canEdit ? listeners : {})}
-        className={`group relative flex h-[92px] touch-manipulation items-stretch rounded-xl border transition select-none [-webkit-touch-callout:none] sm:h-28 ${
-          isDragging ? "shadow-lg" : "shadow-sm hover:-translate-y-0.5 hover:shadow-md"
+        className={`group relative flex h-[92px] touch-manipulation items-stretch rounded-card border transition select-none [-webkit-touch-callout:none] sm:h-28 ${
+          isDragging ? "shadow-lg" : " hover:-translate-y-0.5 hover:shadow-md"
         } ${isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"} ${
           isSelected ? "ring-2 ring-brand-400" : ""
         }`}
@@ -564,7 +562,7 @@ function SortableItemCard({
         {isHighlighted && (
           <div
             aria-hidden="true"
-            className="animate-added-highlight pointer-events-none absolute inset-0 rounded-xl"
+            className="animate-added-highlight pointer-events-none absolute inset-0 rounded-card"
           />
         )}
         {/* Visual-only drag affordance — the whole card is already the drag
@@ -800,7 +798,7 @@ function SortableItemCard({
                     setShowModePicker(false);
                     if (!current) onModeChange(opt.value);
                   }}
-                  className={`flex min-h-12 items-center gap-3 rounded-xl border px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 ${
+                  className={`flex min-h-12 items-center gap-3 rounded-card border px-3 text-left text-sm disabled:cursor-not-allowed disabled:opacity-45 ${
                     current
                       ? "border-brand-600 bg-brand-50 text-brand-700"
                       : "border-line bg-surface text-ink-700 hover:bg-paper-alt"
@@ -851,7 +849,7 @@ function MoveToDayModal({
             type="button"
             disabled={isMoving}
             onClick={() => onPick(day.id)}
-            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
+            className="min-h-9 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm text-ink-700 hover:border-brand-300 hover:bg-brand-50 disabled:opacity-50"
           >
             Day {day.dayIndex}
           </button>
@@ -910,6 +908,7 @@ export default function DayTimeline({
   // rather than by position.
   const [anchorItemId, setAnchorItemId] = useState(initialAnchorItemId);
   const [isPending, startTransition] = useTransition();
+  const confirm = useConfirm();
   const toast = useToast();
   const [routeError, setRouteError] = useState<string | null>(null);
   // A Set (not a single string) — two different legs can genuinely be
@@ -1396,13 +1395,16 @@ export default function DayTimeline({
     });
   }
 
-  function handleDeleteItem(itemId: string) {
+  async function handleDeleteItem(itemId: string) {
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
     if (
-      !confirm(
-        `確定要刪除「${item.place?.name ?? item.note ?? "這個項目"}」嗎？`
-      )
+      !(await confirm({
+        title: "刪除這個行程項目？",
+        message: `「${item.place?.name ?? item.note ?? "這個項目"}」的花費、遊記與照片也會一併刪除。`,
+        confirmLabel: "刪除",
+        danger: true,
+      }))
     )
       return;
 
@@ -1561,7 +1563,7 @@ export default function DayTimeline({
           {/* Mobile: three equal-width buttons with shortened labels so
               the row never wraps (full labels overflow ~375px screens);
               desktop keeps natural widths + full labels. Styling mirrors
-              AppButton's visual language (rounded-xl, active scale press
+              AppButton's visual language (rounded-card, active scale press
               feedback) hand-rolled here because the shared primitive's
               shrink-0/whitespace-nowrap fights the responsive flex-1 +
               dual-label layout this row needs. 新增項目 is tinted as the
@@ -1572,7 +1574,7 @@ export default function DayTimeline({
             <button
               type="button"
               onClick={() => setEditingItem("new")}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-brand-50 px-2 py-2 text-xs font-medium text-brand-700 transition hover:bg-brand-100 active:scale-[0.97] sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-card bg-brand-50 px-2 py-2 text-xs font-medium text-brand-700 transition hover:bg-brand-100 active:scale-[0.97] sm:flex-initial sm:px-3"
             >
               <Plus className="h-3.5 w-3.5 shrink-0" />
               <span className="sm:hidden">新增項目</span>
@@ -1585,7 +1587,7 @@ export default function DayTimeline({
               title={
                 !canOptimize ? "需要至少 3 個都有地點資料的項目才能排序" : undefined
               }
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-card border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
             >
               <Waypoints className="h-3.5 w-3.5 shrink-0 text-brand-600" />
               <span className="sm:hidden">最順路線</span>
@@ -1596,7 +1598,7 @@ export default function DayTimeline({
               onClick={() => setIsAutoScheduling(true)}
               disabled={items.length < 2}
               title={items.length < 2 ? "需要至少 2 個項目才能排時間" : undefined}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-card border border-line bg-surface px-2 py-2 text-xs font-medium text-ink-700 transition hover:bg-paper-alt active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 sm:flex-initial sm:px-3"
             >
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-brand-600" />
               自動排時間
@@ -1710,7 +1712,7 @@ export default function DayTimeline({
               <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
                 <Link
                   href={`/explore?tripId=${tripId}&dayId=${dayId}`}
-                  className="flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                  className={appButtonClassName("primary", "md")}
                 >
                   <Search className="h-4 w-4" />
                   搜尋景點
@@ -1718,7 +1720,7 @@ export default function DayTimeline({
                 <button
                   type="button"
                   onClick={() => setEditingItem("new")}
-                  className="flex items-center gap-1.5 rounded-lg border border-line px-4 py-2 text-sm font-medium text-ink-700 hover:bg-paper-alt"
+                  className={appButtonClassName("secondary", "md")}
                 >
                   <Plus className="h-4 w-4" />
                   新增自訂項目

@@ -44,11 +44,11 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
           ))}
         </div>
       ) : (
-        <p className="mt-1 text-xs text-ink-400">{WEATHER_UNAVAILABLE_MESSAGE}</p>
+        <p className="mt-1 text-xs text-ink-500">{WEATHER_UNAVAILABLE_MESSAGE}</p>
       )}
 
       {nextStop && (
-        <div className="mt-4 rounded-2xl bg-brand-600 p-5 text-white shadow-sm">
+        <div className="mt-4 rounded-card-lg bg-brand-600 p-5 text-white">
           <p className="text-xs font-medium uppercase tracking-wide text-brand-100">
             下一站
           </p>
@@ -92,7 +92,7 @@ export default function TravelModeView({ day }: { day: BoardDay }) {
           return (
             <div
               key={item.id}
-              className={`flex items-center gap-3 rounded-xl border p-3 ${
+              className={`flex items-center gap-3 rounded-card border p-3 ${
                 item.id === nextStop?.id
                   ? "border-brand-400 bg-brand-50"
                   : "border-line bg-surface"

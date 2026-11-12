@@ -1,11 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import AppCard from "@/components/AppCard";
 import DeleteTripButton from "@/components/DeleteTripButton";
 import TripInfoForm from "@/components/TripInfoForm";
+import BackLink from "@/components/BackLink";
 
 export default async function TripSettingsPage({
   params,
@@ -39,15 +38,9 @@ export default async function TripSettingsPage({
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-10 sm:px-6">
-      <Link
-        href={`/trips/${id}`}
-        className="inline-flex items-center gap-1 text-sm text-ink-700 hover:underline"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        回行程
-      </Link>
+      <BackLink href={`/trips/${id}`}>回行程</BackLink>
 
-      <h1 className="mt-3 text-2xl font-bold text-ink-900">行程設定</h1>
+      <h1 className="mt-1 text-2xl font-bold text-ink-900">行程設定</h1>
 
       <AppCard padding="lg" className="mt-6">
         <TripInfoForm

@@ -155,10 +155,10 @@ export function FavoritesPreview({
                 key={p.id}
                 src={p.photoUrl}
                 alt={p.name}
-                className={`h-11 w-11 rounded-lg border-2 border-white object-cover shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
+                className={`h-11 w-11 rounded-lg border-2 border-white object-cover ${i > 0 ? "-ml-2.5" : ""}`}
                 fallback={
                   <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-white bg-brand-50 shadow-sm ${i > 0 ? "-ml-2.5" : ""}`}
+                    className={`flex h-11 w-11 items-center justify-center rounded-lg border-2 border-white bg-brand-50 ${i > 0 ? "-ml-2.5" : ""}`}
                   >
                     <Heart className="h-4 w-4 text-brand-400" />
                   </div>
@@ -212,7 +212,7 @@ export function InspirationChips({
         title={`${month} 月適合去`}
         icon={MapIcon}
         className="mb-1.5"
-        action={<span className="text-xs text-ink-400">精選清單</span>}
+        action={<span className="text-xs text-ink-500">精選清單</span>}
       />
       <p className="mb-4 text-xs text-ink-500">
         {longWeekend
@@ -225,12 +225,12 @@ export function InspirationChips({
           <Link
             key={d.city}
             href={destinationHref(d)}
-            className="flex min-w-0 flex-col gap-0.5 rounded-lg border border-line bg-surface px-3 py-2.5 transition hover:border-brand-200 hover:bg-brand-50"
+            className="flex min-w-0 flex-col gap-0.5 rounded-card border border-line bg-surface px-3 py-2.5 transition hover:border-brand-200 hover:bg-brand-50"
           >
             <span className="flex items-center justify-between gap-1">
               <span className="truncate text-[15px] font-bold text-ink-900">{d.city}</span>
               {d.visited && (
-                <span className="shrink-0 rounded bg-paper-alt px-1.5 text-[10.5px] text-ink-500">
+                <span className="shrink-0 rounded bg-paper-alt px-1.5 text-xs text-ink-500">
                   去過
                 </span>
               )}
@@ -297,11 +297,11 @@ export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "
             <p className="absolute inset-x-2.5 bottom-6 truncate text-[15px] font-bold text-white">
               {trip.title}
             </p>
-            <p className="absolute left-2.5 bottom-2 text-[11px] text-white/85 tabular-nums">
+            <p className="absolute left-2.5 bottom-2 text-xs text-white/85 tabular-nums">
               {trip.startDate.toISOString().slice(0, 7).replace("-", "/")}
             </p>
           </div>
-          <p className="mt-1.5 flex items-center gap-1 truncate text-[11.5px] text-ink-500">
+          <p className="mt-1.5 flex items-center gap-1 truncate text-xs text-ink-500">
             {trip.dayCount} 天
             {trip.photoCount > 0 && (
               <>
@@ -327,22 +327,22 @@ export function MemoryTile({ trip, variant }: { trip: MemoryTileTrip; variant: "
         <div className="relative h-28 shrink-0 bg-paper-alt">{cover}</div>
         <div className="flex min-w-0 flex-col gap-0.5 px-2.5 pb-3 pt-2">
           <p className="truncate text-[14.5px] font-bold text-ink-900">{trip.title}</p>
-          <p className="text-[11.5px] text-ink-500 tabular-nums">
+          <p className="text-xs text-ink-500 tabular-nums">
             {trip.startDate.toISOString().slice(0, 10).replaceAll("-", "/")} –{" "}
             {trip.endDate.toISOString().slice(5, 10).replace("-", "/")}
           </p>
-          <p className="text-[11.5px] text-ink-700">
+          <p className="text-xs text-ink-700">
             {trip.dayCount} 天 · {trip.placeCount} 景點 · {trip.photoCount} 張照片
           </p>
           {!trip.hasJournal ? (
-            <p className="text-[11px] text-ink-400">還沒有遊記</p>
+            <p className="text-xs text-ink-500">還沒有遊記</p>
           ) : trip.journalPublic ? (
-            <p className="flex items-center gap-1 text-[11px] text-success-700">
+            <p className="flex items-center gap-1 text-xs text-success-700">
               <Globe className="h-3 w-3" />
               旅遊書已公開
             </p>
           ) : (
-            <p className="text-[11px] text-ink-400">旅遊書未公開</p>
+            <p className="text-xs text-ink-500">旅遊書未公開</p>
           )}
         </div>
       </Link>

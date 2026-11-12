@@ -141,7 +141,7 @@ export default function BudgetSummary({ days }: { days: BoardDay[] }) {
             </h4>
             <ul className="mt-2 space-y-3">
               {rows.map((item) => (
-                <li key={item.id} className="rounded-lg border border-line p-3">
+                <li key={item.id} className="rounded-card border border-line p-3">
                   <p className="text-sm font-medium text-ink-900">
                     {item.place?.name ?? item.note ?? "未命名項目"}
                   </p>

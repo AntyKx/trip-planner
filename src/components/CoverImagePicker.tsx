@@ -12,6 +12,7 @@ import { upload } from "@vercel/blob/client";
 import { ImageIcon, Camera } from "lucide-react";
 import { updateTripCoverImage } from "@/app/trips/actions";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 export default function CoverImagePicker({
   tripId,
@@ -81,9 +82,8 @@ export default function CoverImagePicker({
       });
       apply(blob.url);
     } catch (err) {
-      setUploadError(
-        err instanceof Error ? `上傳失敗：${err.message}` : "上傳失敗，請再試一次"
-      );
+      console.error("Cover upload failed:", err);
+      setUploadError("上傳失敗，請確認網路後再試一次");
     } finally {
       setIsUploading(false);
     }
@@ -139,7 +139,7 @@ export default function CoverImagePicker({
           </button>
 
           {isOpen && (
-            <div className="absolute bottom-full right-0 z-[var(--z-dropdown)] mb-2 w-72 rounded-xl border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
+            <div className="absolute bottom-full right-0 z-[var(--z-dropdown)] mb-2 w-72 rounded-card border border-line bg-surface p-4 text-left shadow-lg sm:w-80">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -151,7 +151,7 @@ export default function CoverImagePicker({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                className={appButtonClassName("primary", "md", "w-full")}
               >
                 <Camera className="h-4 w-4" />
                 {isUploading ? "上傳中…" : "從手機相簿選擇"}
@@ -186,11 +186,11 @@ export default function CoverImagePicker({
                   value={customUrl}
                   onChange={(e) => setCustomUrl(e.target.value)}
                   placeholder="或貼上圖片網址"
-                  className="min-w-0 flex-1 rounded-md border border-line px-2 py-1 text-sm"
+                  className="min-h-9 min-w-0 flex-1 rounded-md border border-line px-2 py-1 text-sm"
                 />
                 <button
                   type="submit"
-                  className="shrink-0 rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700"
+                  className={appButtonClassName("primary", "sm")}
                 >
                   套用
                 </button>

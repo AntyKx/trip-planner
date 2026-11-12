@@ -40,7 +40,7 @@ export default function CopyCaptionButton({
         if (await copyText(text)) toast.success("已複製，可以貼到 IG 了");
         else toast.error("複製失敗，請再試一次");
       }}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-700 hover:border-brand-400 hover:text-brand-600"
+      className="min-h-9 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-700 hover:border-brand-400 hover:text-brand-600"
     >
       <Copy className="h-3.5 w-3.5" />
       {label}

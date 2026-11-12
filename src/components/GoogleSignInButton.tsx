@@ -10,6 +10,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import { signInWithGoogle } from "@/app/login/actions";
+import { appButtonClassName } from "./AppButton";
 
 const POPUP_BLOCKED_CODES = new Set([
   "auth/popup-blocked",
@@ -56,9 +57,21 @@ export default function GoogleSignInButton({ next = "/" }: { next?: string }) {
 
   function describeError(err: unknown): string {
     const code = (err as { code?: string })?.code;
-    const message = err instanceof Error ? err.message : String(err);
     console.error("Google sign-in failed:", err);
-    return code ? `登入失敗（${code}）` : `登入失敗：${message}`;
+    // Friendly text for the cases a user can actually do something about;
+    // anything else keeps the Firebase code (small, in parentheses) so a
+    // screenshot of the error is still enough to debug from.
+    switch (code) {
+      case "auth/popup-closed-by-user":
+      case "auth/cancelled-popup-request":
+        return "登入視窗已關閉，請再試一次";
+      case "auth/network-request-failed":
+        return "網路連線不穩，請確認網路後再試一次";
+      case "auth/too-many-requests":
+        return "嘗試次數太多，請稍後再試";
+      default:
+        return code ? `登入失敗，請再試一次（${code}）` : "登入失敗，請再試一次";
+    }
   }
 
   async function completeSignIn(result: UserCredential) {
@@ -123,7 +136,7 @@ export default function GoogleSignInButton({ next = "/" }: { next?: string }) {
         type="button"
         onClick={handleSignIn}
         disabled={isPending}
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+        className={appButtonClassName("primary", "lg", "w-full")}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img

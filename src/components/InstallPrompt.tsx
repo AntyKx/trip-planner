@@ -48,7 +48,7 @@ export default function InstallPrompt() {
         hasBottomTabBar ? "bottom-[calc(4rem+env(safe-area-inset-bottom))]" : "bottom-0"
       }`}
     >
-      <div className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3 text-sm shadow-lg">
+      <div className="flex items-center gap-3 rounded-card border border-line bg-surface p-3 text-sm shadow-lg">
         <p className="flex-1 text-ink-700">
           點下方分享鍵 <Share className="inline h-4 w-4 align-text-bottom" />{" "}
           →「加入主畫面」，把行程規劃加到手機桌面

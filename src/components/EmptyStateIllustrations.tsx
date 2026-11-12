@@ -12,7 +12,7 @@ function IllustrationTile({ src, alt }: { src: string; alt: string }) {
     <img
       src={src}
       alt={alt}
-      className="h-28 w-28 rounded-2xl object-cover shadow-md ring-1 ring-black/5"
+      className="h-28 w-28 rounded-card-lg object-cover shadow-md ring-1 ring-black/5"
     />
   );
 }

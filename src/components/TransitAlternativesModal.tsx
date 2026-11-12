@@ -53,7 +53,7 @@ export default function TransitAlternativesModal({
                 key={i}
                 type="button"
                 onClick={() => onChoose(alt)}
-                className="w-full rounded-xl border border-line p-3 text-left hover:border-brand-400 hover:bg-brand-50"
+                className="w-full rounded-card border border-line p-3 text-left hover:border-brand-400 hover:bg-brand-50"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-semibold text-ink-900">

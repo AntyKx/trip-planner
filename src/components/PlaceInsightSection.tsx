@@ -109,7 +109,7 @@ export default function PlaceInsightSection({
           type="button"
           onClick={() => handleAnalyze()}
           disabled={isLoading}
-          className="flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
+          className="min-h-9 flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-3 py-1.5 text-xs font-medium text-accent-700 hover:bg-accent-100 disabled:opacity-50"
         >
           <Sparkles className={`h-3.5 w-3.5 ${isLoading ? "animate-pulse" : ""}`} />
           {isLoading ? "AI 分析中…" : compact ? "AI 分析" : "AI 看看適不適合"}
@@ -118,7 +118,7 @@ export default function PlaceInsightSection({
             this button (score badge + two text lines) instead of leaving a
             blank gap while the request is in flight. */}
         {isLoading && (
-          <div className="mt-1.5 w-full space-y-2 rounded-lg border border-accent-100 bg-accent-50 p-3">
+          <div className="mt-1.5 w-full space-y-2 rounded-card border border-accent-100 bg-accent-50 p-3">
             <div className="flex items-center justify-between gap-2">
               <Skeleton className="h-3 w-24" />
               <Skeleton className="h-4 w-10" />
@@ -133,7 +133,7 @@ export default function PlaceInsightSection({
   }
 
   return (
-    <div className={`w-full rounded-lg border border-accent-100 bg-accent-50 p-3 text-sm ${className ?? ""}`}>
+    <div className={`w-full rounded-card border border-accent-100 bg-accent-50 p-3 text-sm ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-xs font-semibold text-accent-700">
           <Sparkles className="h-3.5 w-3.5" />

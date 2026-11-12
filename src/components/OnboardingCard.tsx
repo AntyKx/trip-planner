@@ -41,7 +41,7 @@ export default function OnboardingCard({ steps }: { steps: OnboardingStep[] }) {
   }
 
   return (
-    <div className="animate-fade-up rounded-card-lg border border-line bg-surface p-4 shadow-soft [animation-fill-mode:forwards]">
+    <div className="animate-fade-up rounded-card-lg border border-line bg-surface p-4 [animation-fill-mode:forwards]">
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-bold text-ink-900">三步驟開始你的旅行手帳</h2>
@@ -92,7 +92,7 @@ export default function OnboardingCard({ steps }: { steps: OnboardingStep[] }) {
                   <>
                     <span className="mt-0.5 block text-xs text-ink-500">{step.desc}</span>
                     {step.feature && (
-                      <span className="mt-1 flex items-start gap-1 text-[11.5px] text-brand-600">
+                      <span className="mt-1 flex items-start gap-1 text-xs text-brand-600">
                         <Sparkles className="mt-0.5 h-3 w-3 shrink-0" />
                         {step.feature}
                       </span>

@@ -85,7 +85,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
             <a
               key={day.id}
               href={`#day-${day.dayIndex}`}
-              className="shrink-0 rounded-md border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-700 hover:border-brand-300 hover:text-brand-700"
+              className="inline-flex min-h-9 shrink-0 items-center rounded-md border border-line bg-surface px-3 py-1 text-xs font-medium text-ink-700 hover:border-brand-300 hover:text-brand-700"
             >
               Day {day.dayIndex}
             </a>
@@ -136,7 +136,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
                       )}
 
                       <div
-                        className={`flex items-stretch gap-3 rounded-xl border p-3 shadow-sm ${
+                        className={`flex items-stretch gap-3 rounded-card border p-3 ${
                           isAnchor ? "border-brand-200 bg-brand-50/40" : "border-line bg-surface"
                         }`}
                       >
@@ -207,7 +207,7 @@ export default function ItineraryOverview({ trip }: { trip: ItineraryOverviewTri
         </div>
       )}
 
-      <p className="mt-10 text-center text-xs text-ink-400">
+      <p className="mt-10 text-center text-xs text-ink-500">
         由 Trip Planner 產生的唯讀分享頁・不含訂房確認碼與花費金額
       </p>
     </>

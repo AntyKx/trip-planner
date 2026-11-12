@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ShieldAlert, Pencil } from "lucide-react";
 import { updateEmergencyInfo } from "@/app/trips/actions";
 import { useToast } from "./Toast";
+import { appButtonClassName } from "./AppButton";
 
 export default function EmergencyInfoCard({
   tripId,
@@ -34,7 +35,7 @@ export default function EmergencyInfoCard({
   }
 
   return (
-    <div className={bare ? "" : "rounded-xl border border-line bg-surface p-4 shadow-sm"}>
+    <div className={bare ? "" : "rounded-card border border-line bg-surface p-4"}>
       <div className="flex items-center justify-between gap-2">
         {!bare && (
           <h3 className="flex items-center gap-1.5 text-sm font-semibold text-ink-700">
@@ -73,7 +74,7 @@ export default function EmergencyInfoCard({
               type="button"
               onClick={handleSave}
               disabled={isPending}
-              className="rounded-md bg-brand-600 px-3 py-1 text-sm text-white hover:bg-brand-700 disabled:opacity-50"
+              className={appButtonClassName("primary", "sm")}
             >
               {isPending ? "儲存中…" : "儲存"}
             </button>
@@ -84,7 +85,7 @@ export default function EmergencyInfoCard({
                 setIsEditing(false);
               }}
               disabled={isPending}
-              className="rounded-md border border-line px-3 py-1 text-sm text-ink-700 hover:bg-paper-alt"
+              className={appButtonClassName("secondary", "sm")}
             >
               取消
             </button>
@@ -95,7 +96,7 @@ export default function EmergencyInfoCard({
           {emergencyInfo}
         </p>
       ) : (
-        <p className="mt-3 text-sm text-ink-400">
+        <p className="mt-3 text-sm text-ink-500">
           尚未填寫，可記錄護照影本位置、保險資訊、緊急聯絡人等。
         </p>
       )}

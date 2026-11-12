@@ -23,6 +23,7 @@ import { SearchResultSkeleton } from "@/components/LoadingSkeleton";
 import { useToast } from "@/components/Toast";
 import { TYPE_LABEL } from "@/lib/labels";
 import { isClosedAllDay, weekdayLabel, type OpeningPeriod } from "@/lib/businessHours";
+import BackLink from "@/components/BackLink";
 
 export type TripOption = {
   id: string;
@@ -358,7 +359,7 @@ export default function ExploreClient({
                   prev ? { ...prev, chosenDayId: e.target.value } : prev
                 )
               }
-              className="rounded-md border border-line px-2 py-1 text-base"
+              className="min-h-9 rounded-md border border-line px-2 py-1 text-base"
             >
               {selectedTrip?.days.map((d) => (
                 <option key={d.id} value={d.id}>
@@ -527,20 +528,12 @@ export default function ExploreClient({
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6">
-      <div className="flex items-center gap-4 text-sm">
-        {selectedTripId && (
-          <Link
-            href={`/trips/${selectedTripId}`}
-            className="text-ink-700 hover:underline"
-          >
-            ← 回到行程
-          </Link>
-        )}
-        <Link href="/" className="text-ink-700 hover:underline">
-          回首頁
-        </Link>
-      </div>
-      <h1 className="mt-2 text-2xl font-bold text-ink-900">探索景點 / 餐廳</h1>
+      {selectedTripId ? (
+        <BackLink href={`/trips/${selectedTripId}`}>回行程</BackLink>
+      ) : (
+        <BackLink href="/">首頁</BackLink>
+      )}
+      <h1 className="mt-1 text-2xl font-bold text-ink-900">探索景點 / 餐廳</h1>
 
       {trips.length === 0 ? (
         <p className="mt-6 text-sm text-ink-700">
@@ -587,7 +580,7 @@ export default function ExploreClient({
                   className="min-w-0 flex-1 rounded-lg border border-line px-3 py-2 text-base"
                 />
                 <AppButton type="submit" isLoading={isSearching} icon={<Search className="h-4 w-4" />}>
-                  {isSearching ? "搜尋中..." : "搜尋"}
+                  {isSearching ? "搜尋中…" : "搜尋"}
                 </AppButton>
               </form>
               {region === "OTHER" && (
@@ -613,7 +606,7 @@ export default function ExploreClient({
                 const t = trips.find((tr) => tr.id === tripId);
                 setSelectedDayId(t?.days[0]?.id ?? "");
               }}
-              className="rounded-md border border-line px-2 py-1 text-base"
+              className="min-h-9 rounded-md border border-line px-2 py-1 text-base"
             >
               {trips.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -624,7 +617,7 @@ export default function ExploreClient({
             <select
               value={selectedDayId}
               onChange={(e) => setSelectedDayId(e.target.value)}
-              className="rounded-md border border-line px-2 py-1 text-base"
+              className="min-h-9 rounded-md border border-line px-2 py-1 text-base"
             >
               {selectedTrip?.days.map((d) => (
                 <option key={d.id} value={d.id}>

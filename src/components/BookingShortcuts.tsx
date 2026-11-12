@@ -114,7 +114,7 @@ export default function BookingShortcuts({
             )}
             <ShortcutTile icon={Ticket} label="找票券" note="Klook" href={klookUrl(city)} />
           </div>
-          <p className="mt-2 text-[11px] text-ink-400">會開啟外部網站，價格與優惠以該網站為準</p>
+          <p className="mt-2 text-xs text-ink-500">會開啟外部網站，價格與優惠以該網站為準</p>
         </>
       ) : (
         <p className="mt-2 text-xs text-ink-500">
@@ -131,7 +131,7 @@ export default function BookingShortcuts({
           <div className="flex flex-wrap gap-1.5">
             {[...new Set(BOOKING_CITIES.map((c) => c.region))].map((region) => (
               <div key={region} className="contents">
-                <span className="mt-1 w-full text-[11px] text-ink-400">{region}</span>
+                <span className="mt-1 w-full text-xs text-ink-500">{region}</span>
                 {BOOKING_CITIES.filter((c) => c.region === region).map((c) => (
                   <ChoiceChip
                     key={c.name}
@@ -154,7 +154,7 @@ export default function BookingShortcuts({
               />
             ))}
           </div>
-          <p className="mt-5 text-[11px] text-ink-400">
+          <p className="mt-5 text-xs text-ink-500">
             清單以外的城市暫不支援帶入日期的住宿搜尋。
           </p>
         </AppModal>
@@ -178,7 +178,7 @@ function ShortcutTile({
     <>
       <Icon className="h-5 w-5 text-brand-600" />
       <span className="text-[13px] font-bold text-ink-900">{label}</span>
-      <span className="max-w-full truncate text-[10.5px] font-normal text-ink-500">{note}</span>
+      <span className="max-w-full truncate text-xs font-normal text-ink-500">{note}</span>
     </>
   );
   const className =

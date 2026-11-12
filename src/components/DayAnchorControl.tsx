@@ -8,6 +8,7 @@ import {
   clearDayAnchor,
   type AnchorItemResult,
 } from "@/app/trips/actions";
+import { useConfirm } from "./ConfirmDialog";
 
 // "本日起點" is a real timeline card (type HOTEL) so it gets a photo,
 // editable time/cost, and a real computed leg to the next stop via the
@@ -33,6 +34,7 @@ export default function DayAnchorControl({
   onAnchorSet: (item: AnchorItemResult) => void;
   onAnchorCleared: () => void;
 }) {
+  const confirm = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
   // Same JP/TW-preset-or-free-text pattern as the explore search (see
@@ -88,10 +90,14 @@ export default function DayAnchorControl({
   }
 
   async function handlePick(place: PlaceResult) {
-    const confirmMessage = anchorName
-      ? `確定要把本日起點改成「${place.name}」嗎？`
-      : `確定要把「${place.name}」設為本日起點嗎？`;
-    if (!confirm(confirmMessage)) return;
+    const ok = await confirm({
+      title: anchorName ? "更換本日起點？" : "設為本日起點？",
+      message: anchorName
+        ? `本日起點會從「${anchorName}」改成「${place.name}」。`
+        : `「${place.name}」會成為今天行程的出發點。`,
+      confirmLabel: anchorName ? "更換" : "設定",
+    });
+    if (!ok) return;
 
     setIsSaving(true);
     setError(null);
@@ -181,7 +187,7 @@ export default function DayAnchorControl({
   }
 
   return (
-    <div className="rounded-lg border border-line bg-paper-alt p-3 text-xs">
+    <div className="rounded-card border border-line bg-paper-alt p-3 text-xs">
       <div className="flex items-center justify-between gap-2">
         <span className="font-medium text-ink-700">設定本日起點</span>
         <button
@@ -198,7 +204,7 @@ export default function DayAnchorControl({
         <select
           value={region}
           onChange={(e) => setRegion(e.target.value as "JP" | "TW" | "OTHER")}
-          className="rounded-md border border-line bg-surface px-1.5 py-1.5 text-xs"
+          className="min-h-9 rounded-md border border-line bg-surface px-1.5 py-1.5 text-xs"
         >
           <option value="JP">日本</option>
           <option value="TW">台灣</option>
@@ -210,7 +216,7 @@ export default function DayAnchorControl({
             value={customRegion}
             onChange={(e) => setCustomRegion(e.target.value)}
             placeholder="國家/城市"
-            className="w-20 min-w-0 rounded-md border border-line px-2 py-1.5 text-xs"
+            className="min-h-9 w-20 min-w-0 rounded-md border border-line px-2 py-1.5 text-xs"
           />
         )}
         <input
@@ -218,12 +224,13 @@ export default function DayAnchorControl({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="搜尋飯店/地點名稱"
-          className="min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-xs"
+          className="min-h-9 min-w-0 flex-1 rounded-md border border-line px-2 py-1.5 text-xs"
         />
         <button
           type="submit"
           disabled={isSearching}
-          className="flex shrink-0 items-center gap-1 rounded-md bg-brand-600 px-2.5 py-1.5 text-white disabled:opacity-50"
+          aria-label="搜尋"
+          className="flex min-h-9 min-w-9 shrink-0 items-center justify-center rounded-card bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50"
         >
           <Search className="h-3.5 w-3.5" />
         </button>
@@ -236,7 +243,7 @@ export default function DayAnchorControl({
             {otherDays.map((day) => (
               <label
                 key={day.id}
-                className={`flex items-center gap-1 rounded-md border px-2 py-1 ${
+                className={`min-h-9 flex items-center gap-1 rounded-md border px-2 py-1 ${
                   applyToDayIds.has(day.id)
                     ? "border-brand-600 bg-brand-50 text-brand-700"
                     : "border-line bg-surface text-ink-600"

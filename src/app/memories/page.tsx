@@ -1,5 +1,3 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth";
 import { MemoryTile, type MemoryTileTrip } from "@/components/HomeSections";
@@ -11,6 +9,7 @@ import {
   tripPhotoCount,
   tripPlaceIds,
 } from "@/lib/tripSummary";
+import BackLink from "@/components/BackLink";
 
 // Every finished trip in one place, grouped by year. Replaced the home
 // page's "旅行回憶（N）" fold, which stacked full-size 16:9 trip cards and
@@ -68,13 +67,7 @@ export default async function MemoriesPage() {
 
   return (
     <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <Link
-        href="/"
-        className="inline-flex min-h-10 items-center gap-1 text-sm text-ink-700 hover:underline"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        首頁
-      </Link>
+      <BackLink href="/">首頁</BackLink>
       <h1 className="mt-1 text-3xl font-bold text-ink-900">旅行回憶</h1>
       {tiles.length > 0 && (
         <p className="mt-1 text-sm text-ink-500">

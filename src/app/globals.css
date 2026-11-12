@@ -63,10 +63,6 @@ textarea {
    direction, 海港藍). The old warm paper base with two radial brand glows
    was one of the "looks AI-generated" tells the user pointed out. Class
    name kept so layout.tsx doesn't need touching. */
-.app-glow-bg {
-  background: var(--color-paper);
-}
-
 /* Removes the ~300ms double-tap-to-zoom delay/gesture on interactive
    controls specifically (buttons, links, checkboxes/radios), without
    disabling pinch-zoom on the page's actual content. */
